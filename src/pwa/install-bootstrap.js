@@ -6,9 +6,24 @@
   // beforeinstallprompt event that a browser may dispatch earlier.
   if (globalThis.SPTInstallBridge) return;
 
+  const ua = String(navigator.userAgent || '');
+  const uaPlatform = String(navigator.userAgentData?.platform || '');
+  const isAndroid = /Android/i.test(ua) || /Android/i.test(uaPlatform);
+  const isIOS = /iPad|iPhone|iPod/i.test(ua);
+  const isMobile = navigator.userAgentData?.mobile === true || isAndroid || isIOS;
+  const platform = isAndroid ? 'android' : (isIOS ? 'ios' : (isMobile ? 'mobile' : 'desktop'));
+
+  // Set the platform marker before stylesheets finish loading so the landing
+  // page can prioritize the correct install path without a layout flash.
+  document.documentElement.dataset.sptPlatform = platform;
+
   const listeners = new Set();
   const bridge = {
     deferredPrompt: null,
+    platform,
+    isAndroid,
+    isIOS,
+    isMobile,
     installed: false,
     promptSeen: false,
     serviceWorkerRegistration: null,

@@ -1,7 +1,7 @@
 # Social Post Tools
 
 [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
-[![Version](https://img.shields.io/badge/version-v4.2.3-2f81f7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.2.4-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
 [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
@@ -46,7 +46,7 @@ X / Threads native app
 → Share onward / copy link / open for AI capture
 ```
 
-The **Install Android app** button is always actionable. When the browser exposes its native install prompt, the button opens it directly; otherwise it opens manual browser-menu instructions and basic install diagnostics. This also covers browsers such as Firefox Android that can install PWAs but do not expose the custom `beforeinstallprompt` API.
+On Android, the landing page now prioritizes the **Install Android app** path and demotes the browser Userscript to an optional disclosure. The install button is always actionable: it opens the native prompt when available, or manual browser-menu instructions and diagnostics otherwise.
 
 ## What it does
 

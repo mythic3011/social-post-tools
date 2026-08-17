@@ -135,6 +135,33 @@ def main() -> int:
                 'install-dialog-present': bool(landing and landing['installDialog'] and landing['diagnostics'] >= 4),
             }, failures)
 
+            android_layout, call_id = value(ws, r'''(() => {
+              document.documentElement.dataset.sptPlatform = 'android';
+              const install = document.querySelector('#install-app');
+              const browserCta = document.querySelector('.browser-setup-cta');
+              const browserSection = document.querySelector('.browser-userscript-section');
+              const androidOption = document.querySelector('.android-browser-option');
+              const androidLabel = install?.querySelector('.android-only');
+              const desktopLabel = install?.querySelector('.not-android');
+              return {
+                installDisplay: install ? getComputedStyle(install).display : null,
+                browserCtaDisplay: browserCta ? getComputedStyle(browserCta).display : null,
+                browserSectionDisplay: browserSection ? getComputedStyle(browserSection).display : null,
+                androidOptionDisplay: androidOption ? getComputedStyle(androidOption).display : null,
+                androidLabelDisplay: androidLabel ? getComputedStyle(androidLabel).display : null,
+                desktopLabelDisplay: desktopLabel ? getComputedStyle(desktopLabel).display : null,
+                scrollWidth: document.documentElement.scrollWidth,
+                width: document.documentElement.clientWidth,
+              };
+            })()''', call_id)
+            report({
+                'android-install-cta-visible': bool(android_layout and android_layout['installDisplay'] != 'none'),
+                'android-browser-setup-demoted': bool(android_layout and android_layout['browserCtaDisplay'] == 'none' and android_layout['browserSectionDisplay'] == 'none'),
+                'android-userscript-still-discoverable': bool(android_layout and android_layout['androidOptionDisplay'] != 'none'),
+                'android-install-label-selected': bool(android_layout and android_layout['androidLabelDisplay'] != 'none' and android_layout['desktopLabelDisplay'] == 'none'),
+                'android-layout-no-overflow': bool(android_layout and android_layout['scrollWidth'] <= android_layout['width'] + 1),
+            }, failures)
+
             call_id = set_document(ws, frame_id, page_document('install.html'), call_id)
             install_page, call_id = value(ws, r'''(() => ({
               width: document.documentElement.clientWidth,

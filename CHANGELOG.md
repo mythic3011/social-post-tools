@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.2.4
+- Make the public landing page platform-adaptive: Android visitors see the PWA install path as the primary action instead of the Userscript funnel.
+- Detect Android/mobile platform in the head-loaded install bootstrap before CSS loads, avoiding a desktop-first flash.
+- Hide the desktop/browser setup CTA and full Userscript marketing card on Android while keeping Userscript setup available under an optional disclosure.
+- Keep the install CTA visible on Android even when `beforeinstallprompt` is unavailable; manual browser-menu guidance remains the fallback.
+- Add mobile-browser regression checks for Android-specific CTA visibility, Userscript demotion, label selection, and horizontal overflow.
+
 ## v4.2.3
 - Make the Android install CTA always actionable: use the native browser prompt when available and otherwise open manual install guidance instead of leaving a dead button.
 - Capture `beforeinstallprompt` in a small head-loaded install bridge before the main application script.

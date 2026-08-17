@@ -124,3 +124,16 @@ code, .url { overflow-wrap: anywhere; word-break: break-word; font-family: ui-mo
   .install-diagnostics dl > div { grid-template-columns: 1fr; gap: .15rem; }
   .install-diagnostics dd { text-align: left; }
 }
+
+/* Platform-adaptive install funnel. The early install bootstrap sets
+   data-spt-platform on <html> before CSS loads, avoiding Android users seeing
+   the desktop Userscript path as the primary installation choice. */
+.android-only { display: none !important; }
+html[data-spt-platform="android"] .android-only { display: initial !important; }
+html[data-spt-platform="android"] .not-android { display: none !important; }
+html[data-spt-platform="android"] .browser-setup-cta,
+html[data-spt-platform="android"] .browser-userscript-section { display: none !important; }
+html[data-spt-platform="android"] .hero-install-actions { grid-template-columns: 1fr; }
+html[data-spt-platform="android"] .platform-lead { display: block !important; margin: 0 0 var(--spt-space-3); color: var(--spt-muted); }
+html[data-spt-platform="android"] .android-browser-option { display: block !important; margin-top: var(--spt-space-5); }
+html[data-spt-platform="android"] .android-browser-option > summary { min-height: 48px; }

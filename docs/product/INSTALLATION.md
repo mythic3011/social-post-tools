@@ -46,9 +46,9 @@ Use the PWA when the starting point is the native X / Threads Android app.
 2. Tap **Install app**. If the browser exposes a native install prompt, Social Post Tools opens it; otherwise the same button shows manual **Install app / Add to Home screen** steps.
 3. From X / Threads, tap **Share** and choose **Social Post Tools**.
 
-The install CTA never depends on `beforeinstallprompt` being present just to be usable. Chromium-based browsers can expose that event and get a one-tap native prompt; browsers without the API fall back to manual installation guidance. The dialog also reports HTTPS, service-worker, native-prompt, and standalone-mode state for troubleshooting.
+On Android, the public landing page detects the platform before the main stylesheet is applied, keeps the PWA install path primary, and moves the browser Userscript into an optional disclosure. The install CTA never depends on `beforeinstallprompt` being present just to be usable. Chromium-based browsers can expose that event and get a one-tap native prompt; browsers without the API fall back to manual installation guidance. The dialog also reports HTTPS, service-worker, native-prompt, and standalone-mode state for troubleshooting.
 
-If an Android device keeps showing an older UI after a deployment, close/reopen the site or clear that site's stored data once. v4.2.3 also version-tags install-critical assets and uses network-first service-worker handling for navigations, JavaScript, CSS, and the manifest to reduce stale PWA shells after releases.
+If an Android device keeps showing an older UI after a deployment, close/reopen the site or clear that site's stored data once. v4.2.4 keeps the Android-first install funnel while v4.2.3 introduced version-tagged install-critical assets and uses network-first service-worker handling for navigations, JavaScript, CSS, and the manifest to reduce stale PWA shells after releases.
 
 ## Which one should I install?
 
