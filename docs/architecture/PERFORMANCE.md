@@ -1,4 +1,4 @@
-# Performance review — v3.8.0
+# Performance review
 
 ## Hot path
 
@@ -90,3 +90,12 @@ Canonical serialization, SHA-256 hashing, and optional media hashing run only af
 The Pages landing is static and shares the existing small PWA CSS/JS/core assets. No runtime configuration endpoint or version fetch was added; version/distribution URLs are injected at build time so the PWA keeps `connect-src 'none'`.
 
 Userscript installer and metadata files are not placed in the service-worker shell cache, avoiding stale update checks and unnecessary cache duplication.
+
+
+## v4.2 UI foundation performance
+
+The CSS-framework refactor changes only the standalone PWA/Pages presentation layer. It adds no Userscript observer, polling loop, event listener, or network request. X/Threads native-menu integration remains framework-free.
+
+Pico CSS is a static same-origin asset copied during build and included in the PWA application shell. Product CSS remains a separate small file so project-specific layout can evolve without rebuilding framework code. The service worker caches both local CSS assets; userscript installer/update files remain outside the shell cache.
+
+The existing Chromium hot-path and shared-core smoke tests are retained unchanged. The v4.2 release test run remained within the established tripwires; these numbers are regression signals rather than production benchmarks.

@@ -1,4 +1,4 @@
-# UX design notes — v4.1
+# UX design notes — v4.2
 
 ## Goal
 
@@ -42,3 +42,12 @@ The Android PWA uses 48px minimum interactive targets. The userscript settings a
 The public Pages root is a landing/install page rather than a settings console. The first screen explains outcomes (share cleanly, use with AI, Android Share) and offers the two install paths. Settings remain one click away but are not the entry task.
 
 The install page does not require users to understand PWA, service-worker, share-target, provider, or URL-builder terminology. Userscript and Android setup are separated as distinct tasks.
+
+
+## v4.2 UI implementation boundary
+
+The HCI model from v4.0/v4.1 is unchanged: common tasks remain visible, advanced controls remain progressively disclosed, and setup is optional for the default path. Pico CSS is an implementation foundation, not a new navigation model.
+
+The standalone PWA/Pages surface uses semantic HTML plus framework primitives for forms, buttons, articles, and disclosure controls. Product-specific CSS is reserved for information hierarchy, spacing tokens, install states, and mobile composition. This reduces custom primitive styling without hiding application state inside utility-class strings.
+
+The Userscript has a different boundary: controls injected into X/Threads native menus continue to clone/inherit host styling, while SPT-owned dialogs/trays remain explicitly scoped. No global framework stylesheet is injected into either social site.

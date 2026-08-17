@@ -1,0 +1,16 @@
+/* SPT development fallback for offline builds. Production uses @picocss/pico@2.1.1 conditional CSS. */
+.pico { font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height: 1.5; }
+.pico *, .pico *::before, .pico *::after { box-sizing: border-box; }
+.pico .container { width: min(100% - 2rem, 72rem); margin-inline: auto; }
+.pico article { border: 1px solid color-mix(in srgb, CanvasText 16%, transparent); border-radius: .75rem; padding: 1rem; margin: .8rem 0; background: color-mix(in srgb, CanvasText 4%, Canvas); }
+.pico h1,.pico h2,.pico p { margin-top: 0; }
+.pico h1 { font-size: 1.5rem; } .pico h2 { font-size: 1.05rem; }
+.pico button,.pico [role="button"] { font: inherit; min-height: 2.9rem; border: 1px solid LinkText; border-radius: .65rem; padding: .65rem .9rem; background: LinkText; color: Canvas; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.pico .secondary,.pico .outline { background: Canvas; color: CanvasText; border-color: color-mix(in srgb, CanvasText 22%, transparent); }
+.pico input,.pico select,.pico textarea { width: 100%; font: inherit; border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); border-radius: .55rem; padding: .65rem .7rem; background: Canvas; color: CanvasText; margin-top: .35rem; margin-bottom: .8rem; }
+.pico textarea { min-height: 7rem; resize: vertical; }
+.pico label { display: block; margin-bottom: .25rem; }
+.pico details > summary { cursor: pointer; padding-block: .65rem; }
+.pico a { color: LinkText; }
+.pico button:focus-visible,.pico [role="button"]:focus-visible,.pico input:focus-visible,.pico select:focus-visible,.pico textarea:focus-visible,.pico summary:focus-visible { outline: 3px solid Highlight; outline-offset: 2px; }
+.pico button:disabled { opacity: .55; cursor: not-allowed; }

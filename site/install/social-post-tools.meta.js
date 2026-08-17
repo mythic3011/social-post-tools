@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         Social Post Tools
 // @namespace    social-post-tools
-// @version      4.1.0
+// @version      4.2.0
 // @description  Simple post sharing and AI capture for X/Threads, with optional advanced link builders, archive tools, Android sharing, and Telegram.
-// Distribution URLs are injected by the GitHub Pages build.
+// @homepageURL  https://share-tools.mythic3011.com/
+// @downloadURL  https://share-tools.mythic3011.com/install/social-post-tools.user.js
+// @updateURL    https://share-tools.mythic3011.com/install/social-post-tools.meta.js
 // @match        https://x.com/*
 // @match        https://twitter.com/*
 // @match        https://mobile.twitter.com/*

@@ -7,56 +7,62 @@
   <meta name="description" content="Share X and Threads posts with clean links, AI-ready capture, Telegram, alternative frontends, and Android Share.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css">
+  <link rel="stylesheet" href="./assets/app.css">
   <title>Social Post Tools</title>
 </head>
 <body data-page="landing">
-<main class="landing">
-  <header class="site-header">
+<div class="pico spt-app">
+<main class="container spt-shell landing">
+  <header class="spt-header site-header">
     <div><h1>Social Post Tools</h1><p class="eyebrow">Share social posts your way</p></div>
-    <a class="button compact" href="./settings.html">Settings</a>
+    <a role="button" class="secondary outline compact" href="./settings.html">Settings</a>
   </header>
 
-  <section class="card hero-card landing-hero">
+  <article class="hero-card landing-hero">
     <div class="badge">X · Threads</div>
     <h2>Cleaner sharing. Better AI capture.</h2>
     <p>Use clean or alternate links, send posts to Android apps or Telegram, and capture the post context you actually want for AI.</p>
     <div class="cta-grid">
-      <button id="install-app" class="primary" type="button" hidden>Install Android app</button>
-      <a class="button primary" href="./install/social-post-tools.user.js">Install Userscript</a>
+      <button id="install-app" type="button" hidden>Install Android app</button>
+      <a role="button" href="./install/social-post-tools.user.js">Install Userscript</a>
     </div>
+    <p id="install-help" class="muted compact-copy">On Android, use your browser menu → Install app / Add to Home screen if the install button is unavailable.</p>
     <p class="muted compact-copy">No account, analytics, or server-side post processing.</p>
-  </section>
+  </article>
 
   <section class="feature-grid" aria-label="Main features">
-    <article class="card feature-card"><h2>Share cleanly</h2><p>Remove tracking and choose an alternative reader or chat-friendly link.</p></article>
-    <article class="card feature-card"><h2>Use with AI</h2><p>Capture the focal post, images, quote/repost context, or visible replies without flattening them together.</p></article>
-    <article class="card feature-card"><h2>Android Share</h2><p>Install the companion, then choose Social Post Tools directly from Android's share sheet.</p></article>
-    <article class="card feature-card"><h2>Advanced when needed</h2><p>Telegram, custom URL builders, archive snapshots, and expert settings stay out of the way until you need them.</p></article>
+    <article class="feature-card"><h2>Share cleanly</h2><p>Remove tracking and choose an alternative reader or chat-friendly link.</p></article>
+    <article class="feature-card"><h2>Use with AI</h2><p>Capture the focal post, images, quote/repost context, or visible replies without flattening them together.</p></article>
+    <article class="feature-card"><h2>Android Share</h2><p>Install the companion, then choose Social Post Tools directly from Android's share sheet.</p></article>
+    <article class="feature-card"><h2>Advanced when needed</h2><p>Telegram, custom URL builders, archive snapshots, and expert settings stay out of the way until you need them.</p></article>
   </section>
 
-  <section class="card">
+  <article>
     <h2>Android setup</h2>
     <div class="step-list" aria-label="Android setup steps">
       <div><span>1</span><p><strong>Install this web app</strong><br><small>Use the Install button when available, or your browser's Install app / Add to Home screen command.</small></p></div>
       <div><span>2</span><p><strong>Share from X or Threads</strong><br><small>Tap Share → Social Post Tools.</small></p></div>
       <div><span>3</span><p><strong>Choose what happens next</strong><br><small>Share onward, copy a clean link, or open the source for richer AI capture.</small></p></div>
     </div>
-  </section>
+  </article>
 
-  <section class="card">
+  <article>
     <h2>Browser Userscript</h2>
     <p>The Userscript adds <strong>Post tools</strong> to X and Threads while keeping the site's native menu style. It requires a compatible userscript manager.</p>
-    <a class="button full" href="./install/social-post-tools.user.js">Install Userscript</a>
-  </section>
+    <a role="button" class="full" href="./install/social-post-tools.user.js">Install Userscript</a>
+  </article>
 
-  <nav class="footer-nav" aria-label="Project links">
-    <a href="./settings.html">Settings</a>
-    <a href="./privacy.html">Privacy & security</a>
-  </nav>
-  <p class="build-info">Version 4.1.0</p>
-  <p id="status" class="status" aria-live="polite"></p>
+  <footer>
+    <nav class="footer-nav" aria-label="Project links">
+      <a href="./settings.html">Settings</a>
+      <a href="./privacy.html">Privacy & security</a>
+    </nav>
+    <p class="build-info">Version 4.2.0</p>
+    <p id="status" class="status" aria-live="polite"></p>
+  </footer>
 </main>
+</div>
 <script src="./social-post-core.js"></script>
 <script src="./app.js"></script>
 </body>

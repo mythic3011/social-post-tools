@@ -105,23 +105,59 @@
 
   function setupInstallPrompt() {
     const button = $('install-app');
+    const help = $('install-help');
     if (!button) return;
+
+    const standalone = window.matchMedia?.('(display-mode: standalone)').matches === true || navigator.standalone === true;
+    if (standalone) {
+      button.hidden = true;
+      if (help) help.textContent = 'Android app is already installed.';
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      button.hidden = true;
+      if (help) help.textContent = 'Android app installation requires HTTPS. Open the HTTPS version of this site first.';
+      return;
+    }
+
     window.addEventListener('beforeinstallprompt', (event) => {
       event.preventDefault();
       deferredInstallPrompt = event;
       button.hidden = false;
+      if (help) help.textContent = 'Android app installation is ready.';
     });
+
     window.addEventListener('appinstalled', () => {
       deferredInstallPrompt = null;
       button.hidden = true;
+      if (help) help.textContent = 'Android app installed.';
       status('Installed. You can now choose Social Post Tools from Android Share.');
     });
+
     button.addEventListener('click', async () => {
-      if (!deferredInstallPrompt) return;
       const prompt = deferredInstallPrompt;
+      if (!prompt) {
+        button.hidden = true;
+        status('Browser install prompt is unavailable. Use the browser menu → Install app / Add to Home screen.');
+        return;
+      }
+
+      // A BeforeInstallPromptEvent can only be used once.
       deferredInstallPrompt = null;
-      button.hidden = true;
-      try { await prompt.prompt(); } catch {}
+      try {
+        await prompt.prompt();
+        const choice = await prompt.userChoice;
+        button.hidden = true;
+        if (choice?.outcome === 'accepted') {
+          status('Install accepted. Finishing Android app installation…');
+        } else {
+          status('Install dismissed. Use the browser menu if you want to install later.');
+        }
+      } catch {
+        button.hidden = true;
+        status('Could not open the install prompt. Use the browser menu → Install app / Add to Home screen.');
+      }
     });
   }
 
@@ -150,7 +186,7 @@
         const strong = document.createElement('strong'); strong.textContent = builder.name;
         const detail = document.createElement('div'); detail.className = 'url muted'; detail.textContent = builder.baseUrl || builder.template || '';
         label.append(strong, detail);
-        const del = document.createElement('button'); del.type = 'button'; del.textContent = 'Delete';
+        const del = document.createElement('button'); del.type = 'button'; del.className = 'secondary outline'; del.textContent = 'Delete';
         del.addEventListener('click', () => {
           draft.builders.custom = draft.builders.custom.filter((item) => item.id !== builder.id);
           for (const p of ['x', 'threads']) if (draft.links[p].builderId === builder.id) draft.links[p].builderId = DEFAULTS.links[p].builderId;

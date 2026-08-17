@@ -1,10 +1,22 @@
 # Testing
 
-Run the complete local suite:
+Install development dependencies, build, then run the complete suite:
 
 ```bash
+npm ci --ignore-scripts --no-audit --no-fund
+python -m pip install -r requirements-dev.txt
+python3 build.py --pages-base https://share-tools.mythic3011.com
 bash tests/run.sh
 ```
+
+For an offline preview environment where the pinned Pico package cannot be installed, the explicit development-only fallback can be used:
+
+```bash
+python3 build.py --pages-base https://share-tools.mythic3011.com --dev-ui-fallback
+bash tests/run.sh
+```
+
+`--dev-ui-fallback` is not a production build mode and is not used by GitHub Actions.
 
 It executes:
 
@@ -30,7 +42,7 @@ Browser fixtures cover:
 Individual commands:
 
 ```bash
-node --check social-mirror-share-copy.user.js
+node --check dist/social-post-tools.user.js
 python3 tests/audit_static.py
 python3 tests/run-fixtures.py
 python3 tests/perf-smoke.py
@@ -97,3 +109,13 @@ The shared-core test verifies stable JSON key ordering and the standard SHA-256 
 - service-worker exclusion of install/update artifacts;
 - GitHub Pages Actions workflow and permission split;
 - absence of Jekyll dependency in the custom Actions publishing path.
+
+
+## v4.2 UI foundation checks
+
+`tests/ui_structure_audit.py` and `tests/pwa_audit.py` verify the framework boundary: pinned/locked Pico version, local same-origin stylesheet links, unchanged CSP, `.pico` scoping, the `[hidden]` invariant, 48px coarse-pointer targets, and the absence of generic product-layer button skinning.
+
+`tests/pages_audit.py` verifies that the generated Pages artifact contains the local framework file/marker, that the service worker caches it, and that both CI and Pages workflows install npm dependencies before the build.
+
+
+`tests/ui_browser_smoke.py` loads the generated site in headless Chromium at a 360px mobile viewport and checks horizontal overflow, install-button hidden state, stylesheet loading, closed-by-default advanced settings, form labeling, and basic light/dark computed-color behavior. This is a layout/accessibility smoke test rather than screenshot pixel-diff testing.

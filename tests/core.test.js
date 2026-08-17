@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('assert');
-const Core = require('../core/social-post-core.js');
+const Core = require('../src/core/social-post-core.js');
 
 async function main() {
 

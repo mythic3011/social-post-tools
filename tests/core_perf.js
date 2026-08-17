@@ -1,5 +1,5 @@
 'use strict';
-const Core = require('../core/social-post-core.js');
+const Core = require('../src/core/social-post-core.js');
 const { performance } = require('perf_hooks');
 let t = performance.now();
 for (let i=0;i<100000;i++) Core.canonicalize('x','https://twitter.com/alice/status/123?s=20&t=x');

@@ -16,7 +16,7 @@ import websocket
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / 'social-mirror-share-copy.user.js'
+SOURCE = ROOT / 'dist/social-post-tools.user.js'
 FIXTURES = ROOT / 'tests' / 'fixtures'
 
 CASES = [

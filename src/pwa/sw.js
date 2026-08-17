@@ -1,8 +1,8 @@
 'use strict';
-const CACHE = 'social-post-tools-pwa-v4';
+const CACHE = 'social-post-tools-pwa-v4.2';
 const SHELL = [
   './', './index.html', './settings.html', './share-target.html', './privacy.html', './404.html',
-  './styles.css', './app.js', './social-post-core.js', './manifest.webmanifest',
+  './assets/vendor/pico.conditional.min.css', './assets/app.css', './app.js', './social-post-core.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png'
 ];
 self.addEventListener('install', (event) => {

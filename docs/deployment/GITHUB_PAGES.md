@@ -16,6 +16,8 @@ No repository owner/name needs to be hardcoded in the source. The deployment wor
 ```text
 checkout
 → setup Node/Python
+→ npm ci (pinned UI dependency)
+→ install Python test dependencies
 → configure Pages
 → build with real Pages base URL
 → run complete test suite
@@ -68,3 +70,20 @@ The PWA service worker caches the application shell but intentionally does not c
 ## Custom domain
 
 A GitHub Pages custom domain also works because the workflow receives the configured Pages base URL from GitHub. Rebuild/deploy after changing the Pages domain so userscript metadata points to the new canonical site.
+
+
+## UI asset build
+
+The repository pins `@picocss/pico` in `package.json` and `package-lock.json`. CI/Pages must run:
+
+```bash
+npm ci --ignore-scripts --no-audit --no-fund
+```
+
+before `build.py`. The builder copies `node_modules/@picocss/pico/css/pico.conditional.min.css` into:
+
+```text
+site/assets/vendor/pico.conditional.min.css
+```
+
+No CDN URL is emitted into production HTML, so the existing same-origin CSP and offline PWA shell continue to work. A local `--dev-ui-fallback` option exists only for offline preview/testing; it is not used by GitHub Actions.

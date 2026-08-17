@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 
 root = Path(__file__).resolve().parents[1]
-src = (root / 'social-mirror-share-copy.user.js').read_text(encoding='utf-8')
+src = (root / 'dist/social-post-tools.user.js').read_text(encoding='utf-8')
 checks = {
     'syntax-danger-no-eval': not re.search(r'\beval\s*\(|new\s+Function\s*\(', src),
     'no-innerhtml-sink': 'innerHTML' not in src and 'insertAdjacentHTML' not in src,

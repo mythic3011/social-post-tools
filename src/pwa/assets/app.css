@@ -1,0 +1,84 @@
+/* Social Post Tools product layer. Pico owns generic controls; this file owns layout and product semantics. */
+:root {
+  color-scheme: light dark;
+  --spt-content-width: 46rem;
+  --spt-wide-width: 58rem;
+  --spt-space-1: .25rem;
+  --spt-space-2: .5rem;
+  --spt-space-3: .75rem;
+  --spt-space-4: 1rem;
+  --spt-space-5: 1.5rem;
+  --spt-radius-sm: .5rem;
+  --spt-radius-md: .75rem;
+  --spt-muted: color-mix(in srgb, CanvasText 62%, transparent);
+  --spt-line: color-mix(in srgb, CanvasText 16%, transparent);
+  --spt-soft: color-mix(in srgb, CanvasText 6%, transparent);
+  --spt-accent-soft: color-mix(in srgb, LinkText 9%, Canvas);
+}
+
+/* HTML hidden is a state invariant; author CSS must never resurrect hidden controls. */
+[hidden], .hidden { display: none !important; }
+
+html, body { margin: 0; min-height: 100%; }
+body { background: Canvas; color: CanvasText; padding-bottom: env(safe-area-inset-bottom); }
+.spt-app { min-height: 100vh; }
+.spt-shell { max-width: var(--spt-content-width); padding-top: max(var(--spt-space-5), env(safe-area-inset-top)); padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+.spt-shell.landing { max-width: var(--spt-wide-width); }
+.spt-header { display: flex; align-items: center; justify-content: space-between; gap: var(--spt-space-3); margin-bottom: var(--spt-space-5); }
+.spt-header h1 { margin-bottom: 0; }
+.eyebrow { margin: var(--spt-space-1) 0 0; color: var(--spt-muted); font-size: .85rem; }
+.muted, small { color: var(--spt-muted); }
+.hero-card { background: var(--spt-accent-soft); }
+.badge { display: inline-block; border: 1px solid var(--spt-line); border-radius: 999px; padding: .2rem .55rem; font-size: .78rem; color: var(--spt-muted); margin-bottom: var(--spt-space-2); }
+.step-list { display: grid; gap: var(--spt-space-3); margin: var(--spt-space-4) 0; }
+.step-list > div { display: grid; grid-template-columns: 2rem 1fr; align-items: start; gap: var(--spt-space-3); }
+.step-list span { width: 1.9rem; height: 1.9rem; border-radius: 999px; display: grid; place-items: center; border: 1px solid var(--spt-line); font-weight: 700; }
+.step-list p { margin: 0; }
+.settings-group { margin: var(--spt-space-3) 0; border: 1px solid var(--spt-line); border-radius: var(--spt-radius-md); overflow: clip; }
+.settings-group > summary { padding-inline: var(--spt-space-4); min-height: 3.25rem; font-weight: 650; }
+.settings-group-body { padding: 0 var(--spt-space-4) var(--spt-space-4); border-top: 1px solid var(--spt-line); }
+.inline-details { margin-top: var(--spt-space-3); }
+.link-preview { border: 1px solid var(--spt-line); border-radius: var(--spt-radius-md); padding: var(--spt-space-3) var(--spt-space-4); margin-top: var(--spt-space-3); background: Canvas; }
+.link-preview > span { color: var(--spt-muted); font-size: .8rem; }
+.link-preview p { margin: var(--spt-space-1) 0 0; }
+.actions, .cta-grid, .feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spt-space-3); }
+.actions { margin: var(--spt-space-3) 0; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--spt-space-4); }
+.full { width: 100%; }
+.compact { padding-block: .45rem; }
+code, .url { overflow-wrap: anywhere; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.url { font-size: .9rem; }
+.status { min-height: 1.5em; margin-top: var(--spt-space-3); color: var(--spt-muted); }
+.checks { display: grid; gap: var(--spt-space-1); }
+.checks label { min-height: 2.75rem; }
+.builder { border-top: 1px solid var(--spt-line); padding-top: var(--spt-space-4); margin-top: var(--spt-space-4); }
+.builder-list { display: grid; gap: var(--spt-space-2); }
+.builder-item { display: flex; justify-content: space-between; gap: var(--spt-space-3); align-items: center; }
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--spt-space-2); }
+.toolbar > * { flex: 1 1 9rem; }
+.secondary-nav { margin-top: var(--spt-space-4); }
+.landing-hero h2 { font-size: clamp(1.35rem, 4vw, 2rem); }
+.landing-hero > p { max-width: 62ch; }
+.compact-copy { margin: var(--spt-space-3) 0 0; font-size: .9rem; }
+.feature-grid { margin-block: var(--spt-space-4); }
+.feature-card { margin: 0; }
+.feature-card p { margin-bottom: 0; color: var(--spt-muted); }
+.footer-nav { display: flex; flex-wrap: wrap; gap: var(--spt-space-4); margin-top: var(--spt-space-5); }
+.build-info { color: var(--spt-muted); font-size: .8rem; }
+.not-found { margin-top: 12vh; text-align: center; }
+
+/* Accessibility/product invariants that stay above the framework. */
+@media (pointer: coarse) {
+  .pico button,
+  .pico [role="button"],
+  .pico input:not([type="checkbox"]):not([type="radio"]),
+  .pico select,
+  .pico textarea,
+  .pico summary { min-height: 48px; }
+}
+
+@media (max-width: 620px) {
+  .actions, .cta-grid, .feature-grid, .form-grid { grid-template-columns: 1fr; }
+  .spt-header { align-items: flex-start; }
+  .builder-item { align-items: flex-start; flex-direction: column; }
+}
