@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Social Post Tools
 // @namespace    social-post-tools
-// @version      4.1.1
+// @version      4.1.0
 // @description  Simple post sharing and AI capture for X/Threads, with optional advanced link builders, archive tools, Android sharing, and Telegram.
 // Distribution URLs are injected by the GitHub Pages build.
 // @match        https://x.com/*
@@ -535,7 +535,7 @@
 
   const APP = Object.freeze({
     id: 'social-post-tools',
-    version: '4.1.1',
+    version: '4.1.0',
     settingsKey: 'social-post-tools:settings',
     captureCacheKey: 'social-post-tools:capture-cache:v1',
     captureResumeKey: 'social-post-tools:capture-resume:v1',

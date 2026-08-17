@@ -9,7 +9,9 @@ import sys
 import tempfile
 import time
 import socket
-import requests
+import os
+import shutil
+import urllib.request
 import websocket
 from pathlib import Path
 
@@ -425,7 +427,8 @@ def run_case(chromium: str, source: str, case: dict) -> tuple[bool, dict, str]:
                 if proc.poll() is not None:
                     break
                 try:
-                    targets = requests.get(f'http://127.0.0.1:{debug_port}/json', timeout=.4).json()
+                    with urllib.request.urlopen(f'http://127.0.0.1:{debug_port}/json', timeout=.4) as response:
+                        targets = json.load(response)
                     target = next((item for item in targets if item.get('type') == 'page'), None)
                     if target and target.get('webSocketDebuggerUrl'):
                         break
@@ -473,10 +476,26 @@ def run_case(chromium: str, source: str, case: dict) -> tuple[bool, dict, str]:
                 proc.communicate(timeout=2)
 
 
+def find_browser() -> str | None:
+    override = os.environ.get('SPT_BROWSER', '').strip()
+    if override:
+        path = shutil.which(override) if '/' not in override else override
+        if path and Path(path).is_file():
+            return str(path)
+    for candidate in ('chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable'):
+        path = shutil.which(candidate)
+        if path:
+            return path
+    for candidate in ('/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'):
+        if Path(candidate).is_file():
+            return candidate
+    return None
+
+
 def main() -> int:
-    chromium = '/usr/bin/chromium'
-    if not Path(chromium).exists():
-        print('SKIP: chromium not found', file=sys.stderr)
+    chromium = find_browser()
+    if not chromium:
+        print('SKIP: Chromium/Chrome not found', file=sys.stderr)
         return 77
     source = test_source()
     failures = 0

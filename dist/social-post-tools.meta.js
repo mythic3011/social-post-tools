@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Social Post Tools
 // @namespace    social-post-tools
-// @version      4.1.0
+// @version      4.1.1
 // @description  Simple post sharing and AI capture for X/Threads, with optional advanced link builders, archive tools, Android sharing, and Telegram.
 // Distribution URLs are injected by the GitHub Pages build.
 // @match        https://x.com/*

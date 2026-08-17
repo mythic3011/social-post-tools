@@ -13,9 +13,9 @@ spec = importlib.util.spec_from_file_location('fixture_runner', runner_path)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 source = mod.test_source()
-chromium = '/usr/bin/chromium'
-if not Path(chromium).exists():
-    raise SystemExit('SKIP: Chromium unavailable')
+chromium = mod.find_browser()
+if not chromium:
+    raise SystemExit('SKIP: Chromium/Chrome unavailable')
 
 body = '''
 <article data-testid="tweet">
@@ -69,8 +69,8 @@ with tempfile.TemporaryDirectory(prefix='spt-perf-', ignore_cleanup_errors=True)
         deadline = time.time() + 10
         while time.time() < deadline:
             try:
-                import requests
-                targets = requests.get(f'http://127.0.0.1:{debug_port}/json', timeout=.4).json()
+                with mod.urllib.request.urlopen(f'http://127.0.0.1:{debug_port}/json', timeout=.4) as response:
+                    targets = json.load(response)
                 target = next((x for x in targets if x.get('type') == 'page' and x.get('webSocketDebuggerUrl')), None)
                 if target: break
             except Exception:

@@ -1,4 +1,4 @@
-# Social Post Tools — v4.1.0
+# Social Post Tools — v4.1.1
 
 Social Post Tools is a userscript plus an optional Android companion PWA for X/Twitter and Threads.
 

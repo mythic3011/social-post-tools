@@ -1,3 +1,10 @@
+v4.1.1
+- Fix GitHub Actions test dependency installation.
+- Remove the unnecessary Requests dependency from CDP HTTP discovery; use Python stdlib urllib instead.
+- Add explicit test-only websocket-client dependency.
+- Auto-discover Chromium or Google Chrome instead of hardcoding /usr/bin/chromium.
+- Add CI regression checks for dependency declaration and portable browser discovery.
+
 v4.1.0
 - Added GitHub Pages-ready public distribution site.
 - Added CI and GitHub Pages deployment workflows.

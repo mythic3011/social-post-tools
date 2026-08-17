@@ -50,3 +50,16 @@ for name, ok in checks.items():
         failed.append(name)
 if failed:
     raise SystemExit(1)
+
+# CI portability/dependency regression checks.
+requirements = (root / 'requirements-dev.txt').read_text(encoding='utf-8')
+assert 'websocket-client==' in requirements, 'test WebSocket dependency must be declared'
+fixture_runner = (root / 'tests' / 'run-fixtures.py').read_text(encoding='utf-8')
+assert 'import requests' not in fixture_runner, 'requests dependency should not be required by fixture runner'
+assert 'urllib.request' in fixture_runner, 'CDP discovery should use Python stdlib HTTP client'
+assert 'def find_browser()' in fixture_runner, 'browser executable must be discovered portably'
+for workflow_name in ('ci.yml', 'pages.yml'):
+    workflow = (root / '.github' / 'workflows' / workflow_name).read_text(encoding='utf-8')
+    assert 'requirements-dev.txt' in workflow, f'{workflow_name} must install test dependencies'
+print('PASS pages-ci-test-dependencies')
+print('PASS pages-ci-browser-discovery')
