@@ -87,3 +87,19 @@ site/assets/vendor/pico.conditional.min.css
 ```
 
 No CDN URL is emitted into production HTML, so the existing same-origin CSP and offline PWA shell continue to work. A local `--dev-ui-fallback` option exists only for offline preview/testing; it is not used by GitHub Actions.
+
+## Search and social metadata
+
+The Pages build generates static discovery metadata from the configured Pages base URL:
+
+```text
+canonical URLs
+Open Graph / Twitter-card metadata
+assets/social-preview.png
+robots.txt
+sitemap.xml
+```
+
+Only the public landing, browser-install, and privacy pages are included in the sitemap. Settings, the Android share-target handler, and the 404 utility page are marked `noindex`. The raw Userscript install directory is excluded from crawler discovery in `robots.txt`; it remains directly reachable for Userscript managers.
+
+Repository-level GitHub description, topics, homepage, and social preview are maintained separately; see [`GITHUB_REPOSITORY.md`](GITHUB_REPOSITORY.md).

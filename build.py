@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '4.2.1'
+VERSION = '4.2.2'
 PICO_VERSION = '2.1.1'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
@@ -17,6 +17,7 @@ SRC = ROOT / 'src'
 PWA_SRC = SRC / 'pwa'
 PICO_CSS = ROOT / 'node_modules' / '@picocss' / 'pico' / 'css' / 'pico.conditional.min.css'
 PICO_FALLBACK = PWA_SRC / 'assets' / 'pico-fallback.css'
+PUBLIC_SITE_URL = 'https://share-tools.mythic3011.com'
 
 
 def normalize_base_url(value: str | None) -> str | None:
@@ -88,12 +89,38 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
     (install / 'social-post-tools.meta.js').write_text(meta, encoding='utf-8')
 
     home = (pages_base + '/') if pages_base else './'
-    for name in ['index.html', 'install.html', 'privacy.html', '404.html']:
-        path = site / name
+    canonical_base = pages_base or PUBLIC_SITE_URL
+    social_image = canonical_base + '/assets/social-preview.png'
+    for path in site.glob('*.html'):
+        name = path.name
+        if name in {'index.html', '404.html'}:
+            canonical_url = canonical_base + '/'
+        else:
+            canonical_url = canonical_base + '/' + name
         text = path.read_text(encoding='utf-8')
         text = text.replace('__APP_VERSION__', html.escape(VERSION))
         text = text.replace('__SITE_HOME__', html.escape(home, quote=True))
+        text = text.replace('__CANONICAL_URL__', html.escape(canonical_url, quote=True))
+        text = text.replace('__SOCIAL_IMAGE_URL__', html.escape(social_image, quote=True))
         path.write_text(text, encoding='utf-8')
+
+    sitemap_urls = [canonical_base + '/', canonical_base + '/install.html', canonical_base + '/privacy.html']
+    sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    sitemap += ''.join(f'  <url><loc>{html.escape(url)}</loc></url>\n' for url in sitemap_urls)
+    sitemap += '</urlset>\n'
+    (site / 'sitemap.xml').write_text(sitemap, encoding='utf-8')
+
+    robots = '\n'.join([
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /settings.html',
+        'Disallow: /share-target.html',
+        'Disallow: /install/',
+        f'Sitemap: {canonical_base}/sitemap.xml',
+        '',
+    ])
+    (site / 'robots.txt').write_text(robots, encoding='utf-8')
+    (site / '.nojekyll').write_text('', encoding='utf-8')
 
 
 def main() -> None:

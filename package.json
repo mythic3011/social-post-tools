@@ -1,6 +1,6 @@
 {
   "name": "social-post-tools",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "private": true,
   "description": "Task-oriented sharing and AI capture helpers for X and Threads.",
   "scripts": {
@@ -10,5 +10,27 @@
   },
   "devDependencies": {
     "@picocss/pico": "2.1.1"
-  }
+  },
+  "homepage": "https://share-tools.mythic3011.com/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mythic3011/social-post-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mythic3011/social-post-tools/issues"
+  },
+  "keywords": [
+    "userscript",
+    "pwa",
+    "progressive-web-app",
+    "web-share-target",
+    "tampermonkey",
+    "violentmonkey",
+    "twitter",
+    "threads",
+    "nitter",
+    "ai-capture",
+    "android-share",
+    "privacy"
+  ]
 }

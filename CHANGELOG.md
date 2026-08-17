@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.2.2
+- Improve GitHub repository discoverability with a stronger user-first README, accurate X/Twitter/Threads/PWA/Userscript terminology, and technology-stack badges.
+- Add a maintainer helper for GitHub About description, homepage, and repository topics.
+- Add `docs/deployment/GITHUB_REPOSITORY.md` with recommended GitHub metadata and social-preview setup.
+- Add a self-hosted 1280×640 social preview image suitable for both GitHub repository preview and public-site Open Graph cards.
+- Add canonical URLs, Open Graph/Twitter metadata, `robots.txt`, and `sitemap.xml` to the Pages build.
+- Mark settings, Android share-target, and 404 utility pages `noindex`; add `no-referrer` to the share-target page.
+- Add SEO/discovery regression tests so generated Pages metadata cannot silently regress.
+
 ## v4.2.1
 - Add a dedicated browser installation journey instead of sending novice users directly to a raw `.user.js` endpoint.
 - Add explicit official Tampermonkey and Violentmonkey manager choices; Tampermonkey is presented as the recommended default.

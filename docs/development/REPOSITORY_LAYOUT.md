@@ -12,7 +12,8 @@ social-post-tools/
 │   │   ├── PERFORMANCE.md
 │   │   └── SECURITY_MODEL.md
 │   ├── deployment/
-│   │   └── GITHUB_PAGES.md
+│   │   ├── GITHUB_PAGES.md
+│   │   └── GITHUB_REPOSITORY.md
 │   ├── development/
 │   │   ├── MIGRATION_V4_2.md
 │   │   ├── REPOSITORY_LAYOUT.md
@@ -23,13 +24,16 @@ social-post-tools/
 │   │   ├── INSTALLATION.md
 │   │   └── UX_DESIGN.md
 │   └── README.md
+├── scripts/
+│   └── configure-github-repo.sh
 ├── src/
 │   ├── core/
 │   │   └── social-post-core.js
 │   ├── pwa/
 │   │   ├── assets/
 │   │   │   ├── app.css
-│   │   │   └── pico-fallback.css
+│   │   │   ├── pico-fallback.css
+│   │   │   └── social-preview.png
 │   │   ├── icons/
 │   │   │   ├── icon-192.png
 │   │   │   └── icon-512.png
@@ -46,11 +50,6 @@ social-post-tools/
 │       └── userscript.template.js
 ├── tests/
 │   ├── fixtures/
-│   │   ├── threads-quote-media.html
-│   │   ├── threads-real-sample.html
-│   │   ├── x-current.html
-│   │   ├── x-quote-media.html
-│   │   └── x-repost.html
 │   ├── audit_static.py
 │   ├── core.test.js
 │   ├── core_perf.js
@@ -59,6 +58,7 @@ social-post-tools/
 │   ├── pwa_audit.py
 │   ├── run-fixtures.py
 │   ├── run.sh
+│   ├── seo_audit.py
 │   ├── ui_browser_smoke.py
 │   └── ui_structure_audit.py
 ├── .gitignore
@@ -68,7 +68,8 @@ social-post-tools/
 ├── package.json
 ├── README.md
 ├── requirements-dev.txt
-└── SECURITY.md```
+└── SECURITY.md
+```
 
 Generated and ignored:
 

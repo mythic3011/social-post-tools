@@ -119,3 +119,20 @@ The shared-core test verifies stable JSON key ordering and the standard SHA-256 
 
 
 `tests/ui_browser_smoke.py` loads the generated site in headless Chromium at a 360px mobile viewport and checks horizontal overflow, install-button hidden state, stylesheet loading, closed-by-default advanced settings, form labeling, and basic light/dark computed-color behavior. This is a layout/accessibility smoke test rather than screenshot pixel-diff testing.
+
+## SEO and repository-discovery regression
+
+`tests/seo_audit.py` verifies the deployable Pages artifact and README discovery surface:
+
+```text
+README stack / platform terminology
+GitHub repository metadata helper + docs
+1280x640 social preview asset
+canonical URL generation
+Open Graph / Twitter-card metadata
+robots.txt + sitemap.xml
+noindex on settings/share-target/404
+no-referrer on the Android share-target page
+```
+
+The SEO audit is static and deterministic; it does not call search engines or external SEO-scoring services.

@@ -1,16 +1,29 @@
 # Social Post Tools
 
-[![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7)](https://share-tools.mythic3011.com/)
-[![Get Tampermonkey](https://img.shields.io/badge/Userscript_manager-Tampermonkey-00485b)](https://www.tampermonkey.net/)
+[![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
+[![Version](https://img.shields.io/badge/version-v4.2.2-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
+[![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
+[![Privacy](https://img.shields.io/badge/privacy-no%20analytics-2ea043)](SECURITY.md)
 
-**Social Post Tools** adds cleaner sharing and structured AI capture to X and Threads. It ships as two complementary surfaces:
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=000)](https://developer.mozilla.org/docs/Web/JavaScript)
+[![HTML5](https://img.shields.io/badge/HTML5-semantic-E34F26?logo=html5&logoColor=fff)](src/pwa/)
+[![CSS3](https://img.shields.io/badge/CSS3-scoped-1572B6?logo=css3&logoColor=fff)](src/pwa/assets/app.css)
+[![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=fff)](docs/product/ANDROID_COMPANION.md)
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=fff)](build.py)
+[![Pico CSS](https://img.shields.io/badge/Pico_CSS-2.1.1-0172AD?logo=css3&logoColor=fff)](docs/development/UI_FOUNDATION.md)
+[![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-deployed-222?logo=github&logoColor=fff)](docs/deployment/GITHUB_PAGES.md)
+[![Tampermonkey](https://img.shields.io/badge/Tampermonkey-supported-00485b)](https://www.tampermonkey.net/)
+[![Violentmonkey](https://img.shields.io/badge/Violentmonkey-supported-7B68EE)](https://violentmonkey.github.io/)
 
-- a **browser Userscript** that integrates into the native X / Threads Share menu; and
-- an **installable Android companion PWA** that can receive links from the Android share sheet.
+**Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean link sharing, Nitter-compatible alternate links, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account or application backend.
 
-The recommended defaults work without configuration. Advanced link builders, Telegram, archive snapshots, and capture controls stay behind progressive disclosure.
+- **Browser:** integrates into the native X / Threads Share menu through Tampermonkey or Violentmonkey.
+- **Android:** installs as a PWA and appears in the Android share sheet as a Web Share Target.
+- **Default UX:** works without configuration; advanced URL builders, archive tools, and capture controls stay behind progressive disclosure.
+
+**Live app:** https://share-tools.mythic3011.com/
 
 ## Install
 
@@ -37,12 +50,25 @@ The browser install prompt is intentionally shown only when the browser reports 
 
 ## What it does
 
-- **Clean links** — strip common tracking parameters and canonicalize X / Threads post URLs.
-- **Alternate links** — use Nitter-compatible readers, embed fixers, or custom URL builders.
-- **Use with AI** — preserve focal post, media ownership, quote/repost context, and optional visible discussion as structured capture rather than flattening everything into text.
-- **Android Share** — receive a native Android share and forward, copy, transform, or hand the source post back to the browser for rich capture.
+- **Clean X / Twitter and Threads links** — strip common tracking parameters and canonicalize post URLs.
+- **Alternative frontends and chat previews** — use Nitter-compatible readers, FixupX/FixVX-style destinations, vxThreads, or custom URL builders.
+- **Structured AI capture** — preserve the focal post, media ownership, quote/repost context, and optional visible discussion instead of flattening everything into one text blob.
+- **Android Share Target** — receive a native Android share and forward, copy, transform, or hand the source post back to the browser for richer capture.
+- **Telegram and system sharing** — use platform share destinations without storing bot credentials.
 - **Archive snapshots** — explicitly create canonical JSON + SHA-256 integrity metadata, with optional media packaging.
 - **Privacy-first defaults** — no analytics or application backend; network-heavy media preparation is explicit.
+
+## Tech stack
+
+| Layer | Technology | Role |
+| --- | --- | --- |
+| Userscript | JavaScript | Native X / Threads Share-menu integration and structured capture |
+| Android companion | PWA + Web Share Target | Receives links from the Android share sheet |
+| UI | Semantic HTML + Pico CSS 2.1.1 | Task-oriented, progressively disclosed interface |
+| Shared core | JavaScript | Canonical URLs, URL builders, portable settings, hashing helpers |
+| Build / audits | Python 3.13 | Static build, packaging, SEO generation, security/UI checks |
+| Hosting | GitHub Pages | Static HTTPS distribution and stable Userscript endpoints |
+| CI | GitHub Actions | Build, security, DOM fixture, UI, SEO, and performance regression tests |
 
 ## Privacy and security
 
@@ -58,8 +84,9 @@ src/
 ├── pwa/         Pages + Android share-target source
 └── userscript/  native X / Threads integration
 
+scripts/        maintainer helpers, including GitHub repository metadata setup
 docs/           product, architecture, deployment, development docs
-tests/          DOM fixtures, security/UI audits, browser/perf smoke tests
+tests/          DOM fixtures, security/UI/SEO audits, browser/perf smoke tests
 dist/           generated Userscript artifacts (ignored)
 site/           generated GitHub Pages artifact (ignored)
 ```
@@ -87,6 +114,12 @@ site/
 
 `site/` is the GitHub Pages deployment artifact. `dist/` and `site/` are generated; edit files under `src/` instead.
 
+## Repository discovery / SEO
+
+GitHub repository discovery is configured through the repository **About** description, homepage, topics, README content, and social preview. The exact recommended metadata and a `gh repo edit` helper are documented in [docs/deployment/GITHUB_REPOSITORY.md](docs/deployment/GITHUB_REPOSITORY.md).
+
+The public Pages build also generates canonical URLs, Open Graph/Twitter metadata, `robots.txt`, `sitemap.xml`, and a 1280×640 social preview asset.
+
 ## Documentation
 
 - [Installation guide](docs/product/INSTALLATION.md)
@@ -95,5 +128,6 @@ site/
 - [Architecture](docs/architecture/ARCHITECTURE.md)
 - [Security model](docs/architecture/SECURITY_MODEL.md)
 - [GitHub Pages deployment](docs/deployment/GITHUB_PAGES.md)
+- [GitHub repository metadata / SEO](docs/deployment/GITHUB_REPOSITORY.md)
 - [Testing](docs/development/TESTING.md)
 - [UI foundation](docs/development/UI_FOUNDATION.md)
