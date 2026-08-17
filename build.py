@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '4.2.0'
+VERSION = '4.2.1'
 PICO_VERSION = '2.1.1'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
@@ -88,7 +88,7 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
     (install / 'social-post-tools.meta.js').write_text(meta, encoding='utf-8')
 
     home = (pages_base + '/') if pages_base else './'
-    for name in ['index.html', 'privacy.html', '404.html']:
+    for name in ['index.html', 'install.html', 'privacy.html', '404.html']:
         path = site / name
         text = path.read_text(encoding='utf-8')
         text = text.replace('__APP_VERSION__', html.escape(VERSION))

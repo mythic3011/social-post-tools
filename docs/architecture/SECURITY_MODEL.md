@@ -106,3 +106,9 @@ The existing CSP remains `style-src 'self'` and `connect-src 'none'`. Pico is co
 The build fails closed when the pinned Pico asset is absent. `--dev-ui-fallback` is an explicit offline-preview mode only; CI and Pages deployment do not use it. The checked-in fallback is scoped and intentionally minimal so it cannot silently become the production dependency.
 
 The product layer continues to own security-sensitive UI state invariants such as `[hidden] { display: none !important; }`, which prevents generic framework/control display rules from exposing controls before their capability is available.
+
+## v4.2.1 external install-manager boundary
+
+The public browser setup page links to the official Tampermonkey and Violentmonkey sites only as explicit user navigation. Social Post Tools does not download, proxy, bundle, iframe, or execute manager code, and CSP remains unchanged. External manager links use `target="_blank"` with `rel="noopener noreferrer"`.
+
+The actual Social Post Tools `.user.js` and `.meta.js` artifacts remain same-origin Pages endpoints. They stay excluded from the service-worker app-shell cache so a browser/userscript manager does not receive an intentionally stale installer or update descriptor from the PWA cache.

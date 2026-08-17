@@ -1,6 +1,6 @@
 {
   "name": "social-post-tools",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "private": true,
   "description": "Task-oriented sharing and AI capture helpers for X and Threads.",
   "scripts": {

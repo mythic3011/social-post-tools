@@ -25,7 +25,7 @@
     <p>Use clean or alternate links, send posts to Android apps or Telegram, and capture the post context you actually want for AI.</p>
     <div class="cta-grid">
       <button id="install-app" type="button" hidden>Install Android app</button>
-      <a role="button" href="./install/social-post-tools.user.js">Install Userscript</a>
+      <a role="button" href="./install.html">Set up browser</a>
     </div>
     <p id="install-help" class="muted compact-copy">On Android, use your browser menu → Install app / Add to Home screen if the install button is unavailable.</p>
     <p class="muted compact-copy">No account, analytics, or server-side post processing.</p>
@@ -48,9 +48,17 @@
   </article>
 
   <article>
-    <h2>Browser Userscript</h2>
-    <p>The Userscript adds <strong>Post tools</strong> to X and Threads while keeping the site's native menu style. It requires a compatible userscript manager.</p>
-    <a role="button" class="full" href="./install/social-post-tools.user.js">Install Userscript</a>
+    <div class="section-heading-row"><div><h2>Browser Userscript</h2><p class="muted compact-copy">Best for X / Threads in the browser.</p></div><span class="badge">2-step setup</span></div>
+    <p>The Userscript adds <strong>Post tools</strong> to X and Threads while keeping the site's native menu style.</p>
+    <div class="browser-install-summary">
+      <div><strong>1. Get a Userscript manager</strong><small>Tampermonkey is the recommended default; Violentmonkey is also supported.</small></div>
+      <div><strong>2. Install Social Post Tools</strong><small>The manager handles the <code>.user.js</code> install and future updates.</small></div>
+    </div>
+    <div class="cta-grid">
+      <a role="button" href="./install.html">Browser setup</a>
+      <a role="button" class="secondary outline" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Get Tampermonkey ↗</a>
+    </div>
+    <p class="muted compact-copy">Already have Tampermonkey or Violentmonkey? <a href="./install/social-post-tools.user.js">Install the Userscript directly.</a></p>
   </article>
 
   <footer>

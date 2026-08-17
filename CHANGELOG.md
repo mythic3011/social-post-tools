@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.2.1
+- Add a dedicated browser installation journey instead of sending novice users directly to a raw `.user.js` endpoint.
+- Add explicit official Tampermonkey and Violentmonkey manager choices; Tampermonkey is presented as the recommended default.
+- Add browser-install badges and a two-step explanation to the public landing page.
+- Add troubleshooting for the common "raw JavaScript source" failure mode when no Userscript manager intercepts `.user.js`.
+- Rewrite the root README around end-user installation first, then capabilities, security, repository layout, and development.
+- Add `docs/product/INSTALLATION.md` and link it from the documentation index.
+- Add `install.html` to the PWA app shell and UI regression coverage.
+
 ## v4.2.0
 - Refactor standalone PWA/Pages UI onto pinned Pico CSS 2.1.1 conditional styling.
 - Keep Pico build-time-local and self-hosted; no runtime CDN or relaxed CSP.

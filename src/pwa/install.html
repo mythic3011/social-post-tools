@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <meta name="description" content="Install Social Post Tools in your browser with Tampermonkey or Violentmonkey.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css">
+  <link rel="stylesheet" href="./assets/app.css">
+  <title>Browser setup · Social Post Tools</title>
+</head>
+<body>
+<div class="pico spt-app">
+<main class="container spt-shell">
+  <header class="spt-header">
+    <div><h1>Browser setup</h1><p class="eyebrow">Social Post Tools</p></div>
+    <a role="button" class="secondary outline compact" href="__SITE_HOME__">Home</a>
+  </header>
+
+  <article class="hero-card">
+    <div class="badge">X · Threads</div>
+    <h2>Two steps, then you are done.</h2>
+    <p>The browser version is a Userscript. Install a Userscript manager once, then install Social Post Tools.</p>
+    <p class="muted compact-copy">Already use Tampermonkey or Violentmonkey? Skip directly to step 2.</p>
+  </article>
+
+  <section class="install-path" aria-label="Browser installation steps">
+    <article>
+      <div class="install-step-heading"><span class="step-number">1</span><div><p class="step-kicker">One-time setup</p><h2>Install a Userscript manager</h2></div></div>
+      <p>A Userscript manager is the browser extension that installs and updates <code>.user.js</code> files.</p>
+      <div class="manager-grid">
+        <div class="manager-card">
+          <div class="manager-title"><strong>Tampermonkey</strong><span class="badge recommended">Recommended</span></div>
+          <p class="muted">Straightforward choice for most users. The official site routes you to the appropriate browser install.</p>
+          <a role="button" class="full" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Get Tampermonkey ↗</a>
+        </div>
+        <div class="manager-card">
+          <div class="manager-title"><strong>Violentmonkey</strong><span class="badge">Open source</span></div>
+          <p class="muted">An open-source Userscript manager and a compatible alternative.</p>
+          <a role="button" class="secondary outline full" href="https://violentmonkey.github.io/" target="_blank" rel="noopener noreferrer">Get Violentmonkey ↗</a>
+        </div>
+      </div>
+      <p class="install-note"><strong>Use the official manager site.</strong> Social Post Tools does not bundle or redistribute a browser extension.</p>
+    </article>
+
+    <article>
+      <div class="install-step-heading"><span class="step-number">2</span><div><p class="step-kicker">Social Post Tools</p><h2>Install the Userscript</h2></div></div>
+      <p>After the manager is installed and enabled, open the Userscript file below. Your manager should show its install/confirm screen.</p>
+      <a role="button" class="full" href="./install/social-post-tools.user.js">Install Social Post Tools Userscript</a>
+      <p class="install-note"><strong>If you only see JavaScript source code:</strong> the Userscript manager is probably missing, disabled, or not handling <code>.user.js</code> links. Finish step 1, then try again.</p>
+    </article>
+
+    <article>
+      <div class="install-step-heading"><span class="step-number">3</span><div><p class="step-kicker">Use it</p><h2>Open X or Threads</h2></div></div>
+      <p>Open a post, use its Share menu, then choose <strong>Post tools</strong>. Recommended defaults work without additional configuration.</p>
+      <div class="toolbar">
+        <a role="button" class="secondary outline" href="https://x.com/" target="_blank" rel="noopener noreferrer">Open X ↗</a>
+        <a role="button" class="secondary outline" href="https://www.threads.com/" target="_blank" rel="noopener noreferrer">Open Threads ↗</a>
+      </div>
+    </article>
+  </section>
+
+  <article>
+    <h2>Using Android native apps instead?</h2>
+    <p>The Android companion is usually simpler when you want to share directly from the native X or Threads app. Return home and install the Android app from the browser.</p>
+    <a role="button" class="secondary outline" href="__SITE_HOME__">Android install options</a>
+  </article>
+
+  <footer>
+    <nav class="footer-nav" aria-label="Project links">
+      <a href="./privacy.html">Privacy & security</a>
+      <a href="./settings.html">Settings</a>
+    </nav>
+    <p class="build-info">Version __APP_VERSION__</p>
+  </footer>
+</main>
+</div>
+</body>
+</html>

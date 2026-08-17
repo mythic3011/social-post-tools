@@ -59,7 +59,7 @@ def report(checks: dict[str, bool], failures: list[str]) -> None:
 
 def main() -> int:
     required = [
-        SITE / 'index.html', SITE / 'settings.html',
+        SITE / 'index.html', SITE / 'install.html', SITE / 'settings.html',
         SITE / 'assets/vendor/pico.conditional.min.css', SITE / 'assets/app.css',
     ]
     if not all(path.is_file() for path in required):
@@ -130,6 +130,20 @@ def main() -> int:
                 'framework-css-parsed': bool(landing and landing['frameworkRules'] > 0),
                 'product-css-parsed': bool(landing and landing['productRules'] > 0),
                 'primary-actions-have-labels': bool(landing and landing['primaryCount'] > 0 and landing['emptyLabels'] == 0),
+            }, failures)
+
+            call_id = set_document(ws, frame_id, page_document('install.html'), call_id)
+            install_page, call_id = value(ws, r'''(() => ({
+              width: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth,
+              managerCards: document.querySelectorAll('.manager-card').length,
+              managerLinks: [...document.querySelectorAll('.manager-card a')].map((a) => a.href),
+              primaryInstall: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.textContent?.trim() || '',
+            }))()''', call_id)
+            report({
+                'browser-setup-mobile-no-overflow': bool(install_page and install_page['scrollWidth'] <= install_page['width'] + 1),
+                'browser-setup-manager-choices': bool(install_page and install_page['managerCards'] == 2),
+                'browser-setup-userscript-cta': bool(install_page and 'Install Social Post Tools Userscript' in install_page['primaryInstall']),
             }, failures)
 
             call_id = set_document(ws, frame_id, page_document('settings.html'), call_id)

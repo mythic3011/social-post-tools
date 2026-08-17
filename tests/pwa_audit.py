@@ -8,11 +8,12 @@ index = (pwa/'index.html').read_text()
 settings = (pwa/'settings.html').read_text()
 share = (pwa/'share-target.html').read_text()
 privacy = (pwa/'privacy.html').read_text()
+install = (pwa/'install.html').read_text()
 app = (pwa/'app.js').read_text()
 sw = (pwa/'sw.js').read_text()
 styles = (pwa/'assets/app.css').read_text()
 fallback = (pwa/'assets/pico-fallback.css').read_text()
-html_pages = [index, settings, share, privacy]
+html_pages = [index, install, settings, share, privacy]
 checks = {
   'manifest-share-target': manifest.get('share_target',{}).get('action') == './share-target.html',
   'manifest-basic-get': manifest.get('share_target',{}).get('method') == 'GET',
@@ -29,13 +30,19 @@ checks = {
   'history-query-cleared': 'history.replaceState' in app,
   'service-worker-share-cache': "share-target.html" in sw and "caches.match('./share-target.html')" in sw,
   'service-worker-settings-cache': "./settings.html" in sw,
+  'service-worker-install-guide-cache': "./install.html" in sw,
   'service-worker-install-network-first': "url.pathname.includes('/install/')" in sw and 'fetch(event.request)' in sw,
   'service-worker-local-framework-cache': "./assets/vendor/pico.conditional.min.css" in sw and "./assets/app.css" in sw,
   'no-analytics-network': 'fetch(' not in app and 'XMLHttpRequest' not in app,
   'rich-capture-handoff-fragment': 'makeCaptureHandoffUrl' in app and 'Open for AI capture' in share,
   'handoff-does-not-embed-shared-text': 'makeCaptureHandoffUrl(parsed.canonicalUrl' in app,
   'settings-local-only': 'localStorage' in app,
-  'ux-landing-primary-tasks': 'Cleaner sharing. Better AI capture.' in index and 'Install Userscript' in index,
+  'ux-landing-primary-tasks': 'Cleaner sharing. Better AI capture.' in index and 'Set up browser' in index,
+  'ux-browser-setup-page': 'Two steps, then you are done.' in install and 'Install Social Post Tools Userscript' in install,
+  'ux-tampermonkey-official-link': 'https://www.tampermonkey.net/' in install and 'Get Tampermonkey' in install,
+  'ux-violentmonkey-official-link': 'https://violentmonkey.github.io/' in install and 'Get Violentmonkey' in install,
+  'security-external-manager-links-noopener': install.count('rel="noopener noreferrer"') >= 4,
+  'ux-raw-source-troubleshooting': 'only see JavaScript source code' in install,
   'ux-progressive-settings': '<details class="settings-group">' in settings,
   'ux-no-setup-required': 'You do not need to configure anything' in settings,
   'ux-install-button-contextual': 'id="install-app"' in index and 'beforeinstallprompt' in app,

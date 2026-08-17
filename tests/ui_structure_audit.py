@@ -23,6 +23,9 @@ checks = {
     'repo-userscript-under-src': (root/'src/userscript/userscript.template.js').is_file(),
     'repo-pwa-under-src': (root/'src/pwa/index.html').is_file(),
     'repo-doc-index': (root/'docs/README.md').is_file() and (root/'docs/development/REPOSITORY_LAYOUT.md').is_file(),
+    'repo-install-doc': (root/'docs/product/INSTALLATION.md').is_file(),
+    'repo-install-page': (root/'src/pwa/install.html').is_file(),
+    'readme-user-first-install': '## Install' in (root/'README.md').read_text() and 'www.tampermonkey.net' in (root/'README.md').read_text(),
     'generated-root-clean': not (root/'social-mirror-share-copy.user.js').exists() and not (root/'social-post-tools.user.js').exists(),
 }
 failed=[]

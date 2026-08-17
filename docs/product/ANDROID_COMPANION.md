@@ -4,7 +4,8 @@ This directory is the source for the GitHub Pages PWA. `build.py` copies it into
 
 Pages:
 
-- `index.html` — public landing/install page
+- `index.html` — public landing / Android install page
+- `install.html` — guided Browser Userscript setup with official manager links
 - `settings.html` — PWA settings
 - `share-target.html` — Android Web Share Target
 - `privacy.html` — local privacy/security explanation

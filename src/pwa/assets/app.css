@@ -82,3 +82,26 @@ code, .url { overflow-wrap: anywhere; word-break: break-word; font-family: ui-mo
   .spt-header { align-items: flex-start; }
   .builder-item { align-items: flex-start; flex-direction: column; }
 }
+
+
+/* Install journey: task-oriented, with external managers clearly separated from SPT. */
+.section-heading-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--spt-space-3); }
+.browser-install-summary { display: grid; gap: var(--spt-space-2); margin: var(--spt-space-4) 0; }
+.browser-install-summary > div { display: grid; gap: .1rem; border-left: 3px solid var(--spt-line); padding-left: var(--spt-space-3); }
+.browser-install-summary small { color: var(--spt-muted); }
+.install-path { display: grid; gap: var(--spt-space-4); }
+.install-step-heading { display: flex; align-items: flex-start; gap: var(--spt-space-3); margin-bottom: var(--spt-space-3); }
+.install-step-heading h2, .install-step-heading p { margin: 0; }
+.step-number { flex: 0 0 2rem; width: 2rem; height: 2rem; border-radius: 999px; display: grid; place-items: center; border: 1px solid var(--spt-line); font-weight: 700; }
+.step-kicker { color: var(--spt-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+.manager-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spt-space-3); margin: var(--spt-space-4) 0; }
+.manager-card { border: 1px solid var(--spt-line); border-radius: var(--spt-radius-md); padding: var(--spt-space-4); background: Canvas; display: flex; flex-direction: column; }
+.manager-card > p { flex: 1; }
+.manager-title { display: flex; align-items: center; justify-content: space-between; gap: var(--spt-space-2); margin-bottom: var(--spt-space-2); }
+.badge.recommended { color: CanvasText; background: var(--spt-accent-soft); }
+.install-note { border-left: 3px solid var(--spt-line); padding-left: var(--spt-space-3); color: var(--spt-muted); font-size: .9rem; }
+
+@media (max-width: 620px) {
+  .manager-grid { grid-template-columns: 1fr; }
+  .section-heading-row { align-items: flex-start; flex-direction: column; }
+}

@@ -27,10 +27,12 @@ framework_marker = site / 'assets/vendor/FRAMEWORK.txt'
 checks = {
     'site-entry-at-artifact-root': (site / 'index.html').is_file(),
     'site-settings-page': (site / 'settings.html').is_file(),
+    'site-browser-install-page': (site / 'install.html').is_file(),
     'site-privacy-page': (site / 'privacy.html').is_file(),
     'site-404-page': (site / '404.html').is_file(),
     'site-userscript-install': (site / 'install/social-post-tools.user.js').is_file(),
     'site-userscript-meta': (site / 'install/social-post-tools.meta.js').is_file(),
+    'site-install-manager-links': 'https://www.tampermonkey.net/' in (site / 'install.html').read_text(encoding='utf-8') and 'https://violentmonkey.github.io/' in (site / 'install.html').read_text(encoding='utf-8'),
     'site-local-framework': framework.is_file() and framework.stat().st_size > 500,
     'site-framework-marker': framework_marker.is_file() and '@picocss/pico 2.1.1' in framework_marker.read_text(),
     'site-product-css': (site / 'assets/app.css').is_file(),

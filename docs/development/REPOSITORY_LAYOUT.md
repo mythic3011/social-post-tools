@@ -20,6 +20,7 @@ social-post-tools/
 │   │   └── UI_FOUNDATION.md
 │   ├── product/
 │   │   ├── ANDROID_COMPANION.md
+│   │   ├── INSTALLATION.md
 │   │   └── UX_DESIGN.md
 │   └── README.md
 ├── src/
@@ -35,6 +36,7 @@ social-post-tools/
 │   │   ├── 404.html
 │   │   ├── app.js
 │   │   ├── index.html
+│   │   ├── install.html
 │   │   ├── manifest.webmanifest
 │   │   ├── privacy.html
 │   │   ├── settings.html
