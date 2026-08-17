@@ -105,3 +105,22 @@ code, .url { overflow-wrap: anywhere; word-break: break-word; font-family: ui-mo
   .manager-grid { grid-template-columns: 1fr; }
   .section-heading-row { align-items: flex-start; flex-direction: column; }
 }
+
+/* Install controller: the CTA is always actionable. If the browser cannot
+   expose a native prompt, the same button opens manual instructions instead. */
+.install-dialog { width: min(92vw, 36rem); padding: 0; border: 0; background: transparent; }
+.install-dialog::backdrop { background: rgb(0 0 0 / .52); }
+.install-dialog > article { margin: 0; max-height: min(82vh, 46rem); overflow: auto; }
+.install-dialog header h2 { margin-bottom: 0; }
+.install-diagnostics { margin-top: var(--spt-space-4); }
+.install-diagnostics dl { display: grid; gap: var(--spt-space-2); margin-bottom: 0; }
+.install-diagnostics dl > div { display: grid; grid-template-columns: minmax(8rem, .8fr) 1fr; gap: var(--spt-space-3); border-bottom: 1px solid var(--spt-line); padding-block: var(--spt-space-2); }
+.install-diagnostics dt { font-weight: 650; }
+.install-diagnostics dd { margin: 0; color: var(--spt-muted); text-align: right; }
+#install-app[data-install-state="manual-fallback"] { --pico-background-color: transparent; --pico-color: CanvasText; --pico-border-color: var(--spt-line); }
+
+@media (max-width: 620px) {
+  .install-dialog { width: calc(100vw - 1.25rem); }
+  .install-diagnostics dl > div { grid-template-columns: 1fr; gap: .15rem; }
+  .install-diagnostics dd { text-align: left; }
+}

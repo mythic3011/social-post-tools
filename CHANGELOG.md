@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.2.3
+- Make the Android install CTA always actionable: use the native browser prompt when available and otherwise open manual install guidance instead of leaving a dead button.
+- Capture `beforeinstallprompt` in a small head-loaded install bridge before the main application script.
+- Register the service worker early with cache-bypass update semantics and expose basic install diagnostics for HTTPS, worker state, prompt availability, and standalone mode.
+- Add Firefox-Android/manual-install fallback wording; custom `beforeinstallprompt` is no longer treated as the only installation path.
+- Version-tag install-critical manifest/CSS/JS asset URLs so older cache-first service workers miss the stale key and fetch the current release.
+- Change navigations and install-critical code/metadata to network-first with precache fallback while preserving the privacy-specific cached share-target shell.
+- Add Android install-path, stale-cache, early-prompt, dialog, and mobile-layout regression checks.
+
 ## v4.2.2
 - Improve GitHub repository discoverability with a stronger user-first README, accurate X/Twitter/Threads/PWA/Userscript terminology, and technology-stack badges.
 - Add a maintainer helper for GitHub About description, homepage, and repository topics.

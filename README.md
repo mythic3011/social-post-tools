@@ -1,7 +1,7 @@
 # Social Post Tools
 
 [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
-[![Version](https://img.shields.io/badge/version-v4.2.2-2f81f7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.2.3-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
 [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
@@ -46,7 +46,7 @@ X / Threads native app
 → Share onward / copy link / open for AI capture
 ```
 
-The browser install prompt is intentionally shown only when the browser reports the PWA as installable. When no in-page prompt is available, use the browser's **Install app / Add to Home screen** command.
+The **Install Android app** button is always actionable. When the browser exposes its native install prompt, the button opens it directly; otherwise it opens manual browser-menu instructions and basic install diagnostics. This also covers browsers such as Firefox Android that can install PWAs but do not expose the custom `beforeinstallprompt` API.
 
 ## What it does
 

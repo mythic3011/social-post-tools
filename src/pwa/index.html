@@ -23,9 +23,10 @@
   <meta name="twitter:description" content="Clean links, Android Share, alternative frontends, and structured AI capture for X and Threads.">
   <meta name="twitter:image" content="__SOCIAL_IMAGE_URL__">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css">
-  <link rel="stylesheet" href="./assets/app.css">
+  <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
+  <script src="./install-bootstrap.js?v=__APP_VERSION__"></script>
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=__APP_VERSION__">
+  <link rel="stylesheet" href="./assets/app.css?v=__APP_VERSION__">
   <title>Social Post Tools</title>
 </head>
 <body data-page="landing">
@@ -41,10 +42,10 @@
     <h2>Cleaner sharing. Better AI capture.</h2>
     <p>Use clean or alternate links, send posts to Android apps or Telegram, and capture the post context you actually want for AI.</p>
     <div class="cta-grid">
-      <button id="install-app" type="button" hidden>Install Android app</button>
+      <button id="install-app" type="button" aria-haspopup="dialog">Install Android app</button>
       <a role="button" href="./install.html">Set up browser</a>
     </div>
-    <p id="install-help" class="muted compact-copy">On Android, use your browser menu → Install app / Add to Home screen if the install button is unavailable.</p>
+    <p id="install-help" class="muted compact-copy">Tap Install. If your browser cannot open its native prompt, Social Post Tools will show the manual Android steps instead.</p>
     <p class="muted compact-copy">No account, analytics, or server-side post processing.</p>
   </article>
 
@@ -78,6 +79,28 @@
     <p class="muted compact-copy">Already have Tampermonkey or Violentmonkey? <a href="./install/social-post-tools.user.js">Install the Userscript directly.</a></p>
   </article>
 
+  <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-dialog-title">
+    <article>
+      <header>
+        <h2 id="install-dialog-title">Install Social Post Tools</h2>
+      </header>
+      <p id="install-guidance">Open your browser menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+      <p class="muted">The custom install prompt is browser-dependent. Manual installation can still work even when this website cannot trigger the browser prompt directly.</p>
+      <details class="install-diagnostics">
+        <summary>Installation diagnostics</summary>
+        <dl>
+          <div><dt>HTTPS</dt><dd id="diag-secure">Checking…</dd></div>
+          <div><dt>Service worker</dt><dd id="diag-worker">Checking…</dd></div>
+          <div><dt>Native prompt</dt><dd id="diag-prompt">Checking…</dd></div>
+          <div><dt>App mode</dt><dd id="diag-mode">Checking…</dd></div>
+        </dl>
+      </details>
+      <footer class="toolbar">
+        <button id="install-dialog-close" type="button" class="secondary">Close</button>
+      </footer>
+    </article>
+  </dialog>
+
   <footer>
     <nav class="footer-nav" aria-label="Project links">
       <a href="./settings.html">Settings</a>
@@ -88,7 +111,7 @@
   </footer>
 </main>
 </div>
-<script src="./social-post-core.js"></script>
-<script src="./app.js"></script>
+<script src="./social-post-core.js?v=__APP_VERSION__"></script>
+<script src="./app.js?v=__APP_VERSION__"></script>
 </body>
 </html>

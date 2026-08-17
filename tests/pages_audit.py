@@ -18,6 +18,7 @@ manifest = json.loads((site / 'manifest.webmanifest').read_text(encoding='utf-8'
 html_files = list(site.glob('*.html'))
 html_text = '\n'.join(p.read_text(encoding='utf-8') for p in html_files)
 site_js = (site / 'app.js').read_text(encoding='utf-8')
+install_bootstrap = (site / 'install-bootstrap.js').read_text(encoding='utf-8')
 sw = (site / 'sw.js').read_text(encoding='utf-8')
 user = (site / 'install/social-post-tools.user.js').read_text(encoding='utf-8')
 meta = (site / 'install/social-post-tools.meta.js').read_text(encoding='utf-8')
@@ -42,7 +43,7 @@ checks = {
     'manifest-project-pages-safe': manifest.get('start_url') == './' and manifest.get('scope') == './' and manifest.get('share_target',{}).get('action') == './share-target.html',
     'html-no-root-relative-assets': not re.search(r'''(?:src|href)=["']/''', html_text),
     'html-no-runtime-css-cdn': 'cdn.jsdelivr.net' not in html_text and 'unpkg.com' not in html_text,
-    'sw-relative-registration': "register('./sw.js')" in site_js,
+    'sw-relative-registration': "register('./sw.js'" in site_js or "register('./sw.js'" in install_bootstrap,
     'sw-does-not-cache-installer': "./install/social-post-tools.user.js" not in re.search(r'const SHELL = \[(.*?)\];', sw, re.S).group(1),
     'sw-caches-local-framework': './assets/vendor/pico.conditional.min.css' in sw,
     'meta-header-only': meta.rstrip().endswith('// ==/UserScript==') and '(() =>' not in meta,

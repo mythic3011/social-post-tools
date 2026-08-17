@@ -7,9 +7,9 @@
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#111111">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css">
-  <link rel="stylesheet" href="./assets/app.css">
+  <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=__APP_VERSION__">
+  <link rel="stylesheet" href="./assets/app.css?v=__APP_VERSION__">
   <title>Shared post · Social Post Tools</title>
 </head>
 <body data-page="share-target">
@@ -47,7 +47,7 @@
   <p id="status" class="status" aria-live="polite"></p>
 </main>
 </div>
-<script src="./social-post-core.js"></script>
-<script src="./app.js"></script>
+<script src="./social-post-core.js?v=__APP_VERSION__"></script>
+<script src="./app.js?v=__APP_VERSION__"></script>
 </body>
 </html>

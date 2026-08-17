@@ -6,9 +6,10 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#111111">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css">
-  <link rel="stylesheet" href="./assets/app.css">
+  <link rel="manifest" href="./manifest.webmanifest?v=4.2.3">
+  <script src="./install-bootstrap.js?v=4.2.3"></script>
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=4.2.3">
+  <link rel="stylesheet" href="./assets/app.css?v=4.2.3">
   <title>Settings · Social Post Tools</title>
 </head>
 <body data-page="settings">
@@ -23,7 +24,8 @@
       <div><span>1</span><p><strong>Install this app</strong><br><small>If the button is unavailable, use your browser menu → Install app / Add to Home screen.</small></p></div>
       <div><span>2</span><p><strong>Share a post</strong><br><small>From X or Threads, tap Share and choose Social Post Tools.</small></p></div>
     </div>
-    <button id="install-app" type="button" hidden>Install app</button>
+    <button id="install-app" type="button" aria-haspopup="dialog">Install app</button>
+    <p id="install-help" class="muted compact-copy">Tap Install. If the browser cannot open its native prompt, manual install steps will be shown.</p>
   </article>
 
   <article>
@@ -80,11 +82,33 @@
     </div>
   </details>
 
+  <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-dialog-title">
+    <article>
+      <header>
+        <h2 id="install-dialog-title">Install Social Post Tools</h2>
+      </header>
+      <p id="install-guidance">Open your browser menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+      <p class="muted">The custom install prompt is browser-dependent. Manual installation can still work even when this website cannot trigger the browser prompt directly.</p>
+      <details class="install-diagnostics">
+        <summary>Installation diagnostics</summary>
+        <dl>
+          <div><dt>HTTPS</dt><dd id="diag-secure">Checking…</dd></div>
+          <div><dt>Service worker</dt><dd id="diag-worker">Checking…</dd></div>
+          <div><dt>Native prompt</dt><dd id="diag-prompt">Checking…</dd></div>
+          <div><dt>App mode</dt><dd id="diag-mode">Checking…</dd></div>
+        </dl>
+      </details>
+      <footer class="toolbar">
+        <button id="install-dialog-close" type="button" class="secondary">Close</button>
+      </footer>
+    </article>
+  </dialog>
+
   <nav class="toolbar secondary-nav" aria-label="Settings navigation"><a role="button" class="secondary outline" href="./">Home</a><a role="button" class="secondary outline" href="share-target.html">Open share screen</a></nav>
   <p id="status" class="status" aria-live="polite"></p>
 </main>
 </div>
-<script src="./social-post-core.js"></script>
-<script src="./app.js"></script>
+<script src="./social-post-core.js?v=4.2.3"></script>
+<script src="./app.js?v=4.2.3"></script>
 </body>
 </html>

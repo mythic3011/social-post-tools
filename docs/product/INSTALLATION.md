@@ -43,10 +43,12 @@ If the `.user.js` URL shows plain JavaScript instead of an install confirmation,
 Use the PWA when the starting point is the native X / Threads Android app.
 
 1. Open <https://share-tools.mythic3011.com/> in an install-capable Android browser.
-2. Use the in-page install button when offered, or the browser's **Install app / Add to Home screen** command.
+2. Tap **Install app**. If the browser exposes a native install prompt, Social Post Tools opens it; otherwise the same button shows manual **Install app / Add to Home screen** steps.
 3. From X / Threads, tap **Share** and choose **Social Post Tools**.
 
-The in-page install control is capability-driven: it is hidden until the browser fires `beforeinstallprompt`. This avoids presenting a dead install button on browsers that do not expose the custom install prompt.
+The install CTA never depends on `beforeinstallprompt` being present just to be usable. Chromium-based browsers can expose that event and get a one-tap native prompt; browsers without the API fall back to manual installation guidance. The dialog also reports HTTPS, service-worker, native-prompt, and standalone-mode state for troubleshooting.
+
+If an Android device keeps showing an older UI after a deployment, close/reopen the site or clear that site's stored data once. v4.2.3 also version-tags install-critical assets and uses network-first service-worker handling for navigations, JavaScript, CSS, and the manifest to reduce stale PWA shells after releases.
 
 ## Which one should I install?
 

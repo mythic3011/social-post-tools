@@ -25,8 +25,8 @@ def page_document(name: str) -> str:
     framework = (SITE / 'assets/vendor/pico.conditional.min.css').read_text(encoding='utf-8')
     product = (SITE / 'assets/app.css').read_text(encoding='utf-8')
     html = re.sub(r'<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>', '', html, flags=re.I)
-    html = re.sub(r'<link[^>]+href="\./assets/vendor/pico\.conditional\.min\.css"[^>]*>', f'<style id="spt-framework-test">{framework}</style>', html, flags=re.I)
-    html = re.sub(r'<link[^>]+href="\./assets/app\.css"[^>]*>', f'<style id="spt-product-test">{product}</style>', html, flags=re.I)
+    html = re.sub(r'<link[^>]+href="\./assets/vendor/pico\.conditional\.min\.css(?:\?[^\"]*)?"[^>]*>', f'<style id="spt-framework-test">{framework}</style>', html, flags=re.I)
+    html = re.sub(r'<link[^>]+href="\./assets/app\.css(?:\?[^\"]*)?"[^>]*>', f'<style id="spt-product-test">{product}</style>', html, flags=re.I)
     html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.I | re.S)
     return html
 
@@ -122,14 +122,17 @@ def main() -> int:
                 productRules: document.querySelector('#spt-product-test')?.sheet?.cssRules?.length || 0,
                 primaryCount: primary.length,
                 emptyLabels: primary.filter((el) => !(el.textContent || '').trim()).length,
+                installDialog: Boolean(document.querySelector('#install-dialog')),
+                diagnostics: document.querySelectorAll('#install-dialog .install-diagnostics dd').length,
               };
             })()''', call_id)
             report({
                 'mobile-no-horizontal-overflow': bool(landing and landing['scrollWidth'] <= landing['width'] + 1),
-                'install-hidden-until-capable': bool(landing and landing['installHidden'] and landing['installDisplay'] == 'none'),
+                'install-cta-visible-with-manual-fallback': bool(landing and not landing['installHidden'] and landing['installDisplay'] != 'none'),
                 'framework-css-parsed': bool(landing and landing['frameworkRules'] > 0),
                 'product-css-parsed': bool(landing and landing['productRules'] > 0),
                 'primary-actions-have-labels': bool(landing and landing['primaryCount'] > 0 and landing['emptyLabels'] == 0),
+                'install-dialog-present': bool(landing and landing['installDialog'] and landing['diagnostics'] >= 4),
             }, failures)
 
             call_id = set_document(ws, frame_id, page_document('install.html'), call_id)

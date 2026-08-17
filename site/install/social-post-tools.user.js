@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Social Post Tools
 // @namespace    social-post-tools
-// @version      4.2.2
+// @version      4.2.3
 // @description  Simple post sharing and AI capture for X/Threads, with optional advanced link builders, archive tools, Android sharing, and Telegram.
 // @homepageURL  https://share-tools.mythic3011.com/
 // @downloadURL  https://share-tools.mythic3011.com/install/social-post-tools.user.js
@@ -537,7 +537,7 @@
 
   const APP = Object.freeze({
     id: 'social-post-tools',
-    version: '4.2.2',
+    version: '4.2.3',
     settingsKey: 'social-post-tools:settings',
     captureCacheKey: 'social-post-tools:capture-cache:v1',
     captureResumeKey: 'social-post-tools:capture-resume:v1',

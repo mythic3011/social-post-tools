@@ -65,7 +65,8 @@
   function status(text) { if ($('status')) $('status').textContent = text || ''; }
 
   function registerServiceWorker() {
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+    if (globalThis.SPTInstallBridge?.registrationPromise) return;
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
   }
 
   function compatible(platform, settings) {
@@ -103,62 +104,155 @@
 
   let deferredInstallPrompt = null;
 
-  function setupInstallPrompt() {
+  function isStandaloneApp() {
+    return window.matchMedia?.('(display-mode: standalone)').matches === true || navigator.standalone === true;
+  }
+
+  function installManualGuidance() {
+    const ua = String(navigator.userAgent || '');
+    if (/Android/i.test(ua) && /Firefox/i.test(ua)) {
+      return 'Open the Firefox menu, then choose Install. Firefox on Android can install PWAs, but it does not expose the custom beforeinstallprompt API used by Chromium.';
+    }
+    if (/Android/i.test(ua)) {
+      return 'Open your browser menu, then choose Install app or Add to Home screen. In Chrome/Edge/other Chromium browsers, also check the address-bar or menu install entry.';
+    }
+    if (/iPad|iPhone|iPod/i.test(ua)) {
+      return 'Open the browser Share menu, then choose Add to Home Screen.';
+    }
+    return 'Use your browser address-bar install icon or menu → Install app / Add to Home screen.';
+  }
+
+  function installBridge() {
+    return globalThis.SPTInstallBridge || null;
+  }
+
+  function syncInstallDiagnostics() {
+    const bridge = installBridge();
+    const secure = $('diag-secure');
+    const worker = $('diag-worker');
+    const prompt = $('diag-prompt');
+    const mode = $('diag-mode');
+    if (secure) secure.textContent = window.isSecureContext ? 'OK' : 'HTTPS required';
+    if (worker) {
+      if (!('serviceWorker' in navigator)) worker.textContent = 'Not supported';
+      else if (bridge?.serviceWorkerError) worker.textContent = 'Registration failed';
+      else if (navigator.serviceWorker.controller || bridge?.serviceWorkerReady) worker.textContent = 'Ready';
+      else if (bridge?.serviceWorkerRegistration) worker.textContent = 'Registered; activating';
+      else worker.textContent = 'Registering';
+    }
+    if (prompt) {
+      if (bridge?.deferredPrompt || deferredInstallPrompt) prompt.textContent = 'Ready';
+      else if ('BeforeInstallPromptEvent' in window || /Chrome|Chromium|Edg|OPR/i.test(String(navigator.userAgent || ''))) prompt.textContent = 'Not offered yet';
+      else prompt.textContent = 'Use browser menu';
+    }
+    if (mode) mode.textContent = isStandaloneApp() ? 'Installed / standalone' : 'Browser';
+  }
+
+  function showInstallHelp() {
+    const dialog = $('install-dialog');
+    const guidance = $('install-guidance');
+    if (guidance) guidance.textContent = window.isSecureContext
+      ? installManualGuidance()
+      : 'Open the HTTPS version of this site first. PWA installation requires a secure context.';
+    syncInstallDiagnostics();
+    if (dialog?.showModal) {
+      if (!dialog.open) dialog.showModal();
+      return;
+    }
+    if (dialog) {
+      dialog.setAttribute('open', '');
+      dialog.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+      return;
+    }
+    status(installManualGuidance());
+  }
+
+  function updateInstallUI() {
     const button = $('install-app');
     const help = $('install-help');
     if (!button) return;
+    const bridge = installBridge();
+    const prompt = bridge?.deferredPrompt || deferredInstallPrompt;
 
-    const standalone = window.matchMedia?.('(display-mode: standalone)').matches === true || navigator.standalone === true;
-    if (standalone) {
+    if (isStandaloneApp() || bridge?.installed) {
       button.hidden = true;
-      if (help) help.textContent = 'Android app is already installed.';
+      if (help) help.textContent = 'Social Post Tools is already installed on this device.';
+      syncInstallDiagnostics();
       return;
     }
 
-    if (!window.isSecureContext) {
-      button.hidden = true;
-      if (help) help.textContent = 'Android app installation requires HTTPS. Open the HTTPS version of this site first.';
-      return;
+    // Keep the CTA usable even without beforeinstallprompt. In browsers such as
+    // Firefox Android, clicking it opens manual install guidance rather than a
+    // dead control.
+    button.hidden = false;
+    button.disabled = false;
+    button.dataset.installState = prompt ? 'prompt-ready' : 'manual-fallback';
+    if (help) help.textContent = prompt
+      ? 'Ready. Tap Install to open the browser install prompt.'
+      : 'Tap Install. If your browser cannot open a native prompt, manual Android install steps will be shown.';
+    syncInstallDiagnostics();
+  }
+
+  function setupInstallPrompt() {
+    const button = $('install-app');
+    if (!button) return;
+    const bridge = installBridge();
+
+    // Fallback listener for builds/pages that load app.js without the early
+    // install bridge. Normal production pages capture this in <head>.
+    if (!bridge) {
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        updateInstallUI();
+      });
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        updateInstallUI();
+        status('Installed. You can now choose Social Post Tools from Android Share.');
+      });
+    } else {
+      deferredInstallPrompt = bridge.deferredPrompt;
+      bridge.onChange((reason) => {
+        deferredInstallPrompt = bridge.deferredPrompt;
+        updateInstallUI();
+        if (reason === 'installed') status('Installed. You can now choose Social Post Tools from Android Share.');
+      });
     }
 
-    window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault();
-      deferredInstallPrompt = event;
-      button.hidden = false;
-      if (help) help.textContent = 'Android app installation is ready.';
-    });
-
-    window.addEventListener('appinstalled', () => {
-      deferredInstallPrompt = null;
-      button.hidden = true;
-      if (help) help.textContent = 'Android app installed.';
-      status('Installed. You can now choose Social Post Tools from Android Share.');
+    $('install-dialog-close')?.addEventListener('click', () => {
+      const dialog = $('install-dialog');
+      if (typeof dialog?.close === 'function') dialog.close();
+      else dialog?.removeAttribute('open');
     });
 
     button.addEventListener('click', async () => {
-      const prompt = deferredInstallPrompt;
+      const currentBridge = installBridge();
+      const prompt = currentBridge?.deferredPrompt || deferredInstallPrompt;
       if (!prompt) {
-        button.hidden = true;
-        status('Browser install prompt is unavailable. Use the browser menu → Install app / Add to Home screen.');
+        showInstallHelp();
         return;
       }
 
-      // A BeforeInstallPromptEvent can only be used once.
+      if (currentBridge) currentBridge.deferredPrompt = null;
       deferredInstallPrompt = null;
+      updateInstallUI();
       try {
         await prompt.prompt();
         const choice = await prompt.userChoice;
-        button.hidden = true;
         if (choice?.outcome === 'accepted') {
-          status('Install accepted. Finishing Android app installation…');
+          status('Install accepted. Android is finishing the app installation.');
         } else {
-          status('Install dismissed. Use the browser menu if you want to install later.');
+          status('Install dismissed. Tap Install again for manual browser-menu instructions.');
         }
       } catch {
-        button.hidden = true;
-        status('Could not open the install prompt. Use the browser menu → Install app / Add to Home screen.');
+        status('The browser could not open its native install prompt.');
+        showInstallHelp();
       }
+      updateInstallUI();
     });
+
+    updateInstallUI();
   }
 
   function renderSettingsPage() {
