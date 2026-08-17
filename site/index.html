@@ -23,10 +23,10 @@
   <meta name="twitter:description" content="Clean links, Android Share, alternative frontends, and structured AI capture for X and Threads.">
   <meta name="twitter:image" content="https://share-tools.mythic3011.com/assets/social-preview.png">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
-  <link rel="manifest" href="./manifest.webmanifest?v=4.2.3">
-  <script src="./install-bootstrap.js?v=4.2.3"></script>
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=4.2.3">
-  <link rel="stylesheet" href="./assets/app.css?v=4.2.3">
+  <link rel="manifest" href="./manifest.webmanifest?v=4.2.5">
+  <script src="./install-bootstrap.js?v=4.2.5"></script>
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=4.2.5">
+  <link rel="stylesheet" href="./assets/app.css?v=4.2.5">
   <title>Social Post Tools</title>
 </head>
 <body data-page="landing">
@@ -39,11 +39,12 @@
 
   <article class="hero-card landing-hero">
     <div class="badge">X · Threads</div>
+    <p class="android-only platform-lead"><strong>Android detected.</strong> Install the app to add Social Post Tools to the Android Share sheet.</p>
     <h2>Cleaner sharing. Better AI capture.</h2>
     <p>Use clean or alternate links, send posts to Android apps or Telegram, and capture the post context you actually want for AI.</p>
-    <div class="cta-grid">
-      <button id="install-app" type="button" aria-haspopup="dialog">Install Android app</button>
-      <a role="button" href="./install.html">Set up browser</a>
+    <div class="cta-grid hero-install-actions">
+      <button id="install-app" type="button" aria-haspopup="dialog"><span class="android-only">Install Android app</span><span class="not-android">Install app</span></button>
+      <a role="button" class="browser-setup-cta" href="./install.html">Set up browser</a>
     </div>
     <p id="install-help" class="muted compact-copy">Tap Install. If your browser cannot open its native prompt, Social Post Tools will show the manual Android steps instead.</p>
     <p class="muted compact-copy">No account, analytics, or server-side post processing.</p>
@@ -65,8 +66,14 @@
     </div>
   </article>
 
-  <article>
-    <div class="section-heading-row"><div><h2>Browser Userscript</h2><p class="muted compact-copy">Best for X / Threads in the browser.</p></div><span class="badge">2-step setup</span></div>
+  <details class="android-only android-browser-option">
+    <summary>Use the browser Userscript instead</summary>
+    <p class="muted">Optional on Android. Use this only when your browser supports a Userscript manager. The installed PWA is the recommended Android share-sheet path.</p>
+    <a role="button" class="secondary outline" href="./install.html">Browser Userscript setup</a>
+  </details>
+
+  <article class="browser-userscript-section">
+    <div class="section-heading-row"><div><h2>Browser Userscript</h2><p class="muted compact-copy">Best for X / Threads in desktop or extension-capable browsers.</p></div><span class="badge">2-step setup</span></div>
     <p>The Userscript adds <strong>Post tools</strong> to X and Threads while keeping the site's native menu style.</p>
     <div class="browser-install-summary">
       <div><strong>1. Get a Userscript manager</strong><small>Tampermonkey is the recommended default; Violentmonkey is also supported.</small></div>
@@ -106,12 +113,12 @@
       <a href="./settings.html">Settings</a>
       <a href="./privacy.html">Privacy & security</a>
     </nav>
-    <p class="build-info">Version 4.2.3</p>
+    <p class="build-info">Version 4.2.5</p>
     <p id="status" class="status" aria-live="polite"></p>
   </footer>
 </main>
 </div>
-<script src="./social-post-core.js?v=4.2.3"></script>
-<script src="./app.js?v=4.2.3"></script>
+<script src="./social-post-core.js?v=4.2.5"></script>
+<script src="./app.js?v=4.2.5"></script>
 </body>
 </html>
