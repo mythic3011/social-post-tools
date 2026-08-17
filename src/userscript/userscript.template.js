@@ -318,7 +318,10 @@
   // to X/Threads servers. Consume and remove it before the site app starts.
   state.handoff = CORE.parseCaptureHandoff(location.href);
   if (state.handoff) {
-    try { history.replaceState(history.state, '', state.handoff.canonicalUrl); } catch {}
+    const cleanHandoffUrl = state.handoff.canonicalUrl || state.handoff.sourceUrl;
+    if (cleanHandoffUrl) {
+      try { history.replaceState(history.state, '', cleanHandoffUrl); } catch {}
+    }
   }
 
   // ---------- Generic utilities ----------
@@ -3695,6 +3698,24 @@
     return null;
   }
 
+  function resolveThreadsShareAliasCanonical(site) {
+    if (!site || site.id !== 'threads') return null;
+    const metadata = [
+      document.querySelector('link[rel="canonical"][href]')?.href,
+      document.querySelector('meta[property="og:url"][content]')?.content,
+      document.querySelector('meta[name="twitter:url"][content]')?.content,
+    ];
+    for (const candidate of metadata) {
+      const canonical = candidate ? canonicalize(site, candidate) : null;
+      if (canonical) return canonical;
+    }
+    for (const root of queryMany(document, site.content.rootSelectors || [])) {
+      const canonical = findCanonicalLinkIn(site, root);
+      if (canonical) return canonical;
+    }
+    return null;
+  }
+
   function stopHandoffWatch() {
     state.handoffObserver?.disconnect?.();
     state.handoffObserver = null;
@@ -3716,11 +3737,31 @@
     const handoff = state.handoff;
     if (!handoff) return;
     const site = SITES.find((item) => item.id === handoff.platform) || currentSite();
-    if (!site || canonicalize(site, location.href) !== handoff.canonicalUrl) {
+    if (!site) {
       stopHandoffWatch();
       state.handoff = null;
       return;
     }
+
+    const currentCanonical = canonicalize(site, location.href);
+    const currentShareAlias = site.id === 'threads' ? CORE.threadsShareAlias(location.href, location.href) : null;
+    const sourceAliasMatches = Boolean(handoff.unresolved && handoff.sourceUrl && currentShareAlias === handoff.sourceUrl);
+
+    if (!handoff.canonicalUrl && handoff.unresolved && site.id === 'threads') {
+      handoff.canonicalUrl = currentCanonical || resolveThreadsShareAliasCanonical(site);
+      if (handoff.canonicalUrl) handoff.unresolved = false;
+    }
+
+    const routeMatches = handoff.canonicalUrl
+      ? (currentCanonical === handoff.canonicalUrl || sourceAliasMatches)
+      : sourceAliasMatches;
+    if (!routeMatches) {
+      stopHandoffWatch();
+      state.handoff = null;
+      return;
+    }
+
+    if (!handoff.canonicalUrl) return;
     const context = findHandoffContext(site, handoff.canonicalUrl);
     if (!context) return;
     const capture = buildSocialCapture(context, handoff.mode || 'smart');

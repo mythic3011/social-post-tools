@@ -1,0 +1,749 @@
+diff --git a/.github/workflows/pages.yml b/.github/workflows/pages.yml
+index 6bcf86f..0114329 100644
+--- a/.github/workflows/pages.yml
++++ b/.github/workflows/pages.yml
+@@ -42,7 +42,7 @@ jobs:
+         uses: actions/configure-pages@v5
+ 
+       - name: Build for Pages
+-        run: python3 build.py --pages-base "${{ steps.pages.outputs.base_url }}"
++        run: python3 build.py --pages-base "${{ steps.pages.outputs.base_url }}" --threads-resolver-url "${{ vars.THREADS_RESOLVER_URL }}"
+ 
+       - name: Test
+         run: bash tests/run.sh
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index ed2b281..aed837b 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,12 @@
+ # Changelog
+ 
++## v4.2.7
++
++- Resolve Threads Android `/share/<token>` aliases to canonical, tracking-free post permalinks through an optional privacy-scoped edge resolver.
++- Never treat a Threads `/share/` alias as the final clean/share URL after resolution succeeds.
++- Keep a local fallback when the resolver is unavailable.
++- Add a hardened Cloudflare Worker resolver that validates every redirect hop and never forwards user cookies.
++
+ ## v4.2.6
+ - Treat Threads Android `https://www.threads.com/share/<id>` payloads as supported Threads share aliases instead of incorrectly showing **Unsupported share**.
+ - Prefer an exact `/@user/post/<id>` permalink when a share payload contains both a Threads share alias and a canonical post URL.
+diff --git a/README.md b/README.md
+index 750761b..76b94b0 100644
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,7 @@
+ # Social Post Tools
+ 
+ [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
+-[![Version](https://img.shields.io/badge/version-v4.2.6-2f81f7)](CHANGELOG.md)
++[![Version](https://img.shields.io/badge/version-v4.2.7-2f81f7)](CHANGELOG.md)
+ [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
+ [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
+ [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
+@@ -17,7 +17,7 @@
+ [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-supported-00485b)](https://www.tampermonkey.net/)
+ [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-supported-7B68EE)](https://violentmonkey.github.io/)
+ 
+-**Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean link sharing, Nitter-compatible alternate links, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account or application backend.
++**Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean link sharing, Nitter-compatible alternate links, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account. A narrowly scoped optional edge resolver is used only to turn Threads Android `/share/<token>` aliases into canonical post permalinks.
+ 
+ - **Browser:** integrates into the native X / Threads Share menu through Tampermonkey or Violentmonkey.
+ - **Android:** install with **Google Chrome** for the supported Android Web Share Target path. Brave is experimental on some builds; Firefox may install the PWA without registering it in the Android share sheet.
+@@ -46,7 +46,7 @@ X / Threads native app
+ → Share onward / copy link / open for AI capture
+ ```
+ 
+-On Android, the landing page prioritizes the **Install Android app** path and demotes the browser Userscript to an optional disclosure. The install dialog reports browser-specific Share Target support instead of treating every install-capable browser as equivalent. Threads native sharing may supply a `threads.com/share/<id>` alias rather than an exact post permalink; the PWA accepts that alias for copy/share/open actions and asks Threads to resolve it before alternate-link conversion or rich AI capture.
++On Android, the landing page prioritizes the **Install Android app** path and demotes the browser Userscript to an optional disclosure. The install dialog reports browser-specific Share Target support instead of treating every install-capable browser as equivalent. Threads native sharing may supply a `threads.com/share/<token>` redirect alias rather than the actual post permalink. When the optional resolver is configured, the PWA resolves it automatically and all normal actions use the canonical tracking-free post URL. If resolution is unavailable, the app falls back without inventing a permalink.
+ 
+ ## What it does
+ 
+@@ -56,7 +56,7 @@ On Android, the landing page prioritizes the **Install Android app** path and de
+ - **Android Share Target** — receive a native Android share and forward, copy, transform, or hand the source post back to the browser for richer capture.
+ - **Telegram and system sharing** — use platform share destinations without storing bot credentials.
+ - **Archive snapshots** — explicitly create canonical JSON + SHA-256 integrity metadata, with optional media packaging.
+-- **Privacy-first defaults** — no analytics or application backend; network-heavy media preparation is explicit.
++- **Privacy-first defaults** — no analytics; the optional Threads alias resolver is narrowly scoped to public Threads `/share/` redirects, and network-heavy media preparation remains explicit.
+ 
+ ## Tech stack
+ 
+@@ -72,7 +72,7 @@ On Android, the landing page prioritizes the **Install Android app** path and de
+ 
+ ## Privacy and security
+ 
+-The PWA processes shared URLs locally and has no runtime application API. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
++The PWA processes normal shared URLs locally. If a Threads `/share/<token>` alias must be converted to the actual post permalink, the deployment may enable the narrow Threads alias resolver documented under `edge/threads-resolver/`; no other application API is required. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
+ 
+ Archive hashes verify archived bytes; they do **not** prove authorship, account ownership, publication time, or historical authenticity. See [SECURITY.md](SECURITY.md) and the [security model](docs/architecture/SECURITY_MODEL.md).
+ 
+@@ -89,6 +89,7 @@ docs/           product, architecture, deployment, development docs
+ tests/          DOM fixtures, security/UI/SEO audits, browser/perf smoke tests
+ dist/           generated Userscript artifacts (ignored)
+ site/           generated GitHub Pages artifact (ignored)
++edge/           optional narrowly scoped Threads alias resolver
+ ```
+ 
+ See [docs/development/REPOSITORY_LAYOUT.md](docs/development/REPOSITORY_LAYOUT.md) for the complete tree.
+diff --git a/build.py b/build.py
+index 81a6107..6f512ec 100755
+--- a/build.py
++++ b/build.py
+@@ -9,7 +9,7 @@ from pathlib import Path
+ from urllib.parse import urlparse
+ 
+ ROOT = Path(__file__).resolve().parent
+-VERSION = '4.2.6'
++VERSION = '4.2.7'
+ PICO_VERSION = '2.1.1'
+ CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
+ DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
+@@ -30,6 +30,18 @@ def normalize_base_url(value: str | None) -> str | None:
+     return value
+ 
+ 
++def normalize_resolver_url(value: str | None) -> str | None:
++    if not value:
++        return None
++    value = value.strip().rstrip('/')
++    parsed = urlparse(value)
++    if parsed.scheme != 'https' or not parsed.netloc or parsed.username or parsed.password:
++        raise SystemExit('--threads-resolver-url must be an absolute HTTPS URL without credentials')
++    if parsed.query or parsed.fragment:
++        raise SystemExit('--threads-resolver-url must not contain a query string or fragment')
++    return value
++
++
+ def distribution_meta(base_url: str | None) -> str:
+     if not base_url:
+         return '// Distribution URLs are injected by the GitHub Pages build.'
+@@ -76,7 +88,7 @@ def install_ui_framework(site: Path, *, dev_fallback: bool) -> None:
+     raise SystemExit('Pico CSS is missing. Run `npm ci` first, or use --dev-ui-fallback for an offline preview build.')
+ 
+ 
+-def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: bool) -> None:
++def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: bool, threads_resolver_url: str | None) -> None:
+     site = ROOT / 'site'
+     if site.exists():
+         shutil.rmtree(site)
+@@ -91,6 +103,8 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback:
+     home = (pages_base + '/') if pages_base else './'
+     canonical_base = pages_base or PUBLIC_SITE_URL
+     social_image = canonical_base + '/assets/social-preview.png'
++    resolver_origin = urlparse(threads_resolver_url).scheme + '://' + urlparse(threads_resolver_url).netloc if threads_resolver_url else ''
++    resolver_connect_src = resolver_origin if resolver_origin else "'none'"
+     for path in site.glob('*.html'):
+         name = path.name
+         if name in {'index.html', '404.html'}:
+@@ -102,8 +116,14 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback:
+         text = text.replace('__SITE_HOME__', html.escape(home, quote=True))
+         text = text.replace('__CANONICAL_URL__', html.escape(canonical_url, quote=True))
+         text = text.replace('__SOCIAL_IMAGE_URL__', html.escape(social_image, quote=True))
++        text = text.replace('__THREADS_CONNECT_SRC__', html.escape(resolver_connect_src, quote=True))
+         path.write_text(text, encoding='utf-8')
+ 
++    app_js = site / 'app.js'
++    app_text = app_js.read_text(encoding='utf-8')
++    app_text = app_text.replace('__THREADS_RESOLVER_URL__', threads_resolver_url or '')
++    app_js.write_text(app_text, encoding='utf-8')
++
+     sitemap_urls = [canonical_base + '/', canonical_base + '/install.html', canonical_base + '/privacy.html']
+     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+     sitemap += ''.join(f'  <url><loc>{html.escape(url)}</loc></url>\n' for url in sitemap_urls)
+@@ -127,8 +147,10 @@ def main() -> None:
+     parser = argparse.ArgumentParser(description='Build Social Post Tools')
+     parser.add_argument('--pages-base', default=os.environ.get('PAGES_BASE_URL'))
+     parser.add_argument('--dev-ui-fallback', action='store_true', help='Use the checked-in offline preview CSS when Pico is not installed.')
++    parser.add_argument('--threads-resolver-url', default=os.environ.get('THREADS_RESOLVER_URL'), help='Optional HTTPS endpoint used to resolve Threads /share/ aliases to canonical post permalinks.')
+     args = parser.parse_args()
+     pages_base = normalize_base_url(args.pages_base)
++    threads_resolver_url = normalize_resolver_url(args.threads_resolver_url)
+ 
+     bundle = render_userscript(pages_base)
+     meta = extract_metadata(bundle)
+@@ -140,11 +162,12 @@ def main() -> None:
+     (dist / 'social-post-tools.meta.js').write_text(meta, encoding='utf-8')
+     (dist / f'social-post-tools-v{VERSION}.user.txt').write_text(bundle, encoding='utf-8')
+ 
+-    write_site(pages_base, bundle, meta, dev_fallback=args.dev_ui_fallback)
++    write_site(pages_base, bundle, meta, dev_fallback=args.dev_ui_fallback, threads_resolver_url=threads_resolver_url)
+     print(f'built v{VERSION}: userscript + meta + GitHub Pages site')
+     print(f'ui framework: @picocss/pico {PICO_VERSION}' + (' (dev fallback)' if args.dev_ui_fallback and not PICO_CSS.is_file() else ''))
+     if pages_base:
+         print(f'pages base: {pages_base}')
++    print('threads alias resolver: ' + (threads_resolver_url or 'disabled'))
+ 
+ 
+ if __name__ == '__main__':
+diff --git a/docs/architecture/PERFORMANCE.md b/docs/architecture/PERFORMANCE.md
+index 8e78765..ea94517 100644
+--- a/docs/architecture/PERFORMANCE.md
++++ b/docs/architecture/PERFORMANCE.md
+@@ -87,7 +87,7 @@ Canonical serialization, SHA-256 hashing, and optional media hashing run only af
+ 
+ ## v4.1 distribution performance
+ 
+-The Pages landing is static and shares the existing small PWA CSS/JS/core assets. No runtime configuration endpoint or version fetch was added; version/distribution URLs are injected at build time so the PWA keeps `connect-src 'none'`.
++The Pages landing is static and shares the existing small PWA CSS/JS/core assets. No runtime configuration or version fetch is added. A single bounded network request may occur only when the Android Threads app supplies a `/share/<token>` alias and an optional resolver endpoint is configured; other PWA flows remain local.
+ 
+ Userscript installer and metadata files are not placed in the service-worker shell cache, avoiding stale update checks and unnecessary cache duplication.
+ 
+diff --git a/docs/architecture/SECURITY_MODEL.md b/docs/architecture/SECURITY_MODEL.md
+index 71f50a1..a48db40 100644
+--- a/docs/architecture/SECURITY_MODEL.md
++++ b/docs/architecture/SECURITY_MODEL.md
+@@ -37,7 +37,7 @@
+ 
+ ## v3.4 Android companion
+ 
+-The companion PWA is static and has no analytics or runtime API dependency. Both HTML pages carry a restrictive CSP (`connect-src 'none'`) and load only same-origin scripts/styles/assets.
++The companion PWA has no analytics. Normal pages keep `connect-src 'none'`. The share-target page may receive one build-injected HTTPS resolver origin so a Threads `/share/<token>` alias can be converted to its canonical post permalink; when no resolver is configured its CSP remains `connect-src 'none'`.
+ 
+ The basic Android Web Share Target uses GET because it only drafts user-visible actions and performs no immediate side effect. Shared values therefore arrive as query parameters. `share-target.html` parses them and immediately calls `history.replaceState()` to remove the query from visible history. Once the installed PWA is service-worker controlled, the worker serves the share-target shell from cache when possible instead of forwarding the query-bearing navigation to the origin.
+ 
+@@ -101,7 +101,7 @@ Build and deploy permissions are separated: the build job has read access to con
+ 
+ The standalone PWA/Pages UI uses a single pinned development dependency, `@picocss/pico@2.1.1`. Production CI installs it with the lockfile using `npm ci --ignore-scripts`, then `build.py` copies only `pico.conditional.min.css` into the static Pages artifact. The deployed PWA does not load CSS, JavaScript, fonts, or telemetry from a third-party CDN at runtime.
+ 
+-The existing CSP remains `style-src 'self'` and `connect-src 'none'`. Pico is confined to SPT-owned pages under a `.pico` wrapper. It is never injected into the X/Threads host page, so the framework cannot alter native social-site controls or increase the Userscript's host-page styling surface.
++The existing CSP remains `style-src 'self'`; normal PWA pages keep `connect-src 'none'`, while the share-target page can be restricted to one build-injected resolver origin. Pico is confined to SPT-owned pages under a `.pico` wrapper. It is never injected into the X/Threads host page, so the framework cannot alter native social-site controls or increase the Userscript's host-page styling surface.
+ 
+ The build fails closed when the pinned Pico asset is absent. `--dev-ui-fallback` is an explicit offline-preview mode only; CI and Pages deployment do not use it. The checked-in fallback is scoped and intentionally minimal so it cannot silently become the production dependency.
+ 
+@@ -112,3 +112,12 @@ The product layer continues to own security-sensitive UI state invariants such a
+ The public browser setup page links to the official Tampermonkey and Violentmonkey sites only as explicit user navigation. Social Post Tools does not download, proxy, bundle, iframe, or execute manager code, and CSP remains unchanged. External manager links use `target="_blank"` with `rel="noopener noreferrer"`.
+ 
+ The actual Social Post Tools `.user.js` and `.meta.js` artifacts remain same-origin Pages endpoints. They stay excluded from the service-worker app-shell cache so a browser/userscript manager does not receive an intentionally stale installer or update descriptor from the PWA cache.
++
++
++## v4.2.7 Threads alias resolver boundary
++
++Threads for Android may share an intermediate `https://www.threads.com/share/<token>/` URL. The token is an opaque alias and is not treated as a canonical post identifier. Browser JavaScript cannot reliably inspect a cross-origin redirect target without CORS, so fully automatic resolution is an optional edge operation rather than a string rewrite.
++
++The bundled Cloudflare Worker is deliberately not a general fetch proxy. It accepts only HTTPS Threads hosts with a strict `/share/<token>` path, follows redirects manually, validates every redirect hop before fetching it, and only returns canonical Threads post paths. It does not forward browser cookies or Threads credentials. If redirect resolution is insufficient, it reads at most the first 256 KiB of HTML to inspect canonical/OG metadata. CORS is restricted to the configured Social Post Tools origin.
++
++The PWA calls the resolver only for unresolved Threads `/share/` aliases. Requests use `credentials: omit`, `referrerPolicy: no-referrer`, `cache: no-store`, and a 5-second client timeout. If resolution succeeds, the alias is removed from outgoing share text and all normal actions use the canonical post permalink or the selected alternate frontend. If the resolver is absent or fails, the existing local fallback remains available.
+diff --git a/patch-work427/docs/deployment/THREADS_ALIAS_RESOLVER.md b/docs/deployment/THREADS_ALIAS_RESOLVER.md
+new file mode 100644
+index 0000000..63bde2f
+--- /dev/null
++++ b/docs/deployment/THREADS_ALIAS_RESOLVER.md
+@@ -0,0 +1,18 @@
++# Threads `/share/` alias resolution
++
++The Android Threads app can send a short `/share/<token>` URL. That URL is an intermediate alias, not the clean post permalink, so Social Post Tools must not treat it as the final share URL.
++
++## Desired flow
++
++```text
++Threads Android share
++→ https://www.threads.com/share/<token>/
++→ Social Post Tools resolver
++→ https://www.threads.com/@user/post/<id>
++→ canonicalize / strip query + tracking
++→ selected vxThreads or clean-link action
++```
++
++The PWA first tries the optional edge resolver. If resolution succeeds, every normal action uses the canonical post permalink. The `/share/` alias is retained only as provenance (`resolvedFrom`) in memory. If the resolver is absent or fails, the UI falls back to opening/copying the Threads alias rather than inventing a canonical URL.
++
++The edge component is intentionally narrow and is not a generic open proxy. See `edge/threads-resolver/README.md`.
+diff --git a/patch-work427/edge/threads-resolver/README.md b/edge/threads-resolver/README.md
+new file mode 100644
+index 0000000..60ee3cb
+--- /dev/null
++++ b/edge/threads-resolver/README.md
+@@ -0,0 +1,31 @@
++# Threads share-alias resolver
++
++Threads for Android may share an intermediate URL such as `https://www.threads.com/share/<token>/` instead of the canonical `https://www.threads.com/@user/post/<id>` permalink.
++
++A static GitHub Pages PWA cannot inspect a cross-origin redirect target because browser Fetch/CORS intentionally hides cross-origin redirect details. This optional Cloudflare Worker resolves only strict Threads `/share/` aliases and returns only a validated Threads post permalink.
++
++Security properties:
++
++- accepts only HTTPS Threads hosts and `/share/<token>` paths;
++- follows redirects manually and validates every redirect hop before fetching it;
++- never forwards browser cookies or Threads credentials;
++- reads at most 256 KiB of an upstream HTML page when redirect resolution alone is insufficient;
++- CORS is restricted to `ALLOWED_ORIGIN`;
++- no generic URL-fetch/proxy behavior;
++- no request-body or alias logging in application code.
++
++Deploy with Wrangler, then point the Pages build at the endpoint:
++
++```bash
++cd edge/threads-resolver
++npx wrangler deploy
++```
++
++Set the GitHub repository variable to the deployed endpoint:
++
++```bash
++gh variable set THREADS_RESOLVER_URL \
++  --body 'https://YOUR-WORKER.example/v1/threads/resolve'
++```
++
++Then rerun the Pages workflow. The PWA keeps a local fallback if the resolver is not configured or cannot resolve a link.
+diff --git a/patch-work427/edge/threads-resolver/worker.mjs b/edge/threads-resolver/worker.mjs
+new file mode 100644
+index 0000000..9322290
+--- /dev/null
++++ b/edge/threads-resolver/worker.mjs
+@@ -0,0 +1,170 @@
++const THREADS_HOSTS = new Set(['threads.com', 'www.threads.com', 'threads.net', 'www.threads.net']);
++const SHARE_PATH = /^\/share\/([A-Za-z0-9_-]+)\/?$/;
++const MAX_REDIRECTS = 5;
++const MAX_HEAD_BYTES = 262144;
++
++function json(data, init = {}) {
++  const headers = new Headers(init.headers || {});
++  headers.set('content-type', 'application/json; charset=utf-8');
++  headers.set('cache-control', 'no-store');
++  headers.set('x-content-type-options', 'nosniff');
++  return new Response(JSON.stringify(data), { ...init, headers });
++}
++
++function corsHeaders(origin, allowedOrigin) {
++  const headers = new Headers();
++  if (origin && origin === allowedOrigin) {
++    headers.set('access-control-allow-origin', origin);
++    headers.set('vary', 'Origin');
++    headers.set('access-control-allow-methods', 'POST, OPTIONS');
++    headers.set('access-control-allow-headers', 'content-type');
++    headers.set('access-control-max-age', '600');
++  }
++  return headers;
++}
++
++function canonicalThreadsUrl(raw) {
++  let url;
++  try { url = new URL(raw); } catch { return null; }
++  if (url.protocol !== 'https:' || !THREADS_HOSTS.has(url.hostname.toLowerCase())) return null;
++  let match = /^\/@([^/]+)\/post\/([^/?#]+)\/?$/i.exec(url.pathname);
++  if (match) return `https://www.threads.com/@${match[1]}/post/${match[2]}`;
++  match = /^\/t\/([^/?#]+)\/?$/i.exec(url.pathname);
++  if (match) return `https://www.threads.com/t/${match[1]}`;
++  return null;
++}
++
++function validShareAlias(raw) {
++  let url;
++  try { url = new URL(raw); } catch { return null; }
++  if (url.protocol !== 'https:' || !THREADS_HOSTS.has(url.hostname.toLowerCase())) return null;
++  const match = SHARE_PATH.exec(url.pathname);
++  if (!match) return null;
++  return `https://www.threads.com/share/${match[1]}`;
++}
++
++function decodeHtmlAttribute(value) {
++  return String(value || '')
++    .replace(/&amp;/gi, '&')
++    .replace(/&quot;/gi, '"')
++    .replace(/&#39;|&apos;/gi, "'")
++    .replace(/&lt;/gi, '<')
++    .replace(/&gt;/gi, '>');
++}
++
++function metadataCanonical(html) {
++  const tags = String(html || '').match(/<(?:link|meta)\b[^>]*>/gi) || [];
++  for (const tag of tags) {
++    const attrs = {};
++    for (const match of tag.matchAll(/([:\w-]+)\s*=\s*(["'])(.*?)\2/gi)) attrs[match[1].toLowerCase()] = decodeHtmlAttribute(match[3]);
++    const rel = String(attrs.rel || '').toLowerCase().split(/\s+/);
++    if (tag.toLowerCase().startsWith('<link') && rel.includes('canonical')) {
++      const candidate = canonicalThreadsUrl(attrs.href);
++      if (candidate) return candidate;
++    }
++    const metaName = String(attrs.property || attrs.name || '').toLowerCase();
++    if (tag.toLowerCase().startsWith('<meta') && ['og:url', 'twitter:url'].includes(metaName)) {
++      const candidate = canonicalThreadsUrl(attrs.content);
++      if (candidate) return candidate;
++    }
++  }
++  return null;
++}
++
++async function readPrefix(response, limit = MAX_HEAD_BYTES) {
++  if (!response.body) return '';
++  const reader = response.body.getReader();
++  const chunks = [];
++  let total = 0;
++  try {
++    while (total < limit) {
++      const { value, done } = await reader.read();
++      if (done) break;
++      const remaining = limit - total;
++      const chunk = value.byteLength > remaining ? value.slice(0, remaining) : value;
++      chunks.push(chunk);
++      total += chunk.byteLength;
++      if (value.byteLength > remaining) break;
++    }
++  } finally {
++    try { await reader.cancel(); } catch {}
++  }
++  const merged = new Uint8Array(total);
++  let offset = 0;
++  for (const chunk of chunks) { merged.set(chunk, offset); offset += chunk.byteLength; }
++  return new TextDecoder().decode(merged);
++}
++
++async function resolveThreadsAlias(raw) {
++  let current = validShareAlias(raw);
++  if (!current) return { ok: false, error: 'invalid_threads_share_alias' };
++
++  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
++    const direct = canonicalThreadsUrl(current);
++    if (direct) return { ok: true, canonicalUrl: direct, resolution: 'redirect' };
++
++    const currentUrl = new URL(current);
++    if (currentUrl.protocol !== 'https:' || !THREADS_HOSTS.has(currentUrl.hostname.toLowerCase())) {
++      return { ok: false, error: 'redirect_left_threads' };
++    }
++
++    const response = await fetch(current, {
++      method: 'GET',
++      redirect: 'manual',
++      headers: {
++        accept: 'text/html,application/xhtml+xml',
++        'user-agent': 'SocialPostTools-Resolver/1.0',
++      },
++    });
++
++    if (response.status >= 300 && response.status < 400) {
++      const location = response.headers.get('location');
++      if (!location) return { ok: false, error: 'redirect_without_location' };
++      const next = new URL(location, current);
++      if (next.protocol !== 'https:' || !THREADS_HOSTS.has(next.hostname.toLowerCase())) {
++        return { ok: false, error: 'redirect_left_threads' };
++      }
++      const canonical = canonicalThreadsUrl(next.href);
++      if (canonical) return { ok: true, canonicalUrl: canonical, resolution: 'redirect' };
++      current = next.href;
++      continue;
++    }
++
++    if (!response.ok) return { ok: false, error: 'threads_upstream_failed' };
++    const canonicalFromUrl = canonicalThreadsUrl(current);
++    if (canonicalFromUrl) return { ok: true, canonicalUrl: canonicalFromUrl, resolution: 'redirect' };
++    const prefix = await readPrefix(response);
++    const canonicalFromMeta = metadataCanonical(prefix);
++    if (canonicalFromMeta) return { ok: true, canonicalUrl: canonicalFromMeta, resolution: 'metadata' };
++    return { ok: false, error: 'canonical_not_found' };
++  }
++  return { ok: false, error: 'too_many_redirects' };
++}
++
++export { canonicalThreadsUrl, validShareAlias, metadataCanonical, resolveThreadsAlias };
++
++export default {
++  async fetch(request, env) {
++    const allowedOrigin = String(env.ALLOWED_ORIGIN || 'https://share-tools.mythic3011.com').replace(/\/$/, '');
++    const origin = request.headers.get('origin') || '';
++    const cors = corsHeaders(origin, allowedOrigin);
++
++    if (request.method === 'OPTIONS') {
++      if (origin !== allowedOrigin) return new Response(null, { status: 403 });
++      return new Response(null, { status: 204, headers: cors });
++    }
++    const requestUrl = new URL(request.url);
++    if (request.method !== 'POST' || requestUrl.pathname !== '/v1/threads/resolve') return json({ ok: false, error: 'not_found' }, { status: 404 });
++    if (origin !== allowedOrigin) return json({ ok: false, error: 'origin_not_allowed' }, { status: 403 });
++
++    let body;
++    try { body = await request.json(); } catch { return json({ ok: false, error: 'invalid_json' }, { status: 400, headers: cors }); }
++    const alias = validShareAlias(body?.url);
++    if (!alias) return json({ ok: false, error: 'invalid_threads_share_alias' }, { status: 400, headers: cors });
++
++    let result;
++    try { result = await resolveThreadsAlias(alias); }
++    catch { result = { ok: false, error: 'resolver_failed' }; }
++    return json(result, { status: result.ok ? 200 : 422, headers: cors });
++  },
++};
+diff --git a/patch-work427/edge/threads-resolver/wrangler.jsonc b/edge/threads-resolver/wrangler.jsonc
+new file mode 100644
+index 0000000..58fec6e
+--- /dev/null
++++ b/edge/threads-resolver/wrangler.jsonc
+@@ -0,0 +1,10 @@
++{
++  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
++  "name": "social-post-tools-threads-resolver",
++  "main": "worker.mjs",
++  "compatibility_date": "2026-08-17",
++  "workers_dev": true,
++  "vars": {
++    "ALLOWED_ORIGIN": "https://share-tools.mythic3011.com"
++  }
++}
+diff --git a/package-lock.json b/package-lock.json
+index a281d4e..ffc8b43 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "social-post-tools",
+-  "version": "4.2.6",
++  "version": "4.2.7",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "social-post-tools",
+-      "version": "4.2.6",
++      "version": "4.2.7",
+       "devDependencies": {
+         "@picocss/pico": "2.1.1"
+       }
+diff --git a/package.json b/package.json
+index b51d75d..f345939 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "social-post-tools",
+-  "version": "4.2.6",
++  "version": "4.2.7",
+   "private": true,
+   "description": "Task-oriented sharing and AI capture helpers for X and Threads.",
+   "scripts": {
+diff --git a/src/pwa/app.js b/src/pwa/app.js
+index 031f347..a415fd0 100644
+--- a/src/pwa/app.js
++++ b/src/pwa/app.js
+@@ -4,6 +4,8 @@
+   if (!Core) return;
+ 
+   const SETTINGS_KEY = 'social-post-tools:pwa-settings:v1';
++  const THREADS_RESOLVER_URL = '__THREADS_RESOLVER_URL__';
++  const THREADS_RESOLVE_TIMEOUT_MS = 5000;
+   const ACTIONS = Object.freeze([
+     ['copyClean', 'Copy original link'],
+     ['copyAlternate', 'Copy share link'],
+@@ -411,13 +413,63 @@
+     window.open(target.href, '_blank', 'noopener,noreferrer');
+   }
+ 
+-  function renderShareTarget() {
++
++  function rewriteResolvedThreadsText(text, canonicalUrl) {
++    const pattern = /https:\/\/(?:www\.)?threads\.(?:com|net)\/share\/[A-Za-z0-9_-]+\/?(?:[?#][^\s]*)?/gi;
++    const replaced = String(text || '').replace(pattern, canonicalUrl).trim();
++    return replaced === canonicalUrl ? '' : replaced;
++  }
++
++  async function resolveThreadsShareAlias(parsed) {
++    if (!parsed?.supported || parsed.platform !== 'threads' || !parsed.needsResolution || !parsed.sharedUrl || !THREADS_RESOLVER_URL) return parsed;
++    const controller = new AbortController();
++    const timer = setTimeout(() => controller.abort(), THREADS_RESOLVE_TIMEOUT_MS);
++    try {
++      const response = await fetch(THREADS_RESOLVER_URL, {
++        method: 'POST',
++        headers: { 'content-type': 'application/json' },
++        body: JSON.stringify({ url: parsed.sharedUrl }),
++        credentials: 'omit',
++        cache: 'no-store',
++        referrerPolicy: 'no-referrer',
++        signal: controller.signal,
++      });
++      if (!response.ok) return parsed;
++      const data = await response.json();
++      const canonicalUrl = Core.canonicalize('threads', data?.canonicalUrl || '');
++      if (!canonicalUrl) return parsed;
++      return {
++        ...parsed,
++        canonicalUrl,
++        text: rewriteResolvedThreadsText(parsed.text, canonicalUrl),
++        shareKind: 'resolved-post',
++        needsResolution: false,
++        resolvedFrom: parsed.sharedUrl,
++        resolution: String(data?.resolution || 'resolver'),
++      };
++    } catch {
++      return parsed;
++    } finally {
++      clearTimeout(timer);
++    }
++  }
++
++  async function renderShareTarget() {
+     const params = new URLSearchParams(location.search);
+     const incoming = { title: params.get('title') || '', text: params.get('text') || '', url: params.get('url') || '' };
+-    const parsed = Core.parseIncomingShare(incoming);
++    let parsed = Core.parseIncomingShare(incoming);
+     // Remove shared data from visible history as soon as it has been parsed.
+     history.replaceState(null, '', './share-target.html');
+ 
++    if (parsed.supported && parsed.platform === 'threads' && parsed.needsResolution && THREADS_RESOLVER_URL) {
++      $('platform-badge').textContent = Core.PLATFORMS.threads.name;
++      $('share-title').textContent = 'Resolving Threads link…';
++      $('share-note').classList.remove('hidden');
++      $('share-note').textContent = 'Converting the Threads /share/ alias into the canonical post permalink.';
++      $('alternate-url').textContent = parsed.sharedUrl || '';
++      parsed = await resolveThreadsShareAlias(parsed);
++    }
++
+     const settings = loadSettings();
+     const hasCanonicalPost = Boolean(parsed.canonicalUrl);
+     const alternateUrl = hasCanonicalPost ? transformed(parsed.platform, parsed.canonicalUrl, settings) : null;
+@@ -435,6 +487,10 @@
+         $('alternate-url').textContent = parsed.sharedUrl || '';
+         $('original-link-details').classList.add('hidden');
+       } else {
++        if (parsed.resolvedFrom) {
++          $('share-note').classList.remove('hidden');
++          $('share-note').textContent = 'Threads short link resolved automatically. Actions below use the canonical post permalink, not the /share/ alias.';
++        }
+         $('clean-url').textContent = parsed.canonicalUrl || '';
+         $('alternate-url').textContent = alternateUrl || parsed.canonicalUrl || 'No compatible builder';
+       }
+@@ -488,5 +544,5 @@
+   setupInstallPrompt();
+   const page = document.body.dataset.page;
+   if (page === 'settings') renderSettingsPage();
+-  if (page === 'share-target') renderShareTarget();
++  if (page === 'share-target') renderShareTarget().catch(() => status('Could not prepare the shared post.'));
+ })();
+diff --git a/src/pwa/share-target.html b/src/pwa/share-target.html
+index 54bf6aa..54cf181 100644
+--- a/src/pwa/share-target.html
++++ b/src/pwa/share-target.html
+@@ -6,7 +6,7 @@
+   <meta name="robots" content="noindex,nofollow,noarchive">
+   <meta name="referrer" content="no-referrer">
+   <meta name="theme-color" content="#111111">
+-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
++  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src __THREADS_CONNECT_SRC__; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
+   <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
+   <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=__APP_VERSION__">
+   <link rel="stylesheet" href="./assets/app.css?v=__APP_VERSION__">
+diff --git a/src/pwa/sw.js b/src/pwa/sw.js
+index 5c0e8ab..724798f 100644
+--- a/src/pwa/sw.js
++++ b/src/pwa/sw.js
+@@ -1,5 +1,5 @@
+ 'use strict';
+-const CACHE = 'social-post-tools-pwa-v4.2.6';
++const CACHE = 'social-post-tools-pwa-v4.2.7';
+ const SHELL = [
+   './', './index.html', './install.html', './settings.html', './share-target.html', './privacy.html', './404.html',
+   './assets/vendor/pico.conditional.min.css', './assets/app.css', './install-bootstrap.js', './app.js', './social-post-core.js', './manifest.webmanifest',
+diff --git a/tests/pages_audit.py b/tests/pages_audit.py
+index 7787218..4165737 100755
+--- a/tests/pages_audit.py
++++ b/tests/pages_audit.py
+@@ -55,6 +55,8 @@ checks = {
+     'pages-workflow-deploy': 'actions/deploy-pages@v4' in workflow,
+     'pages-workflow-least-privilege': 'pages: read' in workflow and 'pages: write' in workflow and 'id-token: write' in workflow,
+     'pages-workflow-npm-ci': 'npm ci --ignore-scripts --no-audit --no-fund' in workflow,
++    'pages-workflow-resolver-variable': 'THREADS_RESOLVER_URL' in workflow and '--threads-resolver-url' in workflow,
++    'site-resolver-placeholder-consumed': '__THREADS_RESOLVER_URL__' not in site_js and '__THREADS_CONNECT_SRC__' not in html_text,
+     'no-jekyll-dependency': 'jekyll' not in workflow.lower(),
+ }
+ failed = []
+diff --git a/tests/pwa_audit.py b/tests/pwa_audit.py
+index da41c0c..9c6442b 100755
+--- a/tests/pwa_audit.py
++++ b/tests/pwa_audit.py
+@@ -27,7 +27,7 @@ checks = {
+   'seo-utility-noindex': 'noindex,nofollow,noarchive' in share and 'noindex,nofollow,noarchive' in settings,
+   'privacy-share-referrer-none': 'name="referrer" content="no-referrer"' in share,
+   'csp-connect-none-settings': "connect-src 'none'" in settings,
+-  'csp-connect-none-share': "connect-src 'none'" in share,
++  'csp-share-connect-build-scoped': 'connect-src __THREADS_CONNECT_SRC__;' in share,
+   'privacy-no-script': "script-src 'none'" in privacy,
+   'no-inline-script': all('<script>' not in text for text in [index, settings, share]),
+   'no-inline-style': all('<style' not in text for text in html_pages),
+@@ -42,7 +42,7 @@ checks = {
+   'service-worker-cache-bust-fallback': "ignoreSearch: true" in sw,
+   'service-worker-bootstrap-cache': "./install-bootstrap.js" in sw,
+   'service-worker-local-framework-cache': "./assets/vendor/pico.conditional.min.css" in sw and "./assets/app.css" in sw,
+-  'no-analytics-network': 'fetch(' not in app and 'XMLHttpRequest' not in app,
++  'no-analytics-network': 'analytics' not in app.lower() and 'XMLHttpRequest' not in app and app.count('fetch(') == 1,
+   'rich-capture-handoff-fragment': 'makeCaptureHandoffUrl' in app and 'Open for AI capture' in share,
+   'handoff-does-not-embed-shared-text': 'makeCaptureHandoffUrl(handoffSource' in app and 'parsed.text' not in re.search(r'const handoffSource.*?const captureEnabled', app, re.S).group(0),
+   'settings-local-only': 'localStorage' in app,
+@@ -63,6 +63,9 @@ checks = {
+   'ux-install-share-target-diagnostic': 'id="diag-share-target"' in index and 'Share Target' in app,
+   'ux-install-chrome-supported-path': 'Google Chrome is the supported install path' in index and 'Supported path' in app,
+   'threads-share-alias-core': 'function threadsShareAlias' in core and "shareKind: 'share-alias'" in core and 'needsResolution: true' in core,
++  'threads-resolver-opt-in': 'THREADS_RESOLVER_URL' in app and 'resolveThreadsShareAlias' in app,
++  'threads-resolver-no-credentials': "credentials: 'omit'" in app and "referrerPolicy: 'no-referrer'" in app,
++  'threads-resolver-rewrites-alias-text': 'rewriteResolvedThreadsText' in app,
+   'threads-share-alias-ui': 'Threads shared link' in app and 'Open Threads post' in app and 'Copy Threads link' in app,
+   'threads-share-alias-not-transformed': 'const alternateUrl = hasCanonicalPost ? transformed' in app,
+   'ux-platform-detected-before-css': 'dataset.sptPlatform = platform' in bootstrap and "isAndroid" in bootstrap,
+diff --git a/tests/run.sh b/tests/run.sh
+index f2abb1d..bf380f3 100755
+--- a/tests/run.sh
++++ b/tests/run.sh
+@@ -6,6 +6,7 @@ python3 "$ROOT/tests/audit_static.py"
+ python3 "$ROOT/tests/run-fixtures.py"
+ python3 "$ROOT/tests/perf-smoke.py"
+ node "$ROOT/tests/core.test.js"
++node "$ROOT/tests/threads_resolver.test.mjs"
+ python3 "$ROOT/tests/pwa_audit.py"
+ python3 "$ROOT/tests/ui_structure_audit.py"
+ python3 "$ROOT/tests/ui_browser_smoke.py"
+diff --git a/patch-work427/tests/threads_resolver.test.mjs b/tests/threads_resolver.test.mjs
+new file mode 100644
+index 0000000..91a5aaf
+--- /dev/null
++++ b/tests/threads_resolver.test.mjs
+@@ -0,0 +1,56 @@
++import assert from 'node:assert/strict';
++import {
++  canonicalThreadsUrl,
++  validShareAlias,
++  metadataCanonical,
++  resolveThreadsAlias,
++} from '../edge/threads-resolver/worker.mjs';
++
++assert.equal(validShareAlias('https://www.threads.com/share/_l6aKbV0p/?xmt=abc'), 'https://www.threads.com/share/_l6aKbV0p');
++assert.equal(validShareAlias('https://evil.example/share/_l6aKbV0p/'), null);
++assert.equal(canonicalThreadsUrl('https://threads.com/@alice/post/AbCd123?xmt=tracking#x'), 'https://www.threads.com/@alice/post/AbCd123');
++assert.equal(canonicalThreadsUrl('https://www.threads.com/share/AbCd123'), null);
++assert.equal(metadataCanonical('<html><head><link href="https://www.threads.com/@bob/post/XYZ?xmt=1" rel="canonical"></head></html>'), 'https://www.threads.com/@bob/post/XYZ');
++assert.equal(metadataCanonical('<meta property="og:url" content="https://www.threads.com/@bob/post/XYZ?xmt=1">'), 'https://www.threads.com/@bob/post/XYZ');
++
++const realFetch = globalThis.fetch;
++try {
++  let calls = [];
++  globalThis.fetch = async (url, options) => {
++    calls.push([String(url), options?.redirect]);
++    return new Response(null, {
++      status: 302,
++      headers: { location: 'https://www.threads.com/@alice/post/POST123?xmt=abc' },
++    });
++  };
++  let result = await resolveThreadsAlias('https://www.threads.com/share/_l6aKbV0p/');
++  assert.deepEqual(result, {
++    ok: true,
++    canonicalUrl: 'https://www.threads.com/@alice/post/POST123',
++    resolution: 'redirect',
++  });
++  assert.equal(calls.length, 1);
++  assert.equal(calls[0][1], 'manual');
++
++  globalThis.fetch = async () => new Response(null, {
++    status: 302,
++    headers: { location: 'https://evil.example/tracker' },
++  });
++  result = await resolveThreadsAlias('https://www.threads.com/share/_l6aKbV0p/');
++  assert.deepEqual(result, { ok: false, error: 'redirect_left_threads' });
++
++  globalThis.fetch = async () => new Response(
++    '<html><head><meta property="og:url" content="https://www.threads.com/@carol/post/Meta123?xmt=abc"></head></html>',
++    { status: 200, headers: { 'content-type': 'text/html' } },
++  );
++  result = await resolveThreadsAlias('https://www.threads.com/share/_l6aKbV0p/');
++  assert.deepEqual(result, {
++    ok: true,
++    canonicalUrl: 'https://www.threads.com/@carol/post/Meta123',
++    resolution: 'metadata',
++  });
++} finally {
++  globalThis.fetch = realFetch;
++}
++
++console.log('PASS threads-alias-resolver');

@@ -37,7 +37,7 @@
 
 ## v3.4 Android companion
 
-The companion PWA is static and has no analytics or runtime API dependency. Both HTML pages carry a restrictive CSP (`connect-src 'none'`) and load only same-origin scripts/styles/assets.
+The companion PWA has no analytics. Normal pages keep `connect-src 'none'`. The share-target page may receive one build-injected HTTPS resolver origin so a Threads `/share/<token>` alias can be converted to its canonical post permalink; when no resolver is configured its CSP remains `connect-src 'none'`.
 
 The basic Android Web Share Target uses GET because it only drafts user-visible actions and performs no immediate side effect. Shared values therefore arrive as query parameters. `share-target.html` parses them and immediately calls `history.replaceState()` to remove the query from visible history. Once the installed PWA is service-worker controlled, the worker serves the share-target shell from cache when possible instead of forwarding the query-bearing navigation to the origin.
 
@@ -101,7 +101,7 @@ Build and deploy permissions are separated: the build job has read access to con
 
 The standalone PWA/Pages UI uses a single pinned development dependency, `@picocss/pico@2.1.1`. Production CI installs it with the lockfile using `npm ci --ignore-scripts`, then `build.py` copies only `pico.conditional.min.css` into the static Pages artifact. The deployed PWA does not load CSS, JavaScript, fonts, or telemetry from a third-party CDN at runtime.
 
-The existing CSP remains `style-src 'self'` and `connect-src 'none'`. Pico is confined to SPT-owned pages under a `.pico` wrapper. It is never injected into the X/Threads host page, so the framework cannot alter native social-site controls or increase the Userscript's host-page styling surface.
+The existing CSP remains `style-src 'self'`; normal PWA pages keep `connect-src 'none'`, while the share-target page can be restricted to one build-injected resolver origin. Pico is confined to SPT-owned pages under a `.pico` wrapper. It is never injected into the X/Threads host page, so the framework cannot alter native social-site controls or increase the Userscript's host-page styling surface.
 
 The build fails closed when the pinned Pico asset is absent. `--dev-ui-fallback` is an explicit offline-preview mode only; CI and Pages deployment do not use it. The checked-in fallback is scoped and intentionally minimal so it cannot silently become the production dependency.
 
@@ -112,3 +112,12 @@ The product layer continues to own security-sensitive UI state invariants such a
 The public browser setup page links to the official Tampermonkey and Violentmonkey sites only as explicit user navigation. Social Post Tools does not download, proxy, bundle, iframe, or execute manager code, and CSP remains unchanged. External manager links use `target="_blank"` with `rel="noopener noreferrer"`.
 
 The actual Social Post Tools `.user.js` and `.meta.js` artifacts remain same-origin Pages endpoints. They stay excluded from the service-worker app-shell cache so a browser/userscript manager does not receive an intentionally stale installer or update descriptor from the PWA cache.
+
+
+## v4.2.7 Threads alias resolver boundary
+
+Threads for Android may share an intermediate `https://www.threads.com/share/<token>/` URL. The token is an opaque alias and is not treated as a canonical post identifier. Browser JavaScript cannot reliably inspect a cross-origin redirect target without CORS, so fully automatic resolution is an optional edge operation rather than a string rewrite.
+
+The bundled Cloudflare Worker is deliberately not a general fetch proxy. It accepts only HTTPS Threads hosts with a strict `/share/<token>` path, follows redirects manually, validates every redirect hop before fetching it, and only returns canonical Threads post paths. It does not forward browser cookies or Threads credentials. If redirect resolution is insufficient, it reads at most the first 256 KiB of HTML to inspect canonical/OG metadata. CORS is restricted to the configured Social Post Tools origin.
+
+The PWA calls the resolver only for unresolved Threads `/share/` aliases. Requests use `credentials: omit`, `referrerPolicy: no-referrer`, `cache: no-store`, and a 5-second client timeout. If resolution succeeds, the alias is removed from outgoing share text and all normal actions use the canonical post permalink or the selected alternate frontend. If the resolver is absent or fails, the existing local fallback remains available.

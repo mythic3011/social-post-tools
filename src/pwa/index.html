@@ -47,6 +47,7 @@
       <a role="button" class="browser-setup-cta" href="./install.html">Set up browser</a>
     </div>
     <p id="install-help" class="muted compact-copy">Tap Install. If your browser cannot open its native prompt, Social Post Tools will show the manual Android steps instead.</p>
+    <p class="android-only muted compact-copy browser-support-note"><strong>Android Share-sheet support:</strong> Google Chrome is the supported install path. Brave is experimental on some builds and may require a developer Web App install setting; Firefox can install the PWA but may not register it as an Android share target.</p>
     <p class="muted compact-copy">No account, analytics, or server-side post processing.</p>
   </article>
 
@@ -60,7 +61,7 @@
   <article>
     <h2>Android setup</h2>
     <div class="step-list" aria-label="Android setup steps">
-      <div><span>1</span><p><strong>Install this web app</strong><br><small>Use the Install button when available, or your browser's Install app / Add to Home screen command.</small></p></div>
+      <div><span>1</span><p><strong>Install with Google Chrome</strong><br><small>Chrome is the supported Android Share-sheet path. Other browsers may install the PWA without registering a system share target.</small></p></div>
       <div><span>2</span><p><strong>Share from X or Threads</strong><br><small>Tap Share → Social Post Tools.</small></p></div>
       <div><span>3</span><p><strong>Choose what happens next</strong><br><small>Share onward, copy a clean link, or open the source for richer AI capture.</small></p></div>
     </div>
@@ -100,6 +101,7 @@
           <div><dt>Service worker</dt><dd id="diag-worker">Checking…</dd></div>
           <div><dt>Native prompt</dt><dd id="diag-prompt">Checking…</dd></div>
           <div><dt>App mode</dt><dd id="diag-mode">Checking…</dd></div>
+          <div><dt>Share target</dt><dd id="diag-share-target">Checking…</dd></div>
         </dl>
       </details>
       <footer class="toolbar">

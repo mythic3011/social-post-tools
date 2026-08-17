@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '1.2.0';
+  const VERSION = '1.2.1';
   const MAX_BUILDER_URL_CHARS = 8192;
   const MAX_CUSTOM_BUILDERS = 32;
 
@@ -317,8 +317,10 @@
   function makeCaptureHandoffUrl(rawUrl, { mode = 'smart' } = {}) {
     const platform = platformForUrl(rawUrl);
     const canonicalUrl = platform ? canonicalize(platform, rawUrl) : null;
-    if (!platform || !canonicalUrl) return null;
-    const url = parseUrl(canonicalUrl);
+    const shareAlias = platform?.id === 'threads' ? threadsShareAlias(rawUrl) : null;
+    if (!platform || (!canonicalUrl && !shareAlias)) return null;
+    const sourceUrl = canonicalUrl || shareAlias;
+    const url = parseUrl(sourceUrl);
     if (!url) return null;
     const params = new URLSearchParams();
     params.set(CAPTURE_HANDOFF_KEY, CAPTURE_HANDOFF_VERSION);
@@ -334,13 +336,26 @@
     if (params.get(CAPTURE_HANDOFF_KEY) !== CAPTURE_HANDOFF_VERSION) return null;
     const platform = platformForUrl(url.href);
     const canonicalUrl = platform ? canonicalize(platform, url.href) : null;
-    if (!platform || !canonicalUrl) return null;
+    const shareAlias = platform?.id === 'threads' ? threadsShareAlias(url.href) : null;
+    if (!platform || (!canonicalUrl && !shareAlias)) return null;
     return {
       version: CAPTURE_HANDOFF_VERSION,
       platform: platform.id,
       canonicalUrl,
+      sourceUrl: canonicalUrl || shareAlias,
+      unresolved: !canonicalUrl && Boolean(shareAlias),
       mode: normalizeCaptureMode(params.get('mode')),
     };
+  }
+
+  function threadsShareAlias(rawUrl, base) {
+    const url = parseUrl(rawUrl, base);
+    if (!url) return null;
+    const platform = platformForUrl(url.href);
+    if (!platform || platform.id !== 'threads') return null;
+    const match = /^\/share\/([A-Za-z0-9_-]+)\/?$/i.exec(url.pathname);
+    if (!match) return null;
+    return `${platform.canonicalOrigin}/share/${match[1]}`;
   }
 
   function parseIncomingShare({ title = '', text = '', url = '' } = {}) {
@@ -350,6 +365,8 @@
     const textUrl = firstHttpUrlInText(text);
     if (textUrl && !candidates.includes(textUrl)) candidates.push(textUrl);
 
+    // Prefer a real post permalink when the share payload contains both a
+    // Threads /share/... alias and a canonical /@user/post/... URL.
     for (const candidate of candidates) {
       const platform = platformForUrl(candidate);
       const canonicalUrl = platform ? canonicalize(platform, candidate) : null;
@@ -359,6 +376,29 @@
           platform: platform.id,
           canonicalUrl,
           sharedUrl: candidate,
+          shareKind: 'post',
+          needsResolution: false,
+          title: cleanText(title),
+          text: cleanText(text),
+        };
+      }
+    }
+
+    // Threads Android may share a public https://www.threads.com/share/<id>
+    // link instead of the canonical /@user/post/<id> permalink. Treat it as
+    // a supported Threads share alias, but do not pretend it is canonical:
+    // alternate-front-end conversion and rich handoff require the exact post
+    // permalink after Threads resolves the alias.
+    for (const candidate of candidates) {
+      const alias = threadsShareAlias(candidate);
+      if (alias) {
+        return {
+          supported: true,
+          platform: 'threads',
+          canonicalUrl: null,
+          sharedUrl: alias,
+          shareKind: 'share-alias',
+          needsResolution: true,
           title: cleanText(title),
           text: cleanText(text),
         };
@@ -371,6 +411,8 @@
       platform: null,
       canonicalUrl: null,
       sharedUrl: fallback && ['http:', 'https:'].includes(fallback.protocol) ? fallback.href : null,
+      shareKind: 'unknown',
+      needsResolution: false,
       title: cleanText(title),
       text: cleanText(text),
     };
@@ -494,6 +536,7 @@
     makeCaptureHandoffUrl,
     parseCaptureHandoff,
     parseIncomingShare,
+    threadsShareAlias,
     stableJsonStringify,
     sha256Hex,
     makePortableLinkSettings,

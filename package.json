@@ -1,12 +1,13 @@
 {
   "name": "social-post-tools",
-  "version": "4.2.5",
+  "version": "4.2.8",
   "private": true,
   "description": "Task-oriented sharing and AI capture helpers for X and Threads.",
   "scripts": {
-    "build": "python3 build.py",
-    "build:dev": "python3 build.py --dev-ui-fallback",
-    "test": "bash tests/run.sh"
+    "build": "uv run --locked python build.py",
+    "build:dev": "uv run --locked python build.py --dev-ui-fallback",
+    "test": "uv run --locked bash tests/run.sh",
+    "python:sync": "uv sync --locked"
   },
   "devDependencies": {
     "@picocss/pico": "2.1.1"

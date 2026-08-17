@@ -1,5 +1,5 @@
 'use strict';
-const CACHE = 'social-post-tools-pwa-v4.2.5';
+const CACHE = 'social-post-tools-pwa-v4.2.8';
 const SHELL = [
   './', './index.html', './install.html', './settings.html', './share-target.html', './privacy.html', './404.html',
   './assets/vendor/pico.conditional.min.css', './assets/app.css', './install-bootstrap.js', './app.js', './social-post-core.js', './manifest.webmanifest',

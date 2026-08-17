@@ -1,7 +1,7 @@
 # Social Post Tools
 
 [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
-[![Version](https://img.shields.io/badge/version-v4.2.5-2f81f7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.2.8-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
 [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
@@ -12,6 +12,7 @@
 [![CSS3](https://img.shields.io/badge/CSS3-scoped-1572B6?logo=css3&logoColor=fff)](src/pwa/assets/app.css)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=fff)](docs/product/ANDROID_COMPANION.md)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=fff)](build.py)
+[![uv](https://img.shields.io/badge/uv-locked-DE5FE9?logo=astral&logoColor=fff)](pyproject.toml)
 [![Pico CSS](https://img.shields.io/badge/Pico_CSS-2.1.1-0172AD?logo=css3&logoColor=fff)](docs/development/UI_FOUNDATION.md)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-deployed-222?logo=github&logoColor=fff)](docs/deployment/GITHUB_PAGES.md)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-supported-00485b)](https://www.tampermonkey.net/)
@@ -20,7 +21,7 @@
 **Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean link sharing, Nitter-compatible alternate links, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account or application backend.
 
 - **Browser:** integrates into the native X / Threads Share menu through Tampermonkey or Violentmonkey.
-- **Android:** installs as a PWA and appears in the Android share sheet as a Web Share Target.
+- **Android:** install with **Google Chrome** for the supported Android Web Share Target path. Brave is experimental on some builds; Firefox may install the PWA without registering it in the Android share sheet.
 - **Default UX:** works without configuration; advanced URL builders, archive tools, and capture controls stay behind progressive disclosure.
 
 **Live app:** https://share-tools.mythic3011.com/
@@ -37,7 +38,7 @@ If a `.user.js` link only displays JavaScript source, install or enable a Usersc
 
 ### Android: native-app sharing
 
-Open **[share-tools.mythic3011.com](https://share-tools.mythic3011.com/)** in a compatible Android browser and install the web app when the browser offers installation. After installation:
+Open **[share-tools.mythic3011.com](https://share-tools.mythic3011.com/)** in **Google Chrome for Android** and install the web app. Chrome is the supported path for registering Social Post Tools in the Android share sheet. Brave can work experimentally on some builds but may require a developer Web App install setting; Firefox may install the PWA without registering a system share target. After installation:
 
 ```text
 X / Threads native app
@@ -46,7 +47,7 @@ X / Threads native app
 → Share onward / copy link / open for AI capture
 ```
 
-On Android, the landing page now prioritizes the **Install Android app** path and demotes the browser Userscript to an optional disclosure. The install button is always actionable: it opens the native prompt when available, or manual browser-menu instructions and diagnostics otherwise.
+On Android, the landing page prioritizes the **Install Android app** path and demotes the browser Userscript to an optional disclosure. The install dialog reports browser-specific Share Target support instead of treating every install-capable browser as equivalent. Threads native sharing may supply a `threads.com/share/<id>` alias rather than an exact post permalink; the PWA accepts that alias for copy/share/open actions and asks Threads to resolve it before alternate-link conversion or rich AI capture.
 
 ## What it does
 
@@ -66,7 +67,7 @@ On Android, the landing page now prioritizes the **Install Android app** path an
 | Android companion | PWA + Web Share Target | Receives links from the Android share sheet |
 | UI | Semantic HTML + Pico CSS 2.1.1 | Task-oriented, progressively disclosed interface |
 | Shared core | JavaScript | Canonical URLs, URL builders, portable settings, hashing helpers |
-| Build / audits | Python 3.13 | Static build, packaging, SEO generation, security/UI checks |
+| Build / audits | Python 3.13 + uv | Locked build/test environment, packaging, SEO generation, security/UI checks |
 | Hosting | GitHub Pages | Static HTTPS distribution and stable Userscript endpoints |
 | CI | GitHub Actions | Build, security, DOM fixture, UI, SEO, and performance regression tests |
 
@@ -87,7 +88,6 @@ src/
 scripts/        maintainer helpers, including GitHub repository metadata setup
 docs/           product, architecture, deployment, development docs
 tests/          DOM fixtures, security/UI/SEO audits, browser/perf smoke tests
-                 Shared CDP launcher uses Chrome-assigned ports and explicit page targets for CI stability
 dist/           generated Userscript artifacts (ignored)
 site/           generated GitHub Pages artifact (ignored)
 ```
@@ -100,9 +100,9 @@ Production-equivalent local build:
 
 ```bash
 npm ci --ignore-scripts --no-audit --no-fund
-python -m pip install -r requirements-dev.txt
-python3 build.py --pages-base https://share-tools.mythic3011.com
-bash tests/run.sh
+uv sync --locked
+uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
+uv run --locked bash tests/run.sh
 ```
 
 Generated output:
@@ -131,4 +131,5 @@ The public Pages build also generates canonical URLs, Open Graph/Twitter metadat
 - [GitHub Pages deployment](docs/deployment/GITHUB_PAGES.md)
 - [GitHub repository metadata / SEO](docs/deployment/GITHUB_REPOSITORY.md)
 - [Testing](docs/development/TESTING.md)
+- [uv Python workflow](docs/development/UV_WORKFLOW.md)
 - [UI foundation](docs/development/UI_FOUNDATION.md)

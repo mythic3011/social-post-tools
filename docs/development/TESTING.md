@@ -4,16 +4,16 @@ Install development dependencies, build, then run the complete suite:
 
 ```bash
 npm ci --ignore-scripts --no-audit --no-fund
-python -m pip install -r requirements-dev.txt
-python3 build.py --pages-base https://share-tools.mythic3011.com
-bash tests/run.sh
+uv sync --locked
+uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
+uv run --locked bash tests/run.sh
 ```
 
 For an offline preview environment where the pinned Pico package cannot be installed, the explicit development-only fallback can be used:
 
 ```bash
-python3 build.py --pages-base https://share-tools.mythic3011.com --dev-ui-fallback
-bash tests/run.sh
+uv run --locked python build.py --pages-base https://share-tools.mythic3011.com --dev-ui-fallback
+uv run --locked bash tests/run.sh
 ```
 
 `--dev-ui-fallback` is not a production build mode and is not used by GitHub Actions.
@@ -43,9 +43,9 @@ Individual commands:
 
 ```bash
 node --check dist/social-post-tools.user.js
-python3 tests/audit_static.py
-python3 tests/run-fixtures.py
-python3 tests/perf-smoke.py
+uv run --locked python tests/audit_static.py
+uv run --locked python tests/run-fixtures.py
+uv run --locked python tests/perf-smoke.py
 ```
 
 ## Android manual check

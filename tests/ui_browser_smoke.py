@@ -108,7 +108,7 @@ def main() -> int:
                 'framework-css-parsed': bool(landing and landing['frameworkRules'] > 0),
                 'product-css-parsed': bool(landing and landing['productRules'] > 0),
                 'primary-actions-have-labels': bool(landing and landing['primaryCount'] > 0 and landing['emptyLabels'] == 0),
-                'install-dialog-present': bool(landing and landing['installDialog'] and landing['diagnostics'] >= 4),
+                'install-dialog-present': bool(landing and landing['installDialog'] and landing['diagnostics'] >= 5),
             }, failures)
 
             android_layout, call_id = value(ws, r'''(() => {

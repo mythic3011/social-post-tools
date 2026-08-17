@@ -36,9 +36,9 @@ git apply --check social-post-tools-v4.2.0.patch
 git apply social-post-tools-v4.2.0.patch
 
 npm ci --ignore-scripts --no-audit --no-fund
-python -m pip install -r requirements-dev.txt
-python3 build.py --pages-base https://share-tools.mythic3011.com
-bash tests/run.sh
+uv sync --locked
+uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
+uv run --locked bash tests/run.sh
 
 git add -A
 git commit -m "refactor: adopt Pico UI foundation and organize repository"
@@ -49,4 +49,9 @@ If the working tree already contains local edits, commit/stash/reconcile them be
 
 ## Deployment
 
-GitHub Actions installs the locked npm dependency and Python test dependency, builds the Pages artifact, runs the full suite, and only then uploads `site/`. The public site stays same-origin and static.
+GitHub Actions installs the locked npm dependency and syncs the locked uv development environment, builds the Pages artifact, runs the full suite, and only then uploads `site/`. The public site stays same-origin and static.
+
+
+## v4.2.8 Python-tooling migration
+
+`requirements-dev.txt` and direct `pip` installation were removed. Python tooling is now declared in `pyproject.toml`, locked in `uv.lock`, and run through `uv`. Existing repositories should remove any stale manually-created `.venv` if dependency state is confusing, then run `uv sync --locked`.

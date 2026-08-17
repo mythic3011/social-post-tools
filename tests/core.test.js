@@ -20,6 +20,24 @@ async function main() {
   let incoming = Core.parseIncomingShare({ text: 'Look https://x.com/a/status/9?s=20' });
   assert.equal(incoming.supported, true);
   assert.equal(incoming.canonicalUrl, 'https://x.com/a/status/9');
+  incoming = Core.parseIncomingShare({ url: 'https://www.threads.com/share/BBeoEtKFjY/' });
+  assert.equal(incoming.supported, true);
+  assert.equal(incoming.platform, 'threads');
+  assert.equal(incoming.canonicalUrl, null);
+  assert.equal(incoming.sharedUrl, 'https://www.threads.com/share/BBeoEtKFjY');
+  assert.equal(incoming.shareKind, 'share-alias');
+  assert.equal(incoming.needsResolution, true);
+  assert.equal(Core.threadsShareAlias('https://threads.net/share/ABC_123/?xmt=1'), 'https://www.threads.com/share/ABC_123');
+
+  incoming = Core.parseIncomingShare({
+    url: 'https://www.threads.com/share/BBeoEtKFjY/',
+    text: 'Exact post: https://www.threads.com/@bob/post/AbC?xmt=1',
+  });
+  assert.equal(incoming.supported, true);
+  assert.equal(incoming.canonicalUrl, 'https://www.threads.com/@bob/post/AbC');
+  assert.equal(incoming.shareKind, 'post');
+  assert.equal(incoming.needsResolution, false);
+
   incoming = Core.parseIncomingShare({ url: 'https://example.com/page' });
   assert.equal(incoming.supported, false);
   assert.equal(incoming.sharedUrl, 'https://example.com/page');
@@ -40,6 +58,14 @@ async function main() {
   assert.equal(parsedHandoff.mode, 'smart');
   assert.equal(Core.parseCaptureHandoff('https://evil.example/alice/status/123#sptCapture=v1&mode=smart'), null);
   assert.equal(Core.makeCaptureHandoffUrl('https://x.com/alice/status/123', { mode: 'discussion' }), 'https://x.com/alice/status/123#sptCapture=v1&mode=smart');
+  const aliasHandoff = Core.makeCaptureHandoffUrl('https://www.threads.com/share/BBeoEtKFjY/', { mode: 'smart' });
+  assert.equal(aliasHandoff, 'https://www.threads.com/share/BBeoEtKFjY#sptCapture=v1&mode=smart');
+  const parsedAliasHandoff = Core.parseCaptureHandoff(aliasHandoff);
+  assert(parsedAliasHandoff);
+  assert.equal(parsedAliasHandoff.platform, 'threads');
+  assert.equal(parsedAliasHandoff.canonicalUrl, null);
+  assert.equal(parsedAliasHandoff.sourceUrl, 'https://www.threads.com/share/BBeoEtKFjY');
+  assert.equal(parsedAliasHandoff.unresolved, true);
 
   const stableA = Core.stableJsonStringify({ z: 1, a: { y: 2, x: 3 }, list: [{ b: 2, a: 1 }] });
   const stableB = Core.stableJsonStringify({ list: [{ a: 1, b: 2 }], a: { x: 3, y: 2 }, z: 1 });

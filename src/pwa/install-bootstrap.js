@@ -12,10 +12,16 @@
   const isIOS = /iPad|iPhone|iPod/i.test(ua);
   const isMobile = navigator.userAgentData?.mobile === true || isAndroid || isIOS;
   const platform = isAndroid ? 'android' : (isIOS ? 'ios' : (isMobile ? 'mobile' : 'desktop'));
+  const browser = navigator.brave && typeof navigator.brave.isBrave === 'function'
+    ? 'brave'
+    : (/Firefox|FxiOS/i.test(ua) ? 'firefox'
+      : (/EdgA|EdgiOS|Edg\//i.test(ua) ? 'edge'
+        : (/Chrome|CriOS/i.test(ua) ? 'chrome' : 'other')));
 
-  // Set the platform marker before stylesheets finish loading so the landing
-  // page can prioritize the correct install path without a layout flash.
+  // Set platform/browser markers before stylesheets finish loading so the
+  // landing page can prioritize the correct install path without a flash.
   document.documentElement.dataset.sptPlatform = platform;
+  document.documentElement.dataset.sptBrowser = browser;
 
   const listeners = new Set();
   const bridge = {
@@ -24,6 +30,7 @@
     isAndroid,
     isIOS,
     isMobile,
+    browser,
     installed: false,
     promptSeen: false,
     serviceWorkerRegistration: null,

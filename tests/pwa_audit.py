@@ -14,6 +14,7 @@ bootstrap = (pwa/'install-bootstrap.js').read_text()
 sw = (pwa/'sw.js').read_text()
 styles = (pwa/'assets/app.css').read_text()
 fallback = (pwa/'assets/pico-fallback.css').read_text()
+core = (root/'src/core/social-post-core.js').read_text()
 html_pages = [index, install, settings, share, privacy]
 checks = {
   'manifest-share-target': manifest.get('share_target',{}).get('action') == './share-target.html',
@@ -26,7 +27,7 @@ checks = {
   'seo-utility-noindex': 'noindex,nofollow,noarchive' in share and 'noindex,nofollow,noarchive' in settings,
   'privacy-share-referrer-none': 'name="referrer" content="no-referrer"' in share,
   'csp-connect-none-settings': "connect-src 'none'" in settings,
-  'csp-connect-none-share': "connect-src 'none'" in share,
+  'csp-share-connect-build-scoped': 'connect-src __THREADS_CONNECT_SRC__;' in share,
   'privacy-no-script': "script-src 'none'" in privacy,
   'no-inline-script': all('<script>' not in text for text in [index, settings, share]),
   'no-inline-style': all('<style' not in text for text in html_pages),
@@ -41,9 +42,9 @@ checks = {
   'service-worker-cache-bust-fallback': "ignoreSearch: true" in sw,
   'service-worker-bootstrap-cache': "./install-bootstrap.js" in sw,
   'service-worker-local-framework-cache': "./assets/vendor/pico.conditional.min.css" in sw and "./assets/app.css" in sw,
-  'no-analytics-network': 'fetch(' not in app and 'XMLHttpRequest' not in app,
+  'no-analytics-network': 'analytics' not in app.lower() and 'XMLHttpRequest' not in app and app.count('fetch(') == 1,
   'rich-capture-handoff-fragment': 'makeCaptureHandoffUrl' in app and 'Open for AI capture' in share,
-  'handoff-does-not-embed-shared-text': 'makeCaptureHandoffUrl(parsed.canonicalUrl' in app,
+  'handoff-does-not-embed-shared-text': 'makeCaptureHandoffUrl(handoffSource' in app and 'parsed.text' not in re.search(r'const handoffSource.*?const captureEnabled', app, re.S).group(0),
   'settings-local-only': 'localStorage' in app,
   'ux-landing-primary-tasks': 'Cleaner sharing. Better AI capture.' in index and 'Set up browser' in index,
   'ux-browser-setup-page': 'Two steps, then you are done.' in install and 'Install Social Post Tools Userscript' in install,
@@ -57,7 +58,16 @@ checks = {
   'ux-install-bridge-early': './install-bootstrap.js' in index and './install-bootstrap.js' in settings and 'beforeinstallprompt' in bootstrap,
   'ux-versioned-install-assets': '?v=__APP_VERSION__' in index and '?v=__APP_VERSION__' in settings,
   'ux-install-dialog-fallback': 'id="install-dialog"' in index and 'id="install-guidance"' in index and 'Installation diagnostics' in index,
-  'ux-install-firefox-fallback': 'Firefox on Android' in app and 'beforeinstallprompt API' in app,
+  'ux-install-firefox-fallback': 'Firefox can install the PWA' in app and 'Google Chrome' in app,
+  'ux-install-brave-experimental': 'Brave can install the PWA' in app and 'developer Web App install setting' in app,
+  'ux-install-share-target-diagnostic': 'id="diag-share-target"' in index and 'Share Target' in app,
+  'ux-install-chrome-supported-path': 'Google Chrome is the supported install path' in index and 'Supported path' in app,
+  'threads-share-alias-core': 'function threadsShareAlias' in core and "shareKind: 'share-alias'" in core and 'needsResolution: true' in core,
+  'threads-resolver-opt-in': 'THREADS_RESOLVER_URL' in app and 'resolveThreadsShareAlias' in app,
+  'threads-resolver-no-credentials': "credentials: 'omit'" in app and "referrerPolicy: 'no-referrer'" in app,
+  'threads-resolver-rewrites-alias-text': 'rewriteResolvedThreadsText' in app,
+  'threads-share-alias-ui': 'Threads shared link' in app and 'Open Threads post' in app and 'Copy Threads link' in app,
+  'threads-share-alias-not-transformed': 'const alternateUrl = hasCanonicalPost ? transformed' in app,
   'ux-platform-detected-before-css': 'dataset.sptPlatform = platform' in bootstrap and "isAndroid" in bootstrap,
   'ux-android-install-primary': 'Android detected.' in index and 'hero-install-actions' in index and 'Install Android app' in index,
   'ux-android-userscript-demoted': 'browser-userscript-section' in index and 'android-browser-option' in index and 'Use the browser Userscript instead' in index,

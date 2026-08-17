@@ -1,14 +1,31 @@
 # Changelog
 
-## v4.2.5
+## v4.2.8
+- Migrate Python build/test tooling from `requirements-dev.txt` + direct `pip` installation to an uv project (`pyproject.toml` + `uv.lock`).
+- Add `.python-version` for the Python 3.13 toolchain and keep the repository itself non-packaged with `tool.uv.package = false`.
+- Pin `websocket-client==1.9.0` in the uv dev dependency group and record PyPI artifact SHA-256 hashes in `uv.lock`.
+- Move CI/Pages to Astral `setup-uv`, `uv python install`, `uv sync --locked`, and `uv run --locked`; remove `actions/setup-python` and direct `pip` commands.
+- Make the shell test runner use the uv-provided `python` executable instead of assuming `python3`, fixing macOS environments where only uv should own the project interpreter.
+- Add `docs/development/UV_WORKFLOW.md` and uv-specific regression assertions.
+- Provide a direct upgrade patch from v4.2.5 to v4.2.8 so repositories stuck on v4.2.5 do not need to apply v4.2.6 and v4.2.7 sequentially.
 
-- Harden the headless-Chrome test harness after intermittent GitHub Actions failures reported as `CDP page target unavailable`.
-- Use Chrome-assigned debugging ports (`--remote-debugging-port=0`) and wait for `DevToolsActivePort` instead of reserving a free TCP port in Python.
-- Explicitly create page targets through the CDP `/json/new` endpoint instead of assuming the initial headless tab has already appeared in `/json`.
-- Reuse one Chrome process for the five DOM extraction fixtures while keeping each fixture in a fresh page target, reducing cold-start churn on shared CI runners.
-- Centralize browser discovery, startup, CDP connection, stderr diagnostics, and target cleanup in `tests/chrome_cdp.py`; the fixture, UI, and performance browser tests now use the same launcher.
-- Increase browser startup tolerance to 30 seconds and preserve Chrome stderr on launch/target failures for actionable CI logs.
-- Add static regression checks for port-zero startup, `DevToolsActivePort`, explicit page-target creation, and the shared CDP controller.
+## v4.2.7
+- Resolve Threads `https://www.threads.com/share/<token>/` aliases through the optional constrained edge resolver before presenting normal post actions.
+- Convert successful alias resolutions to the canonical `/@user/post/<id>` URL and remove the alias from outgoing share text.
+- Keep the resolver narrowly scoped to Threads share aliases, validate redirect hops, omit credentials/referrer, and preserve a safe unresolved-alias fallback.
+- Add deployment docs/tests for the optional Cloudflare Worker resolver.
+
+## v4.2.6
+- Treat Threads Android `https://www.threads.com/share/<id>` payloads as supported Threads share aliases instead of incorrectly showing **Unsupported share**.
+- Prefer an exact `/@user/post/<id>` permalink when a share payload contains both a Threads share alias and a canonical post URL.
+- Keep Threads `/share/` aliases distinct from canonical post URLs so alternate-front-end conversion and rich AI handoff do not pretend an unresolved alias is an exact permalink.
+- Add explicit **Open Threads post**, **Copy Threads link**, and normal system-share actions for unresolved Threads share aliases.
+- Make Android installation guidance browser-aware: Google Chrome is the supported Share Target path; Brave is marked experimental when Web App installation requires a developer setting; Firefox is documented as PWA-only / share-target-not-guaranteed.
+- Add a Share Target support diagnostic and regression coverage for Threads share aliases and browser support messaging.
+
+## v4.2.5
+- Harden the Chromium CDP test harness for GitHub Actions by using one shared browser process, Chrome-selected remote-debugging ports, explicit CDP page-target creation, longer startup tolerance, and reusable launcher code.
+- Add actionable Chrome stderr diagnostics when CDP startup fails instead of reporting only `CDP page target unavailable`.
 
 ## v4.2.4
 - Make the public landing page platform-adaptive: Android visitors see the PWA install path as the primary action instead of the Userscript funnel.

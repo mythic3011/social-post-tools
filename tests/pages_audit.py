@@ -55,6 +55,8 @@ checks = {
     'pages-workflow-deploy': 'actions/deploy-pages@v4' in workflow,
     'pages-workflow-least-privilege': 'pages: read' in workflow and 'pages: write' in workflow and 'id-token: write' in workflow,
     'pages-workflow-npm-ci': 'npm ci --ignore-scripts --no-audit --no-fund' in workflow,
+    'pages-workflow-resolver-variable': 'THREADS_RESOLVER_URL' in workflow and '--threads-resolver-url' in workflow,
+    'site-resolver-placeholder-consumed': '__THREADS_RESOLVER_URL__' not in site_js and '__THREADS_CONNECT_SRC__' not in html_text,
     'no-jekyll-dependency': 'jekyll' not in workflow.lower(),
 }
 failed = []
@@ -65,8 +67,17 @@ for name, ok in checks.items():
 if failed:
     raise SystemExit(1)
 
-requirements = (root / 'requirements-dev.txt').read_text(encoding='utf-8')
-assert 'websocket-client==' in requirements, 'test WebSocket dependency must be declared'
+import tomllib
+pyproject = tomllib.loads((root / 'pyproject.toml').read_text(encoding='utf-8'))
+uv_lock_text = (root / 'uv.lock').read_text(encoding='utf-8')
+uv_lock = tomllib.loads(uv_lock_text)
+assert pyproject['project']['requires-python'] == '>=3.13,<3.14', 'Python toolchain range must stay explicit'
+assert 'websocket-client==1.9.0' in pyproject['dependency-groups']['dev'], 'test WebSocket dependency must be declared in uv dev group'
+assert pyproject['tool']['uv']['package'] is False, 'repo tooling project must stay non-packaged'
+assert not (root / 'requirements-dev.txt').exists(), 'legacy pip requirements file must stay removed'
+locked = {pkg['name']: pkg for pkg in uv_lock['package']}
+assert locked['websocket-client']['version'] == '1.9.0', 'websocket-client must be locked'
+assert 'sha256:af248a825037ef591efbf6ed20cc5faa03d3b47b9e5a2230a529eeee1c1fc3ef' in uv_lock_text, 'locked websocket wheel hash missing'
 fixture_runner = (root / 'tests' / 'run-fixtures.py').read_text(encoding='utf-8')
 chrome_helper = (root / 'tests' / 'chrome_cdp.py').read_text(encoding='utf-8')
 assert 'import requests' not in fixture_runner and 'import requests' not in chrome_helper, 'requests dependency should not be required by browser tests'
@@ -78,9 +89,15 @@ assert '/json/new?' in chrome_helper and "method='PUT'" in chrome_helper, 'brows
 assert 'ChromeController' in fixture_runner, 'fixture suite must use the shared Chrome controller'
 for workflow_name in ('ci.yml', 'pages.yml'):
     wf = (root / '.github' / 'workflows' / workflow_name).read_text(encoding='utf-8')
-    assert 'requirements-dev.txt' in wf, f'{workflow_name} must install test dependencies'
+    assert 'astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d' in wf, f'{workflow_name} must pin setup-uv action'
+    assert "version: '0.12.5'" in wf, f'{workflow_name} must pin uv tool version'
+    assert 'uv python install 3.13' in wf, f'{workflow_name} must install Python through uv'
+    assert 'uv sync --locked' in wf, f'{workflow_name} must sync the locked uv environment'
+    assert 'uv run --locked' in wf, f'{workflow_name} must execute Python tooling through uv'
+    assert 'pip install' not in wf and 'requirements-dev.txt' not in wf, f'{workflow_name} must not use legacy pip dependency setup'
+    assert 'actions/setup-python' not in wf, f'{workflow_name} must not maintain a second Python setup path'
     assert 'npm ci --ignore-scripts --no-audit --no-fund' in wf, f'{workflow_name} must install locked UI dependencies without lifecycle scripts'
-print('PASS pages-ci-test-dependencies')
+print('PASS pages-ci-uv-locked-dependencies')
 print('PASS pages-ci-ui-dependencies')
 print('PASS pages-ci-browser-discovery')
 print('PASS pages-ci-cdp-port-zero')

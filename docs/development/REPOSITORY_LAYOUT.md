@@ -13,17 +13,24 @@ social-post-tools/
 │   │   └── SECURITY_MODEL.md
 │   ├── deployment/
 │   │   ├── GITHUB_PAGES.md
-│   │   └── GITHUB_REPOSITORY.md
+│   │   ├── GITHUB_REPOSITORY.md
+│   │   └── THREADS_ALIAS_RESOLVER.md
 │   ├── development/
 │   │   ├── MIGRATION_V4_2.md
 │   │   ├── REPOSITORY_LAYOUT.md
 │   │   ├── TESTING.md
-│   │   └── UI_FOUNDATION.md
+│   │   ├── UI_FOUNDATION.md
+│   │   └── UV_WORKFLOW.md
 │   ├── product/
 │   │   ├── ANDROID_COMPANION.md
 │   │   ├── INSTALLATION.md
 │   │   └── UX_DESIGN.md
 │   └── README.md
+├── edge/
+│   └── threads-resolver/
+│       ├── README.md
+│       ├── worker.mjs
+│       └── wrangler.jsonc
 ├── scripts/
 │   └── configure-github-repo.sh
 ├── src/
@@ -40,6 +47,7 @@ social-post-tools/
 │   │   ├── 404.html
 │   │   ├── app.js
 │   │   ├── index.html
+│   │   ├── install-bootstrap.js
 │   │   ├── install.html
 │   │   ├── manifest.webmanifest
 │   │   ├── privacy.html
@@ -51,6 +59,7 @@ social-post-tools/
 ├── tests/
 │   ├── fixtures/
 │   ├── audit_static.py
+│   ├── chrome_cdp.py
 │   ├── core.test.js
 │   ├── core_perf.js
 │   ├── pages_audit.py
@@ -59,16 +68,19 @@ social-post-tools/
 │   ├── run-fixtures.py
 │   ├── run.sh
 │   ├── seo_audit.py
+│   ├── threads_resolver.test.mjs
 │   ├── ui_browser_smoke.py
 │   └── ui_structure_audit.py
 ├── .gitignore
+├── .python-version
 ├── build.py
 ├── CHANGELOG.md
 ├── package-lock.json
 ├── package.json
+├── pyproject.toml
 ├── README.md
-├── requirements-dev.txt
-└── SECURITY.md
+├── SECURITY.md
+└── uv.lock
 ```
 
 Generated and ignored:
@@ -76,7 +88,8 @@ Generated and ignored:
 ```text
 dist/          # userscript + metadata release artifacts
 site/          # deployable GitHub Pages / PWA artifact
-node_modules/  # pinned development dependency install
+.venv/        # uv-managed Python development environment
+node_modules/  # pinned UI development dependency install
 ```
 
-Source-of-truth rule: edit `src/`, not `dist/` or `site/`. Detailed docs live under `docs/`; the repository root keeps only project entry points, build manifests, and security/changelog files.
+Source-of-truth rule: edit `src/`, not `dist/` or `site/`. `edge/` contains narrowly scoped optional server-side helpers. Python development dependencies belong in `pyproject.toml` and `uv.lock`; do not recreate a parallel `requirements-dev.txt` or direct-pip workflow.

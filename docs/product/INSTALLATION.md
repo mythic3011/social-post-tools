@@ -42,11 +42,24 @@ If the `.user.js` URL shows plain JavaScript instead of an install confirmation,
 
 Use the PWA when the starting point is the native X / Threads Android app.
 
-1. Open <https://share-tools.mythic3011.com/> in an install-capable Android browser.
-2. Tap **Install app**. If the browser exposes a native install prompt, Social Post Tools opens it; otherwise the same button shows manual **Install app / Add to Home screen** steps.
+1. Open <https://share-tools.mythic3011.com/> in **Google Chrome for Android**.
+2. Tap **Install app**. If Chrome exposes a native install prompt, Social Post Tools opens it; otherwise the same button shows manual installation guidance.
 3. From X / Threads, tap **Share** and choose **Social Post Tools**.
 
-On Android, the public landing page detects the platform before the main stylesheet is applied, keeps the PWA install path primary, and moves the browser Userscript into an optional disclosure. The install CTA never depends on `beforeinstallprompt` being present just to be usable. Chromium-based browsers can expose that event and get a one-tap native prompt; browsers without the API fall back to manual installation guidance. The dialog also reports HTTPS, service-worker, native-prompt, and standalone-mode state for troubleshooting.
+### Android browser support
+
+| Browser | PWA install | Android Share Target | Project support |
+|---|---:|---:|---|
+| Google Chrome | Yes | Supported path | **Supported** |
+| Brave | Build/version dependent | Experimental; may require a developer Web App install setting | Best effort |
+| Firefox | Yes | Not guaranteed to register as a system share target | PWA-only fallback |
+| Other Android browsers | Varies | Varies | Not verified |
+
+The public landing page detects the platform/browser before the main stylesheet is applied, keeps the PWA install path primary, and moves the browser Userscript into an optional disclosure. The install CTA never depends on `beforeinstallprompt` being present just to be usable. The install dialog reports HTTPS, service-worker, native-prompt, standalone-mode, and Share Target support state.
+
+### Threads `/share/` links
+
+The Threads Android app may send a public URL such as `https://www.threads.com/share/<id>` instead of an exact `https://www.threads.com/@user/post/<id>` permalink. Social Post Tools treats that as a **supported Threads share alias**, not an unsupported URL. It can immediately share, copy, or open the alias, but it deliberately waits for Threads to resolve the exact post before running alternate-link conversion or rich AI capture.
 
 If an Android device keeps showing an older UI after a deployment, close/reopen the site or clear that site's stored data once. v4.2.4 keeps the Android-first install funnel while v4.2.3 introduced version-tagged install-critical assets and uses network-first service-worker handling for navigations, JavaScript, CSS, and the manifest to reduce stale PWA shells after releases.
 

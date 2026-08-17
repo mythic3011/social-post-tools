@@ -15,12 +15,13 @@ No repository owner/name needs to be hardcoded in the source. The deployment wor
 
 ```text
 checkout
-→ setup Node/Python
+→ setup Node + uv
 → npm ci (pinned UI dependency)
-→ install Python test dependencies
+→ uv python install 3.13
+→ uv sync --locked
 → configure Pages
-→ build with real Pages base URL
-→ run complete test suite
+→ uv run --locked build with real Pages base URL
+→ uv run --locked complete test suite
 → upload ./site artifact
 → deploy to github-pages environment
 ```
@@ -103,3 +104,8 @@ sitemap.xml
 Only the public landing, browser-install, and privacy pages are included in the sitemap. Settings, the Android share-target handler, and the 404 utility page are marked `noindex`. The raw Userscript install directory is excluded from crawler discovery in `robots.txt`; it remains directly reachable for Userscript managers.
 
 Repository-level GitHub description, topics, homepage, and social preview are maintained separately; see [`GITHUB_REPOSITORY.md`](GITHUB_REPOSITORY.md).
+
+
+## Python build/test environment
+
+The workflow uses `astral-sh/setup-uv`, `uv python install 3.13`, and `uv sync --locked`. Python dependencies are declared in `pyproject.toml` and locked in `uv.lock`; Pages deployment does not call system `pip` or `actions/setup-python`.

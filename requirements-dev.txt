@@ -1,2 +1,0 @@
-# Test-only dependency for Chrome DevTools Protocol WebSocket transport.
-websocket-client==1.9.0

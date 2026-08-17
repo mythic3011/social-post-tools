@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '4.2.5'
+VERSION = '4.2.8'
 PICO_VERSION = '2.1.1'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
@@ -27,6 +27,18 @@ def normalize_base_url(value: str | None) -> str | None:
     parsed = urlparse(value)
     if parsed.scheme != 'https' or not parsed.netloc or parsed.username or parsed.password:
         raise SystemExit('--pages-base must be an absolute HTTPS URL without credentials')
+    return value
+
+
+def normalize_resolver_url(value: str | None) -> str | None:
+    if not value:
+        return None
+    value = value.strip().rstrip('/')
+    parsed = urlparse(value)
+    if parsed.scheme != 'https' or not parsed.netloc or parsed.username or parsed.password:
+        raise SystemExit('--threads-resolver-url must be an absolute HTTPS URL without credentials')
+    if parsed.query or parsed.fragment:
+        raise SystemExit('--threads-resolver-url must not contain a query string or fragment')
     return value
 
 
@@ -76,7 +88,7 @@ def install_ui_framework(site: Path, *, dev_fallback: bool) -> None:
     raise SystemExit('Pico CSS is missing. Run `npm ci` first, or use --dev-ui-fallback for an offline preview build.')
 
 
-def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: bool) -> None:
+def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: bool, threads_resolver_url: str | None) -> None:
     site = ROOT / 'site'
     if site.exists():
         shutil.rmtree(site)
@@ -91,6 +103,8 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
     home = (pages_base + '/') if pages_base else './'
     canonical_base = pages_base or PUBLIC_SITE_URL
     social_image = canonical_base + '/assets/social-preview.png'
+    resolver_origin = urlparse(threads_resolver_url).scheme + '://' + urlparse(threads_resolver_url).netloc if threads_resolver_url else ''
+    resolver_connect_src = resolver_origin if resolver_origin else "'none'"
     for path in site.glob('*.html'):
         name = path.name
         if name in {'index.html', '404.html'}:
@@ -102,7 +116,13 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
         text = text.replace('__SITE_HOME__', html.escape(home, quote=True))
         text = text.replace('__CANONICAL_URL__', html.escape(canonical_url, quote=True))
         text = text.replace('__SOCIAL_IMAGE_URL__', html.escape(social_image, quote=True))
+        text = text.replace('__THREADS_CONNECT_SRC__', html.escape(resolver_connect_src, quote=True))
         path.write_text(text, encoding='utf-8')
+
+    app_js = site / 'app.js'
+    app_text = app_js.read_text(encoding='utf-8')
+    app_text = app_text.replace('__THREADS_RESOLVER_URL__', threads_resolver_url or '')
+    app_js.write_text(app_text, encoding='utf-8')
 
     sitemap_urls = [canonical_base + '/', canonical_base + '/install.html', canonical_base + '/privacy.html']
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -127,8 +147,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Build Social Post Tools')
     parser.add_argument('--pages-base', default=os.environ.get('PAGES_BASE_URL'))
     parser.add_argument('--dev-ui-fallback', action='store_true', help='Use the checked-in offline preview CSS when Pico is not installed.')
+    parser.add_argument('--threads-resolver-url', default=os.environ.get('THREADS_RESOLVER_URL'), help='Optional HTTPS endpoint used to resolve Threads /share/ aliases to canonical post permalinks.')
     args = parser.parse_args()
     pages_base = normalize_base_url(args.pages_base)
+    threads_resolver_url = normalize_resolver_url(args.threads_resolver_url)
 
     bundle = render_userscript(pages_base)
     meta = extract_metadata(bundle)
@@ -140,11 +162,12 @@ def main() -> None:
     (dist / 'social-post-tools.meta.js').write_text(meta, encoding='utf-8')
     (dist / f'social-post-tools-v{VERSION}.user.txt').write_text(bundle, encoding='utf-8')
 
-    write_site(pages_base, bundle, meta, dev_fallback=args.dev_ui_fallback)
+    write_site(pages_base, bundle, meta, dev_fallback=args.dev_ui_fallback, threads_resolver_url=threads_resolver_url)
     print(f'built v{VERSION}: userscript + meta + GitHub Pages site')
     print(f'ui framework: @picocss/pico {PICO_VERSION}' + (' (dev fallback)' if args.dev_ui_fallback and not PICO_CSS.is_file() else ''))
     if pages_base:
         print(f'pages base: {pages_base}')
+    print('threads alias resolver: ' + (threads_resolver_url or 'disabled'))
 
 
 if __name__ == '__main__':
