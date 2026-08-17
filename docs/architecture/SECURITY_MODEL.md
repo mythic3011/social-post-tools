@@ -37,7 +37,7 @@
 
 ## v3.4 Android companion
 
-The companion PWA has no analytics. Normal pages keep `connect-src 'none'`. The share-target page may receive one build-injected HTTPS resolver origin so a Threads `/share/<token>` alias can be converted to its canonical post permalink; when no resolver is configured its CSP remains `connect-src 'none'`.
+The companion PWA has no analytics. Normal pages keep `connect-src 'none'`. The share-target page may receive one build-injected HTTPS resolver origin so a Threads `/share/<token>` alias can be converted to its canonical post permalink; fork/local builds can still disable the resolver, in which case the share-target CSP remains `connect-src 'none'`.
 
 The basic Android Web Share Target uses GET because it only drafts user-visible actions and performs no immediate side effect. Shared values therefore arrive as query parameters. `share-target.html` parses them and immediately calls `history.replaceState()` to remove the query from visible history. Once the installed PWA is service-worker controlled, the worker serves the share-target shell from cache when possible instead of forwarding the query-bearing navigation to the origin.
 

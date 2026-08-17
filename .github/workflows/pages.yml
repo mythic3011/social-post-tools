@@ -46,7 +46,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build for Pages
-        run: uv run --locked python build.py --pages-base "${{ steps.pages.outputs.base_url }}" --threads-resolver-url "${{ vars.THREADS_RESOLVER_URL }}"
+        run: uv run --locked python build.py --pages-base "${{ steps.pages.outputs.base_url }}"
 
       - name: Test
         run: uv run --locked bash tests/run.sh

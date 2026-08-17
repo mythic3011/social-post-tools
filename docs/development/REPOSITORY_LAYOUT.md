@@ -96,4 +96,4 @@ Source-of-truth rule: edit `src/`, not `dist/` or `site/`. `edge/` contains narr
 
 ## Optional edge component
 
-`edge/threads-resolver/` contains the constrained optional resolver used by the `threads-share-resolver` enrichment plugin. It is not part of the static PWA runtime unless `THREADS_RESOLVER_URL` is configured at build time.
+`edge/threads-resolver/` contains the constrained resolver used by the `threads-share-resolver` enrichment plugin. Production builds use the project resolver automatically; forks can override or disable it at build time.

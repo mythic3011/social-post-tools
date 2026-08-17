@@ -154,6 +154,9 @@ export default {
       return new Response(null, { status: 204, headers: cors });
     }
     const requestUrl = new URL(request.url);
+    if (request.method === 'GET' && requestUrl.pathname === '/healthz') {
+      return json({ ok: true, service: 'social-post-tools-threads-resolver' }, { status: 200 });
+    }
     if (request.method !== 'POST' || requestUrl.pathname !== '/v1/threads/resolve') return json({ ok: false, error: 'not_found' }, { status: 404 });
     if (origin !== allowedOrigin) return json({ ok: false, error: 'origin_not_allowed' }, { status: 403 });
 

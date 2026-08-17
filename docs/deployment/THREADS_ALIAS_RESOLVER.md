@@ -1,18 +1,34 @@
-# Threads `/share/` alias resolution
+# Threads alias resolver
 
-The Android Threads app can send a short `/share/<token>` URL. That URL is an intermediate alias, not the clean post permalink, so Social Post Tools must not treat it as the final share URL.
+Threads Android can share an opaque URL such as `https://www.threads.com/share/<token>/`. That token is not the post ID, so the static PWA cannot safely rewrite it into `@user/post/<id>` without following Threads server-side.
 
-## Desired flow
+For the production site, `build.py --pages-base https://share-tools.mythic3011.com` automatically configures:
 
-```text
-Threads Android share
-→ https://www.threads.com/share/<token>/
-→ Social Post Tools resolver
-→ https://www.threads.com/@user/post/<id>
-→ canonicalize / strip query + tracking
-→ selected vxThreads or clean-link action
+`https://resolver.mythic3011.com/v1/threads/resolve`
+
+No `THREADS_RESOLVER_URL` GitHub variable is required.
+
+## One-time Cloudflare setup
+
+Create repository Actions secrets:
+
+- `CLOUDFLARE_API_TOKEN` — token allowed to deploy Workers and manage the Worker custom domain.
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID.
+
+Then run **Deploy Threads Resolver** in GitHub Actions. Future changes under `edge/threads-resolver/` deploy automatically.
+
+The Worker uses the custom domain `resolver.mythic3011.com`, restricts browser CORS to `https://share-tools.mythic3011.com`, accepts only HTTPS Threads `/share/<token>` inputs, validates every redirect hop, and is not a generic proxy.
+
+Health check:
+
+```bash
+curl https://resolver.mythic3011.com/healthz
 ```
 
-The PWA first tries the optional edge resolver. If resolution succeeds, every normal action uses the canonical post permalink. The `/share/` alias is retained only as provenance (`resolvedFrom`) in memory. If the resolver is absent or fails, the UI falls back to opening/copying the Threads alias rather than inventing a canonical URL.
+Expected:
 
-The edge component is intentionally narrow and is not a generic open proxy. See `edge/threads-resolver/README.md`.
+```json
+{"ok":true,"service":"social-post-tools-threads-resolver"}
+```
+
+Forks and local builds do not inherit the mythic3011 resolver unless they deliberately use the production Pages URL. Override with `--threads-resolver-url`, or disable with `--no-threads-resolver`.

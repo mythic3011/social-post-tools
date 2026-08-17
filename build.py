@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '4.3.0'
+VERSION = '4.3.1'
 PICO_VERSION = '2.1.1'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
@@ -18,6 +18,7 @@ PWA_SRC = SRC / 'pwa'
 PICO_CSS = ROOT / 'node_modules' / '@picocss' / 'pico' / 'css' / 'pico.conditional.min.css'
 PICO_FALLBACK = PWA_SRC / 'assets' / 'pico-fallback.css'
 PUBLIC_SITE_URL = 'https://share-tools.mythic3011.com'
+PUBLIC_THREADS_RESOLVER_URL = 'https://resolver.mythic3011.com/v1/threads/resolve'
 
 
 def normalize_base_url(value: str | None) -> str | None:
@@ -155,10 +156,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Build Social Post Tools')
     parser.add_argument('--pages-base', default=os.environ.get('PAGES_BASE_URL'))
     parser.add_argument('--dev-ui-fallback', action='store_true', help='Use the checked-in offline preview CSS when Pico is not installed.')
-    parser.add_argument('--threads-resolver-url', default=os.environ.get('THREADS_RESOLVER_URL'), help='Optional HTTPS endpoint used to resolve Threads /share/ aliases to canonical post permalinks.')
+    parser.add_argument('--threads-resolver-url', default=os.environ.get('THREADS_RESOLVER_URL'), help='Override the HTTPS endpoint used to resolve Threads /share/ aliases. Production share-tools.mythic3011.com defaults to the project resolver.')
+    parser.add_argument('--no-threads-resolver', action='store_true', help='Disable the Threads alias resolver even for the production site.')
     args = parser.parse_args()
     pages_base = normalize_base_url(args.pages_base)
-    threads_resolver_url = normalize_resolver_url(args.threads_resolver_url)
+    configured_resolver = None if args.no_threads_resolver else args.threads_resolver_url
+    if not configured_resolver and not args.no_threads_resolver and pages_base == PUBLIC_SITE_URL:
+        configured_resolver = PUBLIC_THREADS_RESOLVER_URL
+    threads_resolver_url = normalize_resolver_url(configured_resolver)
 
     bundle = render_userscript(pages_base)
     meta = extract_metadata(bundle)

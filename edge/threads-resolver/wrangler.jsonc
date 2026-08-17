@@ -3,7 +3,13 @@
   "name": "social-post-tools-threads-resolver",
   "main": "worker.mjs",
   "compatibility_date": "2026-08-17",
-  "workers_dev": true,
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "resolver.mythic3011.com",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "ALLOWED_ORIGIN": "https://share-tools.mythic3011.com"
   }

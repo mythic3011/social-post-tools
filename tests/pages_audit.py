@@ -55,8 +55,11 @@ checks = {
     'pages-workflow-deploy': 'actions/deploy-pages@v4' in workflow,
     'pages-workflow-least-privilege': 'pages: read' in workflow and 'pages: write' in workflow and 'id-token: write' in workflow,
     'pages-workflow-npm-ci': 'npm ci --ignore-scripts --no-audit --no-fund' in workflow,
-    'pages-workflow-resolver-variable': 'THREADS_RESOLVER_URL' in workflow and '--threads-resolver-url' in workflow,
+    'pages-production-resolver-default': 'THREADS_RESOLVER_URL' not in workflow and '--threads-resolver-url' not in workflow,
     'site-resolver-placeholder-consumed': '__THREADS_RESOLVER_URL__' not in site_js and '__THREADS_CONNECT_SRC__' not in html_text,
+    'edge-resolver-workflow': (root / '.github' / 'workflows' / 'edge-resolver.yml').is_file(),
+    'edge-resolver-custom-domain': 'resolver.mythic3011.com' in (root / 'edge' / 'threads-resolver' / 'wrangler.jsonc').read_text(),
+    'production-resolver-default': 'PUBLIC_THREADS_RESOLVER_URL' in (root / 'build.py').read_text() and 'resolver.mythic3011.com/v1/threads/resolve' in (root / 'build.py').read_text(),
     'no-jekyll-dependency': 'jekyll' not in workflow.lower(),
 }
 failed = []

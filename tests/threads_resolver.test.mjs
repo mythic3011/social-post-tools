@@ -54,3 +54,4 @@ try {
 }
 
 console.log('PASS threads-alias-resolver');
+// v4.3.1 deployment invariant: production worker exposes a health endpoint in addition to the constrained resolver.

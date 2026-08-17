@@ -1,7 +1,7 @@
 # Social Post Tools
 
 [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
-[![Version](https://img.shields.io/badge/version-v4.3.0-2f81f7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.3.1-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
 [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
@@ -54,7 +54,7 @@ X / Threads native app
 
 This prevents an ordinary `https://threads.com/...` handoff from being reclaimed by the native Threads app through Android App Links. Firefox is the default capture browser because the Userscript can use `GM_openInTab` there; Firefox Beta/Nightly or a system-browser fallback are configurable.
 
-Threads native sharing may also supply `threads.com/share/<id>` instead of an exact post permalink. The staged parser treats it as a supported alias and an optional constrained enricher can resolve it to a canonical post before alternate-link conversion. Android payloads that repeat the same post URL in both the Web Share `url` and `text` fields are normalized so outgoing shares do not duplicate the permalink.
+Threads native sharing may also supply `threads.com/share/<id>` instead of an exact post permalink. The staged parser treats it as a supported alias. On the production site, the project-owned constrained resolver automatically converts the alias to the canonical post permalink before alternate-link conversion. Android payloads that repeat the same post URL in both the Web Share `url` and `text` fields are normalized so outgoing shares do not duplicate the permalink.
 
 ## What it does
 
@@ -80,7 +80,7 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 
 ## Privacy and security
 
-The PWA processes shared URLs locally and has no runtime application API. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
+The PWA processes ordinary shared URLs locally and has no analytics. Threads `/share/<token>` aliases use the project-owned constrained resolver because a static browser page cannot read the final cross-origin redirect target. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
 
 Archive hashes verify archived bytes; they do **not** prove authorship, account ownership, publication time, or historical authenticity. See [SECURITY.md](SECURITY.md) and the [security model](docs/architecture/SECURITY_MODEL.md).
 
@@ -116,7 +116,7 @@ uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
 uv run --locked bash tests/run.sh
 ```
 
-If the Threads alias resolver is deployed, pass `--threads-resolver-url` locally or set the `THREADS_RESOLVER_URL` GitHub Actions variable. Python build/test dependencies are managed only through the locked uv project; direct `pip install` is not part of the supported workflow.
+Production builds for `https://share-tools.mythic3011.com` automatically use `https://resolver.mythic3011.com/v1/threads/resolve`. Forks can override it with `--threads-resolver-url` or disable it with `--no-threads-resolver`. Python build/test dependencies are managed only through the locked uv project; direct `pip install` is not part of the supported workflow.
 
 Generated output:
 

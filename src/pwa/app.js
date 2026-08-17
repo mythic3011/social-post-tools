@@ -483,43 +483,68 @@
   }
 
   async function resolveThreadsShareAlias(parsed) {
-    if (!parsed?.supported || parsed.platform !== 'threads' || !parsed.needsResolution || !parsed.sharedUrl || !THREADS_RESOLVER_URL) return parsed;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), THREADS_RESOLVE_TIMEOUT_MS);
-    try {
-      const response = await fetch(THREADS_RESOLVER_URL, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: parsed.sharedUrl }),
-        credentials: 'omit',
-        cache: 'no-store',
-        referrerPolicy: 'no-referrer',
-        signal: controller.signal,
-      });
-      if (!response.ok) return parsed;
-      const data = await response.json();
-      const canonicalUrl = Core.canonicalize('threads', data?.canonicalUrl || '');
-      if (!canonicalUrl) return parsed;
-      return {
-        ...parsed,
-        canonicalUrl,
-        text: rewriteResolvedThreadsText(parsed.text, canonicalUrl),
-        shareKind: 'resolved-post',
-        needsResolution: false,
-        resolvedFrom: parsed.sharedUrl,
-        resolution: String(data?.resolution || 'resolver'),
-        pipeline: {
-          ...(parsed.pipeline || {}),
-          stages: (parsed.pipeline?.stages || []).map((stage) => stage.id === 's02-enrich'
-            ? { ...stage, status: 'resolved', plugin: 'threads-share-resolver' }
-            : stage),
-        },
-      };
-    } catch {
-      return parsed;
-    } finally {
-      clearTimeout(timer);
+    if (!parsed?.supported || parsed.platform !== 'threads' || !parsed.needsResolution || !parsed.sharedUrl) return parsed;
+    if (!THREADS_RESOLVER_URL) return { ...parsed, resolutionError: 'resolver_not_configured' };
+
+    let lastError = 'resolver_failed';
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), THREADS_RESOLVE_TIMEOUT_MS);
+      try {
+        const response = await fetch(THREADS_RESOLVER_URL, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ url: parsed.sharedUrl }),
+          credentials: 'omit',
+          cache: 'no-store',
+          referrerPolicy: 'no-referrer',
+          signal: controller.signal,
+        });
+        let data = null;
+        try { data = await response.json(); } catch {}
+        if (!response.ok) {
+          lastError = String(data?.error || `resolver_http_${response.status}`);
+          if (response.status < 500) break;
+          continue;
+        }
+        const canonicalUrl = Core.canonicalize('threads', data?.canonicalUrl || '');
+        if (!canonicalUrl) {
+          lastError = 'resolver_invalid_canonical';
+          break;
+        }
+        return {
+          ...parsed,
+          canonicalUrl,
+          text: rewriteResolvedThreadsText(parsed.text, canonicalUrl),
+          shareKind: 'resolved-post',
+          needsResolution: false,
+          resolvedFrom: parsed.sharedUrl,
+          resolution: String(data?.resolution || 'resolver'),
+          resolutionError: null,
+          pipeline: {
+            ...(parsed.pipeline || {}),
+            stages: (parsed.pipeline?.stages || []).map((stage) => stage.id === 's02-enrich'
+              ? { ...stage, status: 'resolved', plugin: 'threads-share-resolver' }
+              : stage),
+          },
+        };
+      } catch (error) {
+        lastError = error?.name === 'AbortError' ? 'resolver_timeout' : 'resolver_network_error';
+      } finally {
+        clearTimeout(timer);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 180));
     }
+    return {
+      ...parsed,
+      resolutionError: lastError,
+      pipeline: {
+        ...(parsed.pipeline || {}),
+        stages: (parsed.pipeline?.stages || []).map((stage) => stage.id === 's02-enrich'
+          ? { ...stage, status: 'failed', plugin: 'threads-share-resolver', error: lastError }
+          : stage),
+      },
+    };
   }
 
   const SHARE_ENRICHER_PLUGINS = Object.freeze([
@@ -531,8 +556,7 @@
         return parsed?.supported
           && parsed.platform === 'threads'
           && parsed.needsResolution
-          && Boolean(parsed.sharedUrl)
-          && Boolean(THREADS_RESOLVER_URL);
+          && Boolean(parsed.sharedUrl);
       },
       run: resolveThreadsShareAlias,
     }),
@@ -554,7 +578,7 @@
     // Remove shared data from visible history as soon as it has been parsed.
     history.replaceState(null, '', './share-target.html');
 
-    if (parsed.supported && parsed.platform === 'threads' && parsed.needsResolution && THREADS_RESOLVER_URL) {
+    if (parsed.supported && parsed.platform === 'threads' && parsed.needsResolution) {
       $('platform-badge').textContent = Core.PLATFORMS.threads.name;
       $('share-title').textContent = 'Resolving Threads link…';
       $('share-note').classList.remove('hidden');
@@ -575,7 +599,9 @@
       $('share-text').textContent = parsed.text || '';
       if (parsed.needsResolution) {
         $('share-note').classList.remove('hidden');
-        $('share-note').textContent = 'Threads supplied a /share/ link instead of the exact post permalink. You can share or copy it now. Open Threads once to resolve the post before alternate-link conversion or rich AI capture.';
+        $('share-note').textContent = parsed.resolutionError
+          ? `Automatic canonical-link resolution failed (${parsed.resolutionError}). Retry first; the /share/ URL is only a fallback.`
+          : 'Threads supplied a /share/ alias and the canonical post permalink is still unresolved.';
         $('share-link-label').textContent = 'Threads share link';
         $('alternate-url').textContent = parsed.sharedUrl || '';
         $('original-link-details').classList.add('hidden');
@@ -595,9 +621,16 @@
     const primaryActions = $('actions-primary');
     const moreActions = $('actions-more');
     const moreCard = $('more-actions-card');
-    if (parsed.needsResolution && parsed.sharedUrl) addAction(primaryActions, 'Open Threads post', () => {
-      window.open(parsed.sharedUrl, '_blank', 'noopener,noreferrer');
-    });
+    if (parsed.needsResolution && parsed.sharedUrl) {
+      addAction(primaryActions, 'Retry canonical link', () => {
+        const retry = new URL(location.href);
+        retry.searchParams.set('url', parsed.sharedUrl);
+        location.replace(retry.href);
+      });
+      addAction(moreActions, 'Open Threads fallback', () => {
+        window.open(parsed.sharedUrl, '_blank', 'noopener,noreferrer');
+      });
+    }
     if (settings.actions.enabled.systemShare && chosenUrl) addAction(primaryActions, 'Share…', async () => {
       const ok = await nativeShare({ title: parsed.title, text, url: chosenUrl });
       if (ok === false) status(await copyText([text, chosenUrl].filter(Boolean).join('\n\n')) ? 'Native share unavailable; copied instead.' : 'Native share unavailable.');

@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.3.1 — 2026-08-17
+
+- Production `share-tools.mythic3011.com` builds now enable the project-owned Threads alias resolver automatically; the old deployment-time `THREADS_RESOLVER_URL` variable is no longer required.
+- Add `resolver.mythic3011.com` as the resolver custom domain plus a GitHub Actions Worker deployment workflow and `/healthz` readiness endpoint.
+- Replace the misleading unresolved-alias primary action with **Retry canonical link**; direct opening of the raw Threads alias is demoted to a fallback action.
+- Preserve staged parser/enricher provenance and surface resolver timeout/network/upstream errors instead of silently pretending resolution was not attempted.
+- Keep resolver requests bounded, credentialless, no-store, and restricted to validated Threads `/share/` aliases.
+
 ## v4.3.0
 - Refactor Android incoming shares into a staged `s00-raw` → `s01-parse` → `s02-enrich` pipeline inspired by CrowdSec's parser/enricher separation.
 - Add static X/Threads collection metadata and source-controlled parser/enricher registries; no remote executable plugins are loaded.

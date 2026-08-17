@@ -87,7 +87,7 @@ Canonical serialization, SHA-256 hashing, and optional media hashing run only af
 
 ## v4.1 distribution performance
 
-The Pages landing is static and shares the existing small PWA CSS/JS/core assets. No runtime configuration or version fetch is added. A single bounded network request may occur only when the Android Threads app supplies a `/share/<token>` alias and an optional resolver endpoint is configured; other PWA flows remain local.
+The Pages landing is static and shares the existing small PWA CSS/JS/core assets. No runtime configuration or version fetch is added. A single bounded network request may occur only when the Android Threads app supplies a `/share/<token>` alias and an resolver endpoint is configured; other PWA flows remain local.
 
 Userscript installer and metadata files are not placed in the service-worker shell cache, avoiding stale update checks and unnecessary cache duplication.
 
