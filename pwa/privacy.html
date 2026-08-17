@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Privacy & security · Social Post Tools</title>
+</head>
+<body>
+<main>
+  <header><div><h1>Privacy & security</h1><p class="eyebrow">Social Post Tools</p></div><a class="button compact" href="__SITE_HOME__">Home</a></header>
+  <section class="card">
+    <h2>Local by default</h2>
+    <p>The Android companion has no analytics, account system, or application backend. Shared X/Threads URLs are parsed locally in your browser.</p>
+  </section>
+  <section class="card">
+    <h2>Network behavior</h2>
+    <p>The companion app itself uses no runtime API. Opening a transformed link, Telegram, or the original social site navigates to that destination because you requested it.</p>
+    <p>The Userscript only fetches media when you explicitly prepare an image package or archive. Its cross-origin permissions are restricted to known X/Threads media CDN families.</p>
+  </section>
+  <section class="card">
+    <h2>Storage</h2>
+    <p>PWA preferences stay in browser local storage. Userscript preferences and short-lived capture cache use userscript-manager storage. Rich capture cache is bounded and does not persist downloaded image binaries or visible discussion replies.</p>
+  </section>
+  <section class="card">
+    <h2>Archive integrity</h2>
+    <p>Archive SHA-256 values verify the exact archived bytes. They do not prove account ownership, authorship, publication time, or that a social platform served the content at a particular historical time.</p>
+  </section>
+  <p class="build-info">Version __APP_VERSION__</p>
+</main>
+</body>
+</html>

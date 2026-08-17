@@ -1,0 +1,17 @@
+<main>
+  <article data-testid="tweet" id="focal">
+    <div data-testid="User-Name"><span>Alice</span><span>@alice</span></div>
+    <a href="https://x.com/alice/status/100"><time datetime="2026-08-14T10:00:00.000Z">now</time></a>
+    <div data-testid="tweetText">Outer post text</div>
+    <div data-testid="tweetPhoto"><img id="outer-image" src="https://pbs.twimg.com/media/outer.jpg" alt="outer diagram" width="800" height="600"></div>
+    <article data-testid="tweet" id="quote">
+      <div data-testid="User-Name"><span>Bob</span><span>@bob</span></div>
+      <a href="https://x.com/bob/status/200"><time datetime="2026-08-14T09:00:00.000Z">earlier</time></a>
+      <div data-testid="tweetText">Quoted post text</div>
+      <div data-testid="tweetPhoto"><img id="quote-image" src="https://pbs.twimg.com/media/quote.jpg" alt="quoted screenshot" width="640" height="480"></div>
+    </article>
+    <div role="group">
+      <button id="share" aria-haspopup="menu" aria-label="Share post"><svg><path id="share-path"></path></svg></button>
+    </div>
+  </article>
+</main>

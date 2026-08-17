@@ -1,0 +1,12 @@
+'use strict';
+const Core = require('../core/social-post-core.js');
+const { performance } = require('perf_hooks');
+let t = performance.now();
+for (let i=0;i<100000;i++) Core.canonicalize('x','https://twitter.com/alice/status/123?s=20&t=x');
+const canonicalizeMs=performance.now()-t;
+const builder=Core.BUILTIN_BUILDERS.find(x=>x.id==='nitter-net');
+t=performance.now();
+for (let i=0;i<100000;i++) Core.buildUrl(builder,'x','https://x.com/alice/status/123');
+const buildMs=performance.now()-t;
+console.log(JSON.stringify({canonicalizeMs,buildMs},null,2));
+if (canonicalizeMs>2500 || buildMs>3500) process.exit(1);

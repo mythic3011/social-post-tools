@@ -1,0 +1,15 @@
+v4.1.0
+- Added GitHub Pages-ready public distribution site.
+- Added CI and GitHub Pages deployment workflows.
+- Added landing/install page for nontechnical users.
+- Moved PWA settings to settings.html; landing page is now the PWA start URL.
+- Added one-click userscript install endpoint and lightweight .meta.js update endpoint.
+- Userscript Pages URLs are injected from GitHub's configured Pages base_url at build time; no owner/repo hardcoding.
+- Added privacy/security page and generated 404 page.
+- Hardened project-Pages/subdirectory support with relative manifest/service-worker/share-target paths.
+- Service worker deliberately excludes userscript install/update artifacts from app-shell caching.
+- Added Pages deployment/static-path regression audit.
+
+v4.0.0
+- Refactored UX around task intent and progressive disclosure.
+- Added zero-setup recommended defaults and simple/custom menu modes.

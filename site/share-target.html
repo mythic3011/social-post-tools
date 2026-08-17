@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <title>Shared post · Social Post Tools</title>
+</head>
+<body data-page="share-target">
+<main>
+  <header><div><h1>Shared post</h1><p class="eyebrow">Choose what to do next</p></div><a class="button compact" href="settings.html">Settings</a></header>
+
+  <section class="card" id="supported-card">
+    <div id="platform-badge" class="badge"></div>
+    <h2 id="share-title">Post link</h2>
+    <p id="share-text" class="muted"></p>
+    <div class="link-preview"><span>Share link</span><p class="url" id="alternate-url"></p></div>
+    <details class="inline-details"><summary>Original link</summary><p class="url" id="clean-url"></p></details>
+  </section>
+
+  <section class="card hidden" id="unsupported-card">
+    <h2>Unsupported share</h2>
+    <p class="muted">No X or Threads post URL was found. The shared text is shown below.</p>
+    <p class="url" id="raw-share"></p>
+  </section>
+
+  <section class="actions" id="actions-primary"></section>
+
+  <section class="card" id="ai-capture-card">
+    <h2>Use with AI</h2>
+    <p class="muted">Open the post in your browser to capture its text, images, quote/repost context, and other page-only information.</p>
+    <button id="open-source" class="primary full" type="button">Open for AI capture</button>
+  </section>
+
+  <details class="settings-group hidden" id="more-actions-card">
+    <summary>More actions</summary>
+    <div class="settings-group-body"><section class="actions" id="actions-more"></section></div>
+  </details>
+
+  <p id="status" class="status" aria-live="polite"></p>
+</main>
+<script src="social-post-core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
