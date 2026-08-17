@@ -56,6 +56,21 @@
   </details>
 
   <details class="settings-group">
+    <summary>AI capture</summary>
+    <div class="settings-group-body">
+      <label for="android-capture-browser">Android capture browser
+        <select id="android-capture-browser">
+          <option value="firefox">Firefox (recommended for Userscripts)</option>
+          <option value="firefoxBeta">Firefox Beta</option>
+          <option value="firefoxNightly">Firefox Nightly</option>
+          <option value="system">System browser / app chooser</option>
+        </select>
+      </label>
+      <p class="muted">The Android PWA may be installed by Chrome for Share Target support, while rich capture opens in the browser that has Tampermonkey/Violentmonkey. Firefox is the recommended default.</p>
+    </div>
+  </details>
+
+  <details class="settings-group">
     <summary>Custom link builders</summary>
     <div class="settings-group-body">
       <p class="muted">Advanced: add a self-hosted frontend or your own URL template.</p>

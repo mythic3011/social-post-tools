@@ -6,10 +6,10 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#111111">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
-  <link rel="manifest" href="./manifest.webmanifest?v=4.2.5">
-  <script src="./install-bootstrap.js?v=4.2.5"></script>
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=4.2.5">
-  <link rel="stylesheet" href="./assets/app.css?v=4.2.5">
+  <link rel="manifest" href="./manifest.webmanifest?v=4.3.0">
+  <script src="./install-bootstrap.js?v=4.3.0"></script>
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=4.3.0">
+  <link rel="stylesheet" href="./assets/app.css?v=4.3.0">
   <title>Settings · Social Post Tools</title>
 </head>
 <body data-page="settings">
@@ -52,6 +52,21 @@
       <label for="share-link-source">Link source<select id="share-link-source"><option value="selected">Selected share link</option><option value="clean">Original clean link</option></select></label>
       <label for="share-template">Share text<textarea id="share-template" spellcheck="false"></textarea></label>
       <p class="muted">Variables: {title}, {text}, {url}, {alternateUrl}, {platform}.</p>
+    </div>
+  </details>
+
+  <details class="settings-group">
+    <summary>AI capture</summary>
+    <div class="settings-group-body">
+      <label for="android-capture-browser">Android capture browser
+        <select id="android-capture-browser">
+          <option value="firefox">Firefox (recommended for Userscripts)</option>
+          <option value="firefoxBeta">Firefox Beta</option>
+          <option value="firefoxNightly">Firefox Nightly</option>
+          <option value="system">System browser / app chooser</option>
+        </select>
+      </label>
+      <p class="muted">The Android PWA may be installed by Chrome for Share Target support, while rich capture opens in the browser that has Tampermonkey/Violentmonkey. Firefox is the recommended default.</p>
     </div>
   </details>
 
@@ -108,7 +123,7 @@
   <p id="status" class="status" aria-live="polite"></p>
 </main>
 </div>
-<script src="./social-post-core.js?v=4.2.5"></script>
-<script src="./app.js?v=4.2.5"></script>
+<script src="./social-post-core.js?v=4.3.0"></script>
+<script src="./app.js?v=4.3.0"></script>
 </body>
 </html>

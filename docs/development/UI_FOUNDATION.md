@@ -23,14 +23,15 @@ Page-specific content
 Production / CI:
 
 ```bash
+uv sync --locked
 npm ci --ignore-scripts --no-audit --no-fund
-python3 build.py
+uv run --locked python build.py
 ```
 
 Offline development preview only:
 
 ```bash
-python3 build.py --dev-ui-fallback
+uv run --locked python build.py --dev-ui-fallback
 ```
 
 The fallback exists so repository tests and static previews can run without network/package installation. It is not the production framework asset.

@@ -1,7 +1,7 @@
 'use strict';
-const CACHE = 'social-post-tools-pwa-v4.2.5';
+const CACHE = 'social-post-tools-pwa-v4.3.0';
 const SHELL = [
-  './', './index.html', './install.html', './settings.html', './share-target.html', './privacy.html', './404.html',
+  './', './index.html', './install.html', './settings.html', './share-target.html', './capture-handoff.html', './privacy.html', './404.html',
   './assets/vendor/pico.conditional.min.css', './assets/app.css', './install-bootstrap.js', './app.js', './social-post-core.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png'
 ];
@@ -39,6 +39,14 @@ self.addEventListener('fetch', (event) => {
   // shell instead of forwarding that query back to the origin when possible.
   if (event.request.mode === 'navigate' && url.pathname.endsWith('/share-target.html')) {
     event.respondWith(caches.match('./share-target.html').then((cached) => cached || fetch('./share-target.html')));
+    return;
+  }
+
+  // The AI browser bridge carries only a post URL + capture mode. Once this
+  // origin is controlled by the service worker, keep those query parameters
+  // local by serving the cached shell instead of forwarding them to hosting.
+  if (event.request.mode === 'navigate' && url.pathname.endsWith('/capture-handoff.html')) {
+    event.respondWith(caches.match('./capture-handoff.html').then((cached) => cached || fetch('./capture-handoff.html')));
     return;
   }
 

@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         Social Post Tools
 // @namespace    social-post-tools
-// @version      4.2.5
+// @version      4.3.0
 // @description  Simple post sharing and AI capture for X/Threads, with optional advanced link builders, archive tools, Android sharing, and Telegram.
+// @match        https://share-tools.mythic3011.com/capture-handoff.html*
 // @homepageURL  https://share-tools.mythic3011.com/
 // @downloadURL  https://share-tools.mythic3011.com/install/social-post-tools.user.js
 // @updateURL    https://share-tools.mythic3011.com/install/social-post-tools.meta.js
@@ -19,6 +20,7 @@
 // @grant        GM_deleteValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
+// @grant        GM_openInTab
 // @grant        unsafeWindow
 // @connect      pbs.twimg.com
 // @connect      *.twimg.com
@@ -33,7 +35,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '1.2.0';
+  const VERSION = '1.3.0';
   const MAX_BUILDER_URL_CHARS = 8192;
   const MAX_CUSTOM_BUILDERS = 32;
 
@@ -321,15 +323,72 @@
     return buildUrl(builder, platform, canonicalUrl, options);
   }
 
-  function firstHttpUrlInText(text) {
+  function httpUrlsInText(text) {
     const input = String(text || '');
     const matches = input.match(/https?:\/\/[^\s<>"']+/gi) || [];
+    const out = [];
     for (let raw of matches) {
       raw = raw.replace(/[),.;!?]+$/g, '');
       const url = parseUrl(raw);
-      if (url && ['http:', 'https:'].includes(url.protocol)) return url.href;
+      if (!url || !['http:', 'https:'].includes(url.protocol)) continue;
+      out.push(url.href);
     }
-    return null;
+    return out;
+  }
+
+  function firstHttpUrlInText(text) {
+    return httpUrlsInText(text)[0] || null;
+  }
+
+  function shareUrlIdentity(rawUrl) {
+    const url = parseUrl(rawUrl);
+    if (!url || !['http:', 'https:'].includes(url.protocol)) return null;
+    const platform = platformForUrl(url.href);
+    const canonicalUrl = platform ? canonicalize(platform, url.href) : null;
+    if (canonicalUrl) return `post:${platform.id}:${canonicalUrl}`;
+    const alias = platform?.id === 'threads' ? threadsShareAlias(url.href) : null;
+    if (alias) return `alias:threads:${alias}`;
+    url.hash = '';
+    return `url:${url.href}`;
+  }
+
+  function uniqueShareCandidates({ title = '', text = '', url = '' } = {}) {
+    const candidates = [];
+    const seen = new Set();
+    const add = (raw, source, ordinal = 0) => {
+      const value = String(raw || '').trim();
+      if (!value) return;
+      const parsed = parseUrl(value);
+      if (!parsed || !['http:', 'https:'].includes(parsed.protocol)) return;
+      const href = parsed.href;
+      const identity = shareUrlIdentity(href) || `url:${href}`;
+      if (seen.has(identity)) return;
+      seen.add(identity);
+      candidates.push({ href, identity, source, ordinal });
+    };
+    add(url, 'url', 0);
+    httpUrlsInText(text).forEach((href, index) => add(href, 'text', index));
+    httpUrlsInText(title).forEach((href, index) => add(href, 'title', index));
+    return candidates;
+  }
+
+  function normalizeSharedText(text, primaryUrls = []) {
+    const primary = new Set(primaryUrls.map(shareUrlIdentity).filter(Boolean));
+    const seen = new Set();
+    let output = String(text || '').replace(/https?:\/\/[^\s<>"']+/gi, (raw) => {
+      const trailing = raw.match(/[),.;!?]+$/)?.[0] || '';
+      const core = trailing ? raw.slice(0, -trailing.length) : raw;
+      const identity = shareUrlIdentity(core);
+      if (!identity) return raw;
+      if (primary.has(identity) || seen.has(identity)) return '';
+      seen.add(identity);
+      return core;
+    });
+    output = output
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n');
+    return cleanText(output);
   }
 
   const CAPTURE_HANDOFF_VERSION = 'v1';
@@ -345,8 +404,10 @@
   function makeCaptureHandoffUrl(rawUrl, { mode = 'smart' } = {}) {
     const platform = platformForUrl(rawUrl);
     const canonicalUrl = platform ? canonicalize(platform, rawUrl) : null;
-    if (!platform || !canonicalUrl) return null;
-    const url = parseUrl(canonicalUrl);
+    const shareAlias = platform?.id === 'threads' ? threadsShareAlias(rawUrl) : null;
+    if (!platform || (!canonicalUrl && !shareAlias)) return null;
+    const sourceUrl = canonicalUrl || shareAlias;
+    const url = parseUrl(sourceUrl);
     if (!url) return null;
     const params = new URLSearchParams();
     params.set(CAPTURE_HANDOFF_KEY, CAPTURE_HANDOFF_VERSION);
@@ -362,46 +423,134 @@
     if (params.get(CAPTURE_HANDOFF_KEY) !== CAPTURE_HANDOFF_VERSION) return null;
     const platform = platformForUrl(url.href);
     const canonicalUrl = platform ? canonicalize(platform, url.href) : null;
-    if (!platform || !canonicalUrl) return null;
+    const shareAlias = platform?.id === 'threads' ? threadsShareAlias(url.href) : null;
+    if (!platform || (!canonicalUrl && !shareAlias)) return null;
     return {
       version: CAPTURE_HANDOFF_VERSION,
       platform: platform.id,
       canonicalUrl,
+      sourceUrl: canonicalUrl || shareAlias,
+      unresolved: !canonicalUrl && Boolean(shareAlias),
       mode: normalizeCaptureMode(params.get('mode')),
     };
   }
 
-  function parseIncomingShare({ title = '', text = '', url = '' } = {}) {
-    const rawUrl = String(url || '').trim();
-    const candidates = [];
-    if (rawUrl) candidates.push(rawUrl);
-    const textUrl = firstHttpUrlInText(text);
-    if (textUrl && !candidates.includes(textUrl)) candidates.push(textUrl);
+  function threadsShareAlias(rawUrl, base) {
+    const url = parseUrl(rawUrl, base);
+    if (!url) return null;
+    const platform = platformForUrl(url.href);
+    if (!platform || platform.id !== 'threads') return null;
+    const match = /^\/share\/([A-Za-z0-9_-]+)\/?$/i.exec(url.pathname);
+    if (!match) return null;
+    return `${platform.canonicalOrigin}/share/${match[1]}`;
+  }
 
+  const SHARE_PIPELINE_SCHEMA = 'social-share-pipeline/v1';
+  const SHARE_COLLECTIONS = Object.freeze({
+    x: Object.freeze({
+      id: 'x',
+      platform: 'x',
+      parserIds: Object.freeze(['x-post']),
+      capabilities: Object.freeze(['clean-link', 'alternate-link', 'ai-capture', 'archive']),
+    }),
+    threads: Object.freeze({
+      id: 'threads',
+      platform: 'threads',
+      parserIds: Object.freeze(['threads-post', 'threads-share-alias']),
+      enricherIds: Object.freeze(['threads-share-resolver']),
+      capabilities: Object.freeze(['clean-link', 'alternate-link', 'ai-capture', 'archive']),
+    }),
+  });
+  const SHARE_PARSERS = Object.freeze([
+    Object.freeze({
+      id: 'x-post',
+      stage: 's01-parse',
+      priority: 200,
+      parse(candidate) {
+        const platform = platformForUrl(candidate.href);
+        if (platform?.id !== 'x') return null;
+        const canonicalUrl = canonicalize(platform, candidate.href);
+        return canonicalUrl ? { platform: 'x', canonicalUrl, sharedUrl: candidate.href, shareKind: 'post', needsResolution: false } : null;
+      },
+    }),
+    Object.freeze({
+      id: 'threads-post',
+      stage: 's01-parse',
+      priority: 200,
+      parse(candidate) {
+        const platform = platformForUrl(candidate.href);
+        if (platform?.id !== 'threads') return null;
+        const canonicalUrl = canonicalize(platform, candidate.href);
+        return canonicalUrl ? { platform: 'threads', canonicalUrl, sharedUrl: candidate.href, shareKind: 'post', needsResolution: false } : null;
+      },
+    }),
+    Object.freeze({
+      id: 'threads-share-alias',
+      stage: 's01-parse',
+      priority: 100,
+      parse(candidate) {
+        const alias = threadsShareAlias(candidate.href);
+        return alias ? { platform: 'threads', canonicalUrl: null, sharedUrl: alias, shareKind: 'share-alias', needsResolution: true } : null;
+      },
+    }),
+  ]);
+
+  function runSharePipeline({ title = '', text = '', url = '' } = {}) {
+    const candidates = uniqueShareCandidates({ title, text, url });
+    const parsedCandidates = [];
     for (const candidate of candidates) {
-      const platform = platformForUrl(candidate);
-      const canonicalUrl = platform ? canonicalize(platform, candidate) : null;
-      if (platform && canonicalUrl) {
-        return {
-          supported: true,
-          platform: platform.id,
-          canonicalUrl,
-          sharedUrl: candidate,
-          title: cleanText(title),
-          text: cleanText(text),
-        };
+      for (const parser of SHARE_PARSERS) {
+        const parsed = parser.parse(candidate);
+        if (!parsed) continue;
+        parsedCandidates.push({ parser, candidate, parsed });
+        break;
       }
     }
+    parsedCandidates.sort((a, b) => {
+      if (a.parser.priority !== b.parser.priority) return b.parser.priority - a.parser.priority;
+      const sourceRank = { url: 3, text: 2, title: 1 };
+      const sourceDiff = (sourceRank[b.candidate.source] || 0) - (sourceRank[a.candidate.source] || 0);
+      if (sourceDiff) return sourceDiff;
+      return a.candidate.ordinal - b.candidate.ordinal;
+    });
 
-    const fallback = parseUrl(rawUrl || textUrl || '');
-    return {
+    const winner = parsedCandidates[0] || null;
+    const fallback = candidates[0]?.href || null;
+    const primaryUrls = winner
+      ? [winner.candidate.href, winner.parsed.canonicalUrl, winner.parsed.sharedUrl].filter(Boolean)
+      : [fallback].filter(Boolean);
+    const normalizedText = normalizeSharedText(text, primaryUrls);
+    const base = winner ? {
+      supported: true,
+      ...winner.parsed,
+    } : {
       supported: false,
       platform: null,
       canonicalUrl: null,
-      sharedUrl: fallback && ['http:', 'https:'].includes(fallback.protocol) ? fallback.href : null,
-      title: cleanText(title),
-      text: cleanText(text),
+      sharedUrl: fallback,
+      shareKind: 'unknown',
+      needsResolution: false,
     };
+
+    return {
+      ...base,
+      title: normalizeSharedText(title, primaryUrls),
+      text: normalizedText,
+      pipeline: {
+        schema: SHARE_PIPELINE_SCHEMA,
+        collection: base.platform && SHARE_COLLECTIONS[base.platform] ? SHARE_COLLECTIONS[base.platform].id : null,
+        parser: winner?.parser.id || null,
+        stages: [
+          { id: 's00-raw', candidateCount: candidates.length },
+          { id: 's01-parse', parser: winner?.parser.id || null },
+          { id: 's02-enrich', status: base.needsResolution ? 'pending' : 'local' },
+        ],
+      },
+    };
+  }
+
+  function parseIncomingShare(envelope = {}) {
+    return runSharePipeline(envelope);
   }
 
   function canonicalJsonValue(value) {
@@ -514,14 +663,23 @@
     buildUrl,
     selectBuilder,
     transformedUrl,
+    httpUrlsInText,
     firstHttpUrlInText,
+    shareUrlIdentity,
+    uniqueShareCandidates,
+    normalizeSharedText,
     CAPTURE_HANDOFF_VERSION,
     CAPTURE_HANDOFF_KEY,
     CAPTURE_MODES,
     normalizeCaptureMode,
     makeCaptureHandoffUrl,
     parseCaptureHandoff,
+    SHARE_PIPELINE_SCHEMA,
+    SHARE_COLLECTIONS,
+    SHARE_PARSERS,
+    runSharePipeline,
     parseIncomingShare,
+    threadsShareAlias,
     stableJsonStringify,
     sha256Hex,
     makePortableLinkSettings,
@@ -537,7 +695,7 @@
 
   const APP = Object.freeze({
     id: 'social-post-tools',
-    version: '4.2.5',
+    version: '4.3.0',
     settingsKey: 'social-post-tools:settings',
     captureCacheKey: 'social-post-tools:capture-cache:v1',
     captureResumeKey: 'social-post-tools:capture-resume:v1',
@@ -558,6 +716,36 @@
     captureCacheMaxTotalChars: 1536 * 1024,
     captureRevisionMaxEvents: 6,
   });
+
+  function handleCaptureBridgePage() {
+    if (!/\/capture-handoff\.html$/i.test(location.pathname)) return false;
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('url') || '';
+    const mode = CORE.normalizeCaptureMode(params.get('mode'));
+    const target = CORE.makeCaptureHandoffUrl(raw, { mode });
+    const mark = (state) => {
+      const root = document.documentElement;
+      if (!root) return;
+      root.dataset.sptCaptureBridgeSource = raw;
+      root.dataset.sptCaptureBridgeMode = mode;
+      root.dataset.sptCaptureBridge = state;
+    };
+    try { history.replaceState(history.state, '', location.pathname); } catch {}
+    if (!target) {
+      mark('invalid');
+      return true;
+    }
+    mark('handled');
+    try {
+      if (typeof GM_openInTab !== 'function') throw new Error('GM_openInTab unavailable');
+      GM_openInTab(target, { active: true, insert: true, setParent: true });
+    } catch {
+      mark('failed');
+    }
+    return true;
+  }
+
+  if (handleCaptureBridgePage()) return;
 
   const TEXT = Object.freeze({
     entry: 'Post tools  ›',
@@ -821,7 +1009,10 @@
   // to X/Threads servers. Consume and remove it before the site app starts.
   state.handoff = CORE.parseCaptureHandoff(location.href);
   if (state.handoff) {
-    try { history.replaceState(history.state, '', state.handoff.canonicalUrl); } catch {}
+    const cleanHandoffUrl = state.handoff.canonicalUrl || state.handoff.sourceUrl;
+    if (cleanHandoffUrl) {
+      try { history.replaceState(history.state, '', cleanHandoffUrl); } catch {}
+    }
   }
 
   // ---------- Generic utilities ----------
@@ -4198,6 +4389,24 @@
     return null;
   }
 
+  function resolveThreadsShareAliasCanonical(site) {
+    if (!site || site.id !== 'threads') return null;
+    const metadata = [
+      document.querySelector('link[rel="canonical"][href]')?.href,
+      document.querySelector('meta[property="og:url"][content]')?.content,
+      document.querySelector('meta[name="twitter:url"][content]')?.content,
+    ];
+    for (const candidate of metadata) {
+      const canonical = candidate ? canonicalize(site, candidate) : null;
+      if (canonical) return canonical;
+    }
+    for (const root of queryMany(document, site.content.rootSelectors || [])) {
+      const canonical = findCanonicalLinkIn(site, root);
+      if (canonical) return canonical;
+    }
+    return null;
+  }
+
   function stopHandoffWatch() {
     state.handoffObserver?.disconnect?.();
     state.handoffObserver = null;
@@ -4219,11 +4428,31 @@
     const handoff = state.handoff;
     if (!handoff) return;
     const site = SITES.find((item) => item.id === handoff.platform) || currentSite();
-    if (!site || canonicalize(site, location.href) !== handoff.canonicalUrl) {
+    if (!site) {
       stopHandoffWatch();
       state.handoff = null;
       return;
     }
+
+    const currentCanonical = canonicalize(site, location.href);
+    const currentShareAlias = site.id === 'threads' ? CORE.threadsShareAlias(location.href, location.href) : null;
+    const sourceAliasMatches = Boolean(handoff.unresolved && handoff.sourceUrl && currentShareAlias === handoff.sourceUrl);
+
+    if (!handoff.canonicalUrl && handoff.unresolved && site.id === 'threads') {
+      handoff.canonicalUrl = currentCanonical || resolveThreadsShareAliasCanonical(site);
+      if (handoff.canonicalUrl) handoff.unresolved = false;
+    }
+
+    const routeMatches = handoff.canonicalUrl
+      ? (currentCanonical === handoff.canonicalUrl || sourceAliasMatches)
+      : sourceAliasMatches;
+    if (!routeMatches) {
+      stopHandoffWatch();
+      state.handoff = null;
+      return;
+    }
+
+    if (!handoff.canonicalUrl) return;
     const context = findHandoffContext(site, handoff.canonicalUrl);
     if (!context) return;
     const capture = buildSocialCapture(context, handoff.mode || 'smart');

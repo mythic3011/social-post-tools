@@ -1,7 +1,7 @@
 # Social Post Tools
 
 [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
-[![Version](https://img.shields.io/badge/version-v4.2.8-2f81f7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.3.0-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
 [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
@@ -12,7 +12,6 @@
 [![CSS3](https://img.shields.io/badge/CSS3-scoped-1572B6?logo=css3&logoColor=fff)](src/pwa/assets/app.css)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=fff)](docs/product/ANDROID_COMPANION.md)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=fff)](build.py)
-[![uv](https://img.shields.io/badge/uv-locked-DE5FE9?logo=astral&logoColor=fff)](pyproject.toml)
 [![Pico CSS](https://img.shields.io/badge/Pico_CSS-2.1.1-0172AD?logo=css3&logoColor=fff)](docs/development/UI_FOUNDATION.md)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-deployed-222?logo=github&logoColor=fff)](docs/deployment/GITHUB_PAGES.md)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-supported-00485b)](https://www.tampermonkey.net/)
@@ -38,16 +37,24 @@ If a `.user.js` link only displays JavaScript source, install or enable a Usersc
 
 ### Android: native-app sharing
 
-Open **[share-tools.mythic3011.com](https://share-tools.mythic3011.com/)** in **Google Chrome for Android** and install the web app. Chrome is the supported path for registering Social Post Tools in the Android share sheet. Brave can work experimentally on some builds but may require a developer Web App install setting; Firefox may install the PWA without registering a system share target. After installation:
+Open **[share-tools.mythic3011.com](https://share-tools.mythic3011.com/)** in **Google Chrome for Android** and install the web app. Chrome is the supported path for registering Social Post Tools in the Android share sheet. Brave can work experimentally on some builds but may require a developer Web App install setting; Firefox may install the PWA without registering a system share target.
+
+For **rich AI capture**, the Android flow deliberately uses two browser roles:
 
 ```text
 X / Threads native app
-→ Share
-→ Social Post Tools
-→ Share onward / copy link / open for AI capture
+→ Android Share
+→ Social Post Tools PWA (installed by Chrome)
+→ Open for AI capture
+→ explicit Firefox browser bridge
+→ Tampermonkey / Violentmonkey Userscript
+→ X / Threads post opens as a browser tab
+→ structured capture
 ```
 
-On Android, the landing page prioritizes the **Install Android app** path and demotes the browser Userscript to an optional disclosure. The install dialog reports browser-specific Share Target support instead of treating every install-capable browser as equivalent. Threads native sharing may supply a `threads.com/share/<id>` alias rather than an exact post permalink; the PWA accepts that alias for copy/share/open actions and asks Threads to resolve it before alternate-link conversion or rich AI capture.
+This prevents an ordinary `https://threads.com/...` handoff from being reclaimed by the native Threads app through Android App Links. Firefox is the default capture browser because the Userscript can use `GM_openInTab` there; Firefox Beta/Nightly or a system-browser fallback are configurable.
+
+Threads native sharing may also supply `threads.com/share/<id>` instead of an exact post permalink. The staged parser treats it as a supported alias and an optional constrained enricher can resolve it to a canonical post before alternate-link conversion. Android payloads that repeat the same post URL in both the Web Share `url` and `text` fields are normalized so outgoing shares do not duplicate the permalink.
 
 ## What it does
 
@@ -67,7 +74,7 @@ On Android, the landing page prioritizes the **Install Android app** path and de
 | Android companion | PWA + Web Share Target | Receives links from the Android share sheet |
 | UI | Semantic HTML + Pico CSS 2.1.1 | Task-oriented, progressively disclosed interface |
 | Shared core | JavaScript | Canonical URLs, URL builders, portable settings, hashing helpers |
-| Build / audits | Python 3.13 + uv | Locked build/test environment, packaging, SEO generation, security/UI checks |
+| Build / audits | Python 3.13 | Static build, packaging, SEO generation, security/UI checks |
 | Hosting | GitHub Pages | Static HTTPS distribution and stable Userscript endpoints |
 | CI | GitHub Actions | Build, security, DOM fixture, UI, SEO, and performance regression tests |
 
@@ -94,16 +101,22 @@ site/           generated GitHub Pages artifact (ignored)
 
 See [docs/development/REPOSITORY_LAYOUT.md](docs/development/REPOSITORY_LAYOUT.md) for the complete tree.
 
+## Architecture
+
+Incoming Android shares are normalized through a staged parser/enricher pipeline inspired by CrowdSec's separation of acquisition, parsing, and enrichment. Platform parsers and network enrichers stay isolated from copy/share/AI destinations. See [`docs/architecture/SHARE_PIPELINE.md`](docs/architecture/SHARE_PIPELINE.md).
+
 ## Development
 
 Production-equivalent local build:
 
 ```bash
-npm ci --ignore-scripts --no-audit --no-fund
 uv sync --locked
+npm ci --ignore-scripts --no-audit --no-fund
 uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
 uv run --locked bash tests/run.sh
 ```
+
+If the Threads alias resolver is deployed, pass `--threads-resolver-url` locally or set the `THREADS_RESOLVER_URL` GitHub Actions variable. Python build/test dependencies are managed only through the locked uv project; direct `pip install` is not part of the supported workflow.
 
 Generated output:
 
@@ -127,9 +140,10 @@ The public Pages build also generates canonical URLs, Open Graph/Twitter metadat
 - [Android companion](docs/product/ANDROID_COMPANION.md)
 - [UX design](docs/product/UX_DESIGN.md)
 - [Architecture](docs/architecture/ARCHITECTURE.md)
+- [Parser / enricher / collection model](docs/architecture/PLUGIN_MODEL.md)
+- [Share parsing pipeline](docs/architecture/SHARE_PIPELINE.md)
 - [Security model](docs/architecture/SECURITY_MODEL.md)
 - [GitHub Pages deployment](docs/deployment/GITHUB_PAGES.md)
 - [GitHub repository metadata / SEO](docs/deployment/GITHUB_REPOSITORY.md)
 - [Testing](docs/development/TESTING.md)
-- [uv Python workflow](docs/development/UV_WORKFLOW.md)
 - [UI foundation](docs/development/UI_FOUNDATION.md)

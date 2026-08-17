@@ -59,7 +59,7 @@ def report(checks: dict[str, bool], failures: list[str]) -> None:
 
 def main() -> int:
     required = [
-        SITE / 'index.html', SITE / 'install.html', SITE / 'settings.html',
+        SITE / 'index.html', SITE / 'install.html', SITE / 'settings.html', SITE / 'capture-handoff.html',
         SITE / 'assets/vendor/pico.conditional.min.css', SITE / 'assets/app.css',
     ]
     if not all(path.is_file() for path in required):
@@ -150,6 +150,18 @@ def main() -> int:
                 'browser-setup-mobile-no-overflow': bool(install_page and install_page['scrollWidth'] <= install_page['width'] + 1),
                 'browser-setup-manager-choices': bool(install_page and install_page['managerCards'] == 2),
                 'browser-setup-userscript-cta': bool(install_page and 'Install Social Post Tools Userscript' in install_page['primaryInstall']),
+            }, failures)
+
+            call_id = set_document(ws, frame_id, page_document('capture-handoff.html'), call_id)
+            bridge, call_id = value(ws, r'''(() => ({
+              width: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth,
+              title: document.querySelector('#handoff-title')?.textContent?.trim() || '',
+              installLink: document.querySelector('#handoff-install')?.getAttribute('href') || '',
+            }))()''', call_id)
+            report({
+                'capture-bridge-mobile-no-overflow': bool(bridge and bridge['scrollWidth'] <= bridge['width'] + 1),
+                'capture-bridge-has-fallback-install': bool(bridge and bridge['installLink'] == './install.html'),
             }, failures)
 
             call_id = set_document(ws, frame_id, page_document('settings.html'), call_id)

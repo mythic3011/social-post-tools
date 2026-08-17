@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '1.2.1';
+  const VERSION = '1.3.0';
   const MAX_BUILDER_URL_CHARS = 8192;
   const MAX_CUSTOM_BUILDERS = 32;
 
@@ -293,15 +293,72 @@
     return buildUrl(builder, platform, canonicalUrl, options);
   }
 
-  function firstHttpUrlInText(text) {
+  function httpUrlsInText(text) {
     const input = String(text || '');
     const matches = input.match(/https?:\/\/[^\s<>"']+/gi) || [];
+    const out = [];
     for (let raw of matches) {
       raw = raw.replace(/[),.;!?]+$/g, '');
       const url = parseUrl(raw);
-      if (url && ['http:', 'https:'].includes(url.protocol)) return url.href;
+      if (!url || !['http:', 'https:'].includes(url.protocol)) continue;
+      out.push(url.href);
     }
-    return null;
+    return out;
+  }
+
+  function firstHttpUrlInText(text) {
+    return httpUrlsInText(text)[0] || null;
+  }
+
+  function shareUrlIdentity(rawUrl) {
+    const url = parseUrl(rawUrl);
+    if (!url || !['http:', 'https:'].includes(url.protocol)) return null;
+    const platform = platformForUrl(url.href);
+    const canonicalUrl = platform ? canonicalize(platform, url.href) : null;
+    if (canonicalUrl) return `post:${platform.id}:${canonicalUrl}`;
+    const alias = platform?.id === 'threads' ? threadsShareAlias(url.href) : null;
+    if (alias) return `alias:threads:${alias}`;
+    url.hash = '';
+    return `url:${url.href}`;
+  }
+
+  function uniqueShareCandidates({ title = '', text = '', url = '' } = {}) {
+    const candidates = [];
+    const seen = new Set();
+    const add = (raw, source, ordinal = 0) => {
+      const value = String(raw || '').trim();
+      if (!value) return;
+      const parsed = parseUrl(value);
+      if (!parsed || !['http:', 'https:'].includes(parsed.protocol)) return;
+      const href = parsed.href;
+      const identity = shareUrlIdentity(href) || `url:${href}`;
+      if (seen.has(identity)) return;
+      seen.add(identity);
+      candidates.push({ href, identity, source, ordinal });
+    };
+    add(url, 'url', 0);
+    httpUrlsInText(text).forEach((href, index) => add(href, 'text', index));
+    httpUrlsInText(title).forEach((href, index) => add(href, 'title', index));
+    return candidates;
+  }
+
+  function normalizeSharedText(text, primaryUrls = []) {
+    const primary = new Set(primaryUrls.map(shareUrlIdentity).filter(Boolean));
+    const seen = new Set();
+    let output = String(text || '').replace(/https?:\/\/[^\s<>"']+/gi, (raw) => {
+      const trailing = raw.match(/[),.;!?]+$/)?.[0] || '';
+      const core = trailing ? raw.slice(0, -trailing.length) : raw;
+      const identity = shareUrlIdentity(core);
+      if (!identity) return raw;
+      if (primary.has(identity) || seen.has(identity)) return '';
+      seen.add(identity);
+      return core;
+    });
+    output = output
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n');
+    return cleanText(output);
   }
 
   const CAPTURE_HANDOFF_VERSION = 'v1';
@@ -358,64 +415,112 @@
     return `${platform.canonicalOrigin}/share/${match[1]}`;
   }
 
-  function parseIncomingShare({ title = '', text = '', url = '' } = {}) {
-    const rawUrl = String(url || '').trim();
-    const candidates = [];
-    if (rawUrl) candidates.push(rawUrl);
-    const textUrl = firstHttpUrlInText(text);
-    if (textUrl && !candidates.includes(textUrl)) candidates.push(textUrl);
+  const SHARE_PIPELINE_SCHEMA = 'social-share-pipeline/v1';
+  const SHARE_COLLECTIONS = Object.freeze({
+    x: Object.freeze({
+      id: 'x',
+      platform: 'x',
+      parserIds: Object.freeze(['x-post']),
+      capabilities: Object.freeze(['clean-link', 'alternate-link', 'ai-capture', 'archive']),
+    }),
+    threads: Object.freeze({
+      id: 'threads',
+      platform: 'threads',
+      parserIds: Object.freeze(['threads-post', 'threads-share-alias']),
+      enricherIds: Object.freeze(['threads-share-resolver']),
+      capabilities: Object.freeze(['clean-link', 'alternate-link', 'ai-capture', 'archive']),
+    }),
+  });
+  const SHARE_PARSERS = Object.freeze([
+    Object.freeze({
+      id: 'x-post',
+      stage: 's01-parse',
+      priority: 200,
+      parse(candidate) {
+        const platform = platformForUrl(candidate.href);
+        if (platform?.id !== 'x') return null;
+        const canonicalUrl = canonicalize(platform, candidate.href);
+        return canonicalUrl ? { platform: 'x', canonicalUrl, sharedUrl: candidate.href, shareKind: 'post', needsResolution: false } : null;
+      },
+    }),
+    Object.freeze({
+      id: 'threads-post',
+      stage: 's01-parse',
+      priority: 200,
+      parse(candidate) {
+        const platform = platformForUrl(candidate.href);
+        if (platform?.id !== 'threads') return null;
+        const canonicalUrl = canonicalize(platform, candidate.href);
+        return canonicalUrl ? { platform: 'threads', canonicalUrl, sharedUrl: candidate.href, shareKind: 'post', needsResolution: false } : null;
+      },
+    }),
+    Object.freeze({
+      id: 'threads-share-alias',
+      stage: 's01-parse',
+      priority: 100,
+      parse(candidate) {
+        const alias = threadsShareAlias(candidate.href);
+        return alias ? { platform: 'threads', canonicalUrl: null, sharedUrl: alias, shareKind: 'share-alias', needsResolution: true } : null;
+      },
+    }),
+  ]);
 
-    // Prefer a real post permalink when the share payload contains both a
-    // Threads /share/... alias and a canonical /@user/post/... URL.
+  function runSharePipeline({ title = '', text = '', url = '' } = {}) {
+    const candidates = uniqueShareCandidates({ title, text, url });
+    const parsedCandidates = [];
     for (const candidate of candidates) {
-      const platform = platformForUrl(candidate);
-      const canonicalUrl = platform ? canonicalize(platform, candidate) : null;
-      if (platform && canonicalUrl) {
-        return {
-          supported: true,
-          platform: platform.id,
-          canonicalUrl,
-          sharedUrl: candidate,
-          shareKind: 'post',
-          needsResolution: false,
-          title: cleanText(title),
-          text: cleanText(text),
-        };
+      for (const parser of SHARE_PARSERS) {
+        const parsed = parser.parse(candidate);
+        if (!parsed) continue;
+        parsedCandidates.push({ parser, candidate, parsed });
+        break;
       }
     }
+    parsedCandidates.sort((a, b) => {
+      if (a.parser.priority !== b.parser.priority) return b.parser.priority - a.parser.priority;
+      const sourceRank = { url: 3, text: 2, title: 1 };
+      const sourceDiff = (sourceRank[b.candidate.source] || 0) - (sourceRank[a.candidate.source] || 0);
+      if (sourceDiff) return sourceDiff;
+      return a.candidate.ordinal - b.candidate.ordinal;
+    });
 
-    // Threads Android may share a public https://www.threads.com/share/<id>
-    // link instead of the canonical /@user/post/<id> permalink. Treat it as
-    // a supported Threads share alias, but do not pretend it is canonical:
-    // alternate-front-end conversion and rich handoff require the exact post
-    // permalink after Threads resolves the alias.
-    for (const candidate of candidates) {
-      const alias = threadsShareAlias(candidate);
-      if (alias) {
-        return {
-          supported: true,
-          platform: 'threads',
-          canonicalUrl: null,
-          sharedUrl: alias,
-          shareKind: 'share-alias',
-          needsResolution: true,
-          title: cleanText(title),
-          text: cleanText(text),
-        };
-      }
-    }
-
-    const fallback = parseUrl(rawUrl || textUrl || '');
-    return {
+    const winner = parsedCandidates[0] || null;
+    const fallback = candidates[0]?.href || null;
+    const primaryUrls = winner
+      ? [winner.candidate.href, winner.parsed.canonicalUrl, winner.parsed.sharedUrl].filter(Boolean)
+      : [fallback].filter(Boolean);
+    const normalizedText = normalizeSharedText(text, primaryUrls);
+    const base = winner ? {
+      supported: true,
+      ...winner.parsed,
+    } : {
       supported: false,
       platform: null,
       canonicalUrl: null,
-      sharedUrl: fallback && ['http:', 'https:'].includes(fallback.protocol) ? fallback.href : null,
+      sharedUrl: fallback,
       shareKind: 'unknown',
       needsResolution: false,
-      title: cleanText(title),
-      text: cleanText(text),
     };
+
+    return {
+      ...base,
+      title: normalizeSharedText(title, primaryUrls),
+      text: normalizedText,
+      pipeline: {
+        schema: SHARE_PIPELINE_SCHEMA,
+        collection: base.platform && SHARE_COLLECTIONS[base.platform] ? SHARE_COLLECTIONS[base.platform].id : null,
+        parser: winner?.parser.id || null,
+        stages: [
+          { id: 's00-raw', candidateCount: candidates.length },
+          { id: 's01-parse', parser: winner?.parser.id || null },
+          { id: 's02-enrich', status: base.needsResolution ? 'pending' : 'local' },
+        ],
+      },
+    };
+  }
+
+  function parseIncomingShare(envelope = {}) {
+    return runSharePipeline(envelope);
   }
 
   function canonicalJsonValue(value) {
@@ -528,13 +633,21 @@
     buildUrl,
     selectBuilder,
     transformedUrl,
+    httpUrlsInText,
     firstHttpUrlInText,
+    shareUrlIdentity,
+    uniqueShareCandidates,
+    normalizeSharedText,
     CAPTURE_HANDOFF_VERSION,
     CAPTURE_HANDOFF_KEY,
     CAPTURE_MODES,
     normalizeCaptureMode,
     makeCaptureHandoffUrl,
     parseCaptureHandoff,
+    SHARE_PIPELINE_SCHEMA,
+    SHARE_COLLECTIONS,
+    SHARE_PARSERS,
+    runSharePipeline,
     parseIncomingShare,
     threadsShareAlias,
     stableJsonStringify,

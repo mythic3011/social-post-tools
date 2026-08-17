@@ -93,3 +93,7 @@ node_modules/  # pinned UI development dependency install
 ```
 
 Source-of-truth rule: edit `src/`, not `dist/` or `site/`. `edge/` contains narrowly scoped optional server-side helpers. Python development dependencies belong in `pyproject.toml` and `uv.lock`; do not recreate a parallel `requirements-dev.txt` or direct-pip workflow.
+
+## Optional edge component
+
+`edge/threads-resolver/` contains the constrained optional resolver used by the `threads-share-resolver` enrichment plugin. It is not part of the static PWA runtime unless `THREADS_RESOLVER_URL` is configured at build time.

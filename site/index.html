@@ -23,10 +23,10 @@
   <meta name="twitter:description" content="Clean links, Android Share, alternative frontends, and structured AI capture for X and Threads.">
   <meta name="twitter:image" content="https://share-tools.mythic3011.com/assets/social-preview.png">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
-  <link rel="manifest" href="./manifest.webmanifest?v=4.2.5">
-  <script src="./install-bootstrap.js?v=4.2.5"></script>
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=4.2.5">
-  <link rel="stylesheet" href="./assets/app.css?v=4.2.5">
+  <link rel="manifest" href="./manifest.webmanifest?v=4.3.0">
+  <script src="./install-bootstrap.js?v=4.3.0"></script>
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=4.3.0">
+  <link rel="stylesheet" href="./assets/app.css?v=4.3.0">
   <title>Social Post Tools</title>
 </head>
 <body data-page="landing">
@@ -47,6 +47,7 @@
       <a role="button" class="browser-setup-cta" href="./install.html">Set up browser</a>
     </div>
     <p id="install-help" class="muted compact-copy">Tap Install. If your browser cannot open its native prompt, Social Post Tools will show the manual Android steps instead.</p>
+    <p class="android-only muted compact-copy browser-support-note"><strong>Android Share-sheet support:</strong> Google Chrome is the supported install path. Brave is experimental on some builds and may require a developer Web App install setting; Firefox can install the PWA but may not register it as an Android share target.</p>
     <p class="muted compact-copy">No account, analytics, or server-side post processing.</p>
   </article>
 
@@ -60,7 +61,7 @@
   <article>
     <h2>Android setup</h2>
     <div class="step-list" aria-label="Android setup steps">
-      <div><span>1</span><p><strong>Install this web app</strong><br><small>Use the Install button when available, or your browser's Install app / Add to Home screen command.</small></p></div>
+      <div><span>1</span><p><strong>Install with Google Chrome</strong><br><small>Chrome is the supported Android Share-sheet path. Other browsers may install the PWA without registering a system share target.</small></p></div>
       <div><span>2</span><p><strong>Share from X or Threads</strong><br><small>Tap Share → Social Post Tools.</small></p></div>
       <div><span>3</span><p><strong>Choose what happens next</strong><br><small>Share onward, copy a clean link, or open the source for richer AI capture.</small></p></div>
     </div>
@@ -100,6 +101,7 @@
           <div><dt>Service worker</dt><dd id="diag-worker">Checking…</dd></div>
           <div><dt>Native prompt</dt><dd id="diag-prompt">Checking…</dd></div>
           <div><dt>App mode</dt><dd id="diag-mode">Checking…</dd></div>
+          <div><dt>Share target</dt><dd id="diag-share-target">Checking…</dd></div>
         </dl>
       </details>
       <footer class="toolbar">
@@ -113,12 +115,12 @@
       <a href="./settings.html">Settings</a>
       <a href="./privacy.html">Privacy & security</a>
     </nav>
-    <p class="build-info">Version 4.2.5</p>
+    <p class="build-info">Version 4.3.0</p>
     <p id="status" class="status" aria-live="polite"></p>
   </footer>
 </main>
 </div>
-<script src="./social-post-core.js?v=4.2.5"></script>
-<script src="./app.js?v=4.2.5"></script>
+<script src="./social-post-core.js?v=4.3.0"></script>
+<script src="./app.js?v=4.3.0"></script>
 </body>
 </html>

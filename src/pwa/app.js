@@ -6,6 +6,12 @@
   const SETTINGS_KEY = 'social-post-tools:pwa-settings:v1';
   const THREADS_RESOLVER_URL = '__THREADS_RESOLVER_URL__';
   const THREADS_RESOLVE_TIMEOUT_MS = 5000;
+  const ANDROID_CAPTURE_BROWSERS = Object.freeze({
+    firefox: Object.freeze({ id: 'firefox', label: 'Firefox (recommended for Userscripts)', packageName: 'org.mozilla.firefox' }),
+    firefoxBeta: Object.freeze({ id: 'firefoxBeta', label: 'Firefox Beta', packageName: 'org.mozilla.firefox_beta' }),
+    firefoxNightly: Object.freeze({ id: 'firefoxNightly', label: 'Firefox Nightly', packageName: 'org.mozilla.fenix' }),
+    system: Object.freeze({ id: 'system', label: 'System browser / app chooser', packageName: null }),
+  });
   const ACTIONS = Object.freeze([
     ['copyClean', 'Copy original link'],
     ['copyAlternate', 'Copy share link'],
@@ -20,6 +26,7 @@
     builders: { custom: [] },
     actions: { enabled: { copyClean: false, copyAlternate: true, systemShare: true, telegram: false, openAlternate: false, richCapture: true } },
     share: { linkSource: 'selected', template: '{text}' },
+    capture: { androidBrowser: 'firefox' },
     security: { allowInsecureCustomUrls: false },
   });
 
@@ -55,6 +62,7 @@
     for (const [id] of ACTIONS) settings.actions.enabled[id] = settings.actions.enabled[id] !== false;
     settings.share.linkSource = settings.share.linkSource === 'clean' ? 'clean' : 'selected';
     settings.share.template = String(settings.share.template || '{text}').slice(0, 8000);
+    if (!ANDROID_CAPTURE_BROWSERS[settings.capture?.androidBrowser]) settings.capture.androidBrowser = DEFAULTS.capture.androidBrowser;
     return settings;
   }
 
@@ -119,6 +127,44 @@
     if (/EdgA|EdgiOS|Edg\//i.test(ua)) return 'edge';
     if (/Chrome|CriOS/i.test(ua)) return 'chrome';
     return 'other';
+  }
+
+  function isAndroidClient() {
+    return /Android/i.test(String(navigator.userAgent || ''));
+  }
+
+  function captureBridgeUrl(sourceUrl, mode = 'smart') {
+    const platform = Core.platformForUrl(sourceUrl);
+    const canonicalUrl = platform ? Core.canonicalize(platform, sourceUrl) : null;
+    const alias = platform?.id === 'threads' ? Core.threadsShareAlias(sourceUrl) : null;
+    const target = canonicalUrl || alias;
+    if (!target) return null;
+    const bridge = new URL('./capture-handoff.html', location.href);
+    bridge.searchParams.set('url', target);
+    bridge.searchParams.set('mode', Core.normalizeCaptureMode(mode));
+    return bridge.href;
+  }
+
+  function androidIntentUrl(webUrl, packageName) {
+    const target = new URL(webUrl);
+    if (!packageName || target.protocol !== 'https:') return target.href;
+    const data = `intent://${target.host}${target.pathname}${target.search}`;
+    return `${data}#Intent;scheme=https;package=${packageName};S.browser_fallback_url=${encodeURIComponent(target.href)};end`;
+  }
+
+  function openCaptureBridge(sourceUrl, settings, mode = 'smart') {
+    const bridgeUrl = captureBridgeUrl(sourceUrl, mode);
+    if (!bridgeUrl) return false;
+    if (isAndroidClient()) {
+      const browser = ANDROID_CAPTURE_BROWSERS[settings.capture?.androidBrowser] || ANDROID_CAPTURE_BROWSERS.firefox;
+      // The explicit browser package prevents Android App Links from handing
+      // the Threads/X URL straight back to the native social app. The bridge
+      // then lets the Userscript open the actual post with GM_openInTab.
+      location.href = androidIntentUrl(bridgeUrl, browser.packageName);
+      return true;
+    }
+    window.open(bridgeUrl, '_blank', 'noopener,noreferrer');
+    return true;
   }
 
   function installManualGuidance() {
@@ -297,6 +343,7 @@
     }
     $('share-link-source').value = draft.share.linkSource;
     $('share-template').value = draft.share.template;
+    if ($('android-capture-browser')) $('android-capture-browser').value = draft.capture.androidBrowser;
 
     function refreshBuilderList() {
       const list = $('builder-list'); list.replaceChildren();
@@ -360,13 +407,13 @@
       } catch { status('Invalid portable settings JSON.'); }
     });
     $('settings-reset').addEventListener('click', () => {
-      draft = clone(DEFAULTS); refreshAllSelects(); refreshBuilderList(); $('share-link-source').value = draft.share.linkSource; $('share-template').value = draft.share.template;
+      draft = clone(DEFAULTS); refreshAllSelects(); refreshBuilderList(); $('share-link-source').value = draft.share.linkSource; $('share-template').value = draft.share.template; if ($('android-capture-browser')) $('android-capture-browser').value = draft.capture.androidBrowser;
       for (const input of checks.querySelectorAll('input[data-action]')) input.checked = draft.actions.enabled[input.dataset.action] !== false;
       status('Settings reset in the draft.');
     });
     $('settings-save').addEventListener('click', () => {
       draft.links.x.builderId = $('x-builder').value; draft.links.threads.builderId = $('threads-builder').value;
-      draft.share.linkSource = $('share-link-source').value; draft.share.template = $('share-template').value;
+      draft.share.linkSource = $('share-link-source').value; draft.share.template = $('share-template').value; if ($('android-capture-browser')) draft.capture.androidBrowser = $('android-capture-browser').value;
       for (const input of checks.querySelectorAll('input[data-action]')) draft.actions.enabled[input.dataset.action] = input.checked;
       draft = saveSettings(draft); status('Saved.');
     });
@@ -387,6 +434,21 @@
     const vars = shareVars(parsed, alternateUrl);
     const rendered = Core.applyTemplate(settings.share.template || '{text}', vars).trim();
     return rendered.slice(0, 4000);
+  }
+
+  function outgoingShareText(settings, parsed, alternateUrl, chosenUrl) {
+    const rendered = shareText(settings, parsed, alternateUrl);
+    // Android sources frequently repeat the same permalink in both text and
+    // url. Destinations receive the URL in navigator.share({ url }), so strip
+    // equivalent canonical/alias/alternate URLs from the text field once more
+    // after the final destination URL has been selected. Preserve captions and
+    // unrelated URLs.
+    return Core.normalizeSharedText(rendered, [
+      chosenUrl,
+      parsed.canonicalUrl,
+      parsed.sharedUrl,
+      alternateUrl,
+    ].filter(Boolean));
   }
 
   async function copyText(text) {
@@ -446,12 +508,43 @@
         needsResolution: false,
         resolvedFrom: parsed.sharedUrl,
         resolution: String(data?.resolution || 'resolver'),
+        pipeline: {
+          ...(parsed.pipeline || {}),
+          stages: (parsed.pipeline?.stages || []).map((stage) => stage.id === 's02-enrich'
+            ? { ...stage, status: 'resolved', plugin: 'threads-share-resolver' }
+            : stage),
+        },
       };
     } catch {
       return parsed;
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  const SHARE_ENRICHER_PLUGINS = Object.freeze([
+    Object.freeze({
+      id: 'threads-share-resolver',
+      kind: 'enricher',
+      priority: 100,
+      matches(parsed) {
+        return parsed?.supported
+          && parsed.platform === 'threads'
+          && parsed.needsResolution
+          && Boolean(parsed.sharedUrl)
+          && Boolean(THREADS_RESOLVER_URL);
+      },
+      run: resolveThreadsShareAlias,
+    }),
+  ]);
+
+  async function runShareEnrichers(parsed) {
+    let current = parsed;
+    for (const plugin of SHARE_ENRICHER_PLUGINS.slice().sort((a, b) => b.priority - a.priority)) {
+      if (!plugin.matches(current)) continue;
+      current = await plugin.run(current);
+    }
+    return current;
   }
 
   async function renderShareTarget() {
@@ -467,14 +560,14 @@
       $('share-note').classList.remove('hidden');
       $('share-note').textContent = 'Converting the Threads /share/ alias into the canonical post permalink.';
       $('alternate-url').textContent = parsed.sharedUrl || '';
-      parsed = await resolveThreadsShareAlias(parsed);
+      parsed = await runShareEnrichers(parsed);
     }
 
     const settings = loadSettings();
     const hasCanonicalPost = Boolean(parsed.canonicalUrl);
     const alternateUrl = hasCanonicalPost ? transformed(parsed.platform, parsed.canonicalUrl, settings) : null;
     const chosenUrl = settings.share.linkSource === 'clean' ? (parsed.canonicalUrl || parsed.sharedUrl) : (alternateUrl || parsed.canonicalUrl || parsed.sharedUrl);
-    const text = shareText(settings, parsed, alternateUrl);
+    const text = outgoingShareText(settings, parsed, alternateUrl, chosenUrl);
 
     if (parsed.supported) {
       $('platform-badge').textContent = Core.PLATFORMS[parsed.platform].name;
@@ -520,24 +613,56 @@
     const captureButton = $('open-source');
     const captureCopy = captureCard?.querySelector('p.muted');
     const handoffSource = parsed.canonicalUrl || (parsed.needsResolution ? parsed.sharedUrl : null);
-    const handoffUrl = handoffSource ? Core.makeCaptureHandoffUrl(handoffSource, { mode: 'smart' }) : null;
     const unresolvedThreads = parsed.platform === 'threads' && parsed.needsResolution && Boolean(parsed.sharedUrl);
-    const captureEnabled = settings.actions.enabled.richCapture !== false && Boolean(handoffUrl || unresolvedThreads);
+    const captureEnabled = settings.actions.enabled.richCapture !== false && Boolean(handoffSource);
     captureCard.classList.toggle('hidden', !captureEnabled);
-    captureButton.disabled = !handoffUrl && !unresolvedThreads;
-    if (unresolvedThreads) {
-      if (captureCopy) captureCopy.textContent = 'Threads shared a short /share/ link. Open it in a browser with the Userscript installed; Social Post Tools will try to resolve the exact post from the final page and continue the rich capture automatically.';
-      captureButton.textContent = handoffUrl ? 'Open for AI capture' : 'Open Threads post';
+    captureButton.disabled = !handoffSource;
+    if (captureCopy) {
+      captureCopy.textContent = unresolvedThreads
+        ? 'Open the Threads share alias in your Userscript browser. Social Post Tools will resolve the final post there and continue capture without handing the link back to the Threads app.'
+        : 'Open the post in the browser that has the Social Post Tools Userscript. On Android, Firefox is used by default so the native Threads/X app does not intercept the handoff.';
     }
+    captureButton.textContent = 'Open for AI capture';
     captureButton.addEventListener('click', () => {
-      if (handoffUrl) {
-        // The fragment is consumed and removed locally by the userscript before
-        // capture preparation. No post content is sent back to this PWA.
-        location.href = handoffUrl;
-        return;
-      }
-      if (unresolvedThreads) window.open(parsed.sharedUrl, '_blank', 'noopener,noreferrer');
+      if (!handoffSource) return;
+      if (!openCaptureBridge(handoffSource, settings, 'smart')) status('Could not prepare the AI capture handoff.');
     });
+  }
+
+  function renderCaptureHandoffPage() {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('url') || document.documentElement.dataset.sptCaptureBridgeSource || '';
+    const platform = Core.platformForUrl(raw);
+    const canonicalUrl = platform ? Core.canonicalize(platform, raw) : null;
+    const alias = platform?.id === 'threads' ? Core.threadsShareAlias(raw) : null;
+    const target = canonicalUrl || alias;
+    history.replaceState(null, '', './capture-handoff.html');
+
+    const targetNode = $('handoff-target');
+    const titleNode = $('handoff-title');
+    const noteNode = $('handoff-note');
+    const copyButton = $('handoff-copy');
+    if (!target) {
+      if (titleNode) titleNode.textContent = 'Invalid capture target';
+      if (noteNode) noteNode.textContent = 'Only X and Threads post links or supported Threads share aliases can be handed to the Userscript.';
+      if (copyButton) copyButton.disabled = true;
+      return;
+    }
+    if (targetNode) targetNode.textContent = target;
+    copyButton?.addEventListener('click', async () => status(await copyText(target) ? 'Post link copied.' : 'Clipboard unavailable.'));
+
+    // The Userscript marks the document at document-start, then uses
+    // GM_openInTab so Android does not hand the social URL to the native app.
+    setTimeout(() => {
+      const handled = document.documentElement.dataset.sptCaptureBridge === 'handled';
+      if (handled) {
+        if (titleNode) titleNode.textContent = 'Opening in your Userscript browser…';
+        if (noteNode) noteNode.textContent = 'The Social Post Tools Userscript detected the handoff and is opening the post in a browser tab.';
+      } else {
+        if (titleNode) titleNode.textContent = 'Userscript not detected';
+        if (noteNode) noteNode.textContent = 'Install or enable Social Post Tools in this browser, then retry from the Android share screen. Firefox + Tampermonkey/Violentmonkey is the recommended Android capture path.';
+      }
+    }, 900);
   }
 
   registerServiceWorker();
@@ -545,4 +670,5 @@
   const page = document.body.dataset.page;
   if (page === 'settings') renderSettingsPage();
   if (page === 'share-target') renderShareTarget().catch(() => status('Could not prepare the shared post.'));
+  if (page === 'capture-handoff') renderCaptureHandoffPage();
 })();

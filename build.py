@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '4.2.8'
+VERSION = '4.3.0'
 PICO_VERSION = '2.1.1'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
@@ -43,13 +43,20 @@ def normalize_resolver_url(value: str | None) -> str | None:
 
 
 def distribution_meta(base_url: str | None) -> str:
+    public_base = base_url or PUBLIC_SITE_URL
+    parsed = urlparse(public_base)
+    base_path = parsed.path.rstrip('/')
+    bridge_match = f'{parsed.scheme}://{parsed.netloc}{base_path}/capture-handoff.html*'
+    lines = [f'// @match        {bridge_match}']
     if not base_url:
-        return '// Distribution URLs are injected by the GitHub Pages build.'
-    return '\n'.join([
+        lines.append('// Distribution URLs are injected by the GitHub Pages build.')
+        return '\n'.join(lines)
+    lines.extend([
         f'// @homepageURL  {base_url}/',
         f'// @downloadURL  {base_url}/install/social-post-tools.user.js',
         f'// @updateURL    {base_url}/install/social-post-tools.meta.js',
     ])
+    return '\n'.join(lines)
 
 
 def render_userscript(pages_base: str | None) -> str:
@@ -135,6 +142,7 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
         'Allow: /',
         'Disallow: /settings.html',
         'Disallow: /share-target.html',
+        'Disallow: /capture-handoff.html',
         'Disallow: /install/',
         f'Sitemap: {canonical_base}/sitemap.xml',
         '',

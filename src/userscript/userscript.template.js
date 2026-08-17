@@ -17,6 +17,7 @@
 // @grant        GM_deleteValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
+// @grant        GM_openInTab
 // @grant        unsafeWindow
 // @connect      pbs.twimg.com
 // @connect      *.twimg.com
@@ -55,6 +56,36 @@
     captureCacheMaxTotalChars: 1536 * 1024,
     captureRevisionMaxEvents: 6,
   });
+
+  function handleCaptureBridgePage() {
+    if (!/\/capture-handoff\.html$/i.test(location.pathname)) return false;
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('url') || '';
+    const mode = CORE.normalizeCaptureMode(params.get('mode'));
+    const target = CORE.makeCaptureHandoffUrl(raw, { mode });
+    const mark = (state) => {
+      const root = document.documentElement;
+      if (!root) return;
+      root.dataset.sptCaptureBridgeSource = raw;
+      root.dataset.sptCaptureBridgeMode = mode;
+      root.dataset.sptCaptureBridge = state;
+    };
+    try { history.replaceState(history.state, '', location.pathname); } catch {}
+    if (!target) {
+      mark('invalid');
+      return true;
+    }
+    mark('handled');
+    try {
+      if (typeof GM_openInTab !== 'function') throw new Error('GM_openInTab unavailable');
+      GM_openInTab(target, { active: true, insert: true, setParent: true });
+    } catch {
+      mark('failed');
+    }
+    return true;
+  }
+
+  if (handleCaptureBridgePage()) return;
 
   const TEXT = Object.freeze({
     entry: 'Post tools  ›',

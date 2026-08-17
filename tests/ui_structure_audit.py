@@ -25,6 +25,9 @@ checks = {
     'repo-doc-index': (root/'docs/README.md').is_file() and (root/'docs/development/REPOSITORY_LAYOUT.md').is_file(),
     'repo-install-doc': (root/'docs/product/INSTALLATION.md').is_file(),
     'repo-install-page': (root/'src/pwa/install.html').is_file(),
+    'repo-capture-bridge-page': (root/'src/pwa/capture-handoff.html').is_file(),
+    'repo-share-pipeline-doc': (root/'docs/architecture/SHARE_PIPELINE.md').is_file(),
+    'repo-uv-project': (root/'pyproject.toml').is_file() and (root/'uv.lock').is_file() and not (root/'requirements-dev.txt').exists(),
     'readme-user-first-install': '## Install' in (root/'README.md').read_text() and 'www.tampermonkey.net' in (root/'README.md').read_text(),
     'generated-root-clean': not (root/'social-mirror-share-copy.user.js').exists() and not (root/'social-post-tools.user.js').exists(),
 }

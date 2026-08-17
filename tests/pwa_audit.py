@@ -7,6 +7,7 @@ manifest = json.loads((pwa/'manifest.webmanifest').read_text())
 index = (pwa/'index.html').read_text()
 settings = (pwa/'settings.html').read_text()
 share = (pwa/'share-target.html').read_text()
+bridge_page = (pwa/'capture-handoff.html').read_text()
 privacy = (pwa/'privacy.html').read_text()
 install = (pwa/'install.html').read_text()
 app = (pwa/'app.js').read_text()
@@ -15,7 +16,9 @@ sw = (pwa/'sw.js').read_text()
 styles = (pwa/'assets/app.css').read_text()
 fallback = (pwa/'assets/pico-fallback.css').read_text()
 core = (root/'src/core/social-post-core.js').read_text()
-html_pages = [index, install, settings, share, privacy]
+userscript = (root/'src/userscript/userscript.template.js').read_text()
+build = (root/'build.py').read_text()
+html_pages = [index, install, settings, share, bridge_page, privacy]
 checks = {
   'manifest-share-target': manifest.get('share_target',{}).get('action') == './share-target.html',
   'manifest-basic-get': manifest.get('share_target',{}).get('method') == 'GET',
@@ -35,6 +38,7 @@ checks = {
   'no-eval': not re.search(r'\beval\s*\(|new\s+Function\s*\(', app),
   'history-query-cleared': 'history.replaceState' in app,
   'service-worker-share-cache': "share-target.html" in sw and "caches.match('./share-target.html')" in sw,
+  'service-worker-capture-bridge-cache': "capture-handoff.html" in sw and "caches.match('./capture-handoff.html')" in sw,
   'service-worker-settings-cache': "./settings.html" in sw,
   'service-worker-install-guide-cache': "./install.html" in sw,
   'service-worker-install-network-only': "url.pathname.includes('/install/')" in sw and 'fetch(event.request)' in sw,
@@ -43,8 +47,13 @@ checks = {
   'service-worker-bootstrap-cache': "./install-bootstrap.js" in sw,
   'service-worker-local-framework-cache': "./assets/vendor/pico.conditional.min.css" in sw and "./assets/app.css" in sw,
   'no-analytics-network': 'analytics' not in app.lower() and 'XMLHttpRequest' not in app and app.count('fetch(') == 1,
-  'rich-capture-handoff-fragment': 'makeCaptureHandoffUrl' in app and 'Open for AI capture' in share,
-  'handoff-does-not-embed-shared-text': 'makeCaptureHandoffUrl(handoffSource' in app and 'parsed.text' not in re.search(r'const handoffSource.*?const captureEnabled', app, re.S).group(0),
+  'rich-capture-browser-bridge': 'openCaptureBridge' in app and 'capture-handoff.html' in app and 'Open for AI capture' in share,
+  'rich-capture-android-firefox-intent': 'androidIntentUrl' in app and 'org.mozilla.firefox' in app and 'browser_fallback_url' in app,
+  'rich-capture-intent-targets-bridge': "new URL('./capture-handoff.html'" in app and 'location.href = androidIntentUrl(bridgeUrl' in app,
+  'rich-capture-bridge-page': 'data-page="capture-handoff"' in bridge_page and 'Userscript not detected' in app,
+  'rich-capture-userscript-open-tab': '// @grant        GM_openInTab' in userscript and 'GM_openInTab(target' in userscript,
+  'rich-capture-build-match': 'capture-handoff.html*' in build and 'bridge_match' in build,
+  'handoff-does-not-embed-shared-text': 'captureBridgeUrl(sourceUrl' in app and "bridge.searchParams.set(\'url\', target)" in app and 'parsed.text' not in re.search(r'const handoffSource.*?const captureEnabled', app, re.S).group(0),
   'settings-local-only': 'localStorage' in app,
   'ux-landing-primary-tasks': 'Cleaner sharing. Better AI capture.' in index and 'Set up browser' in index,
   'ux-browser-setup-page': 'Two steps, then you are done.' in install and 'Install Social Post Tools Userscript' in install,
@@ -62,8 +71,14 @@ checks = {
   'ux-install-brave-experimental': 'Brave can install the PWA' in app and 'developer Web App install setting' in app,
   'ux-install-share-target-diagnostic': 'id="diag-share-target"' in index and 'Share Target' in app,
   'ux-install-chrome-supported-path': 'Google Chrome is the supported install path' in index and 'Supported path' in app,
+  'share-pipeline-stages': 'SHARE_PIPELINE_SCHEMA' in core and "id: 's00-raw'" in core and "id: 's01-parse'" in core and "id: 's02-enrich'" in core,
+  'share-parser-registry': 'SHARE_PARSERS' in core and "id: 'x-post'" in core and "id: 'threads-post'" in core and "id: 'threads-share-alias'" in core,
+  'share-collection-registry': 'SHARE_COLLECTIONS' in core and "parserIds: Object.freeze(['x-post'])" in core and "'threads-share-resolver'" in core and 'pipeline: {' in core and 'collection:' in core,
+  'share-text-url-dedupe': 'normalizeSharedText' in core and 'primary.has(identity)' in core and 'seen.has(identity)' in core,
+  'share-destination-url-dedupe': 'function outgoingShareText' in app and 'Core.normalizeSharedText(rendered' in app and 'chosenUrl' in app,
   'threads-share-alias-core': 'function threadsShareAlias' in core and "shareKind: 'share-alias'" in core and 'needsResolution: true' in core,
   'threads-resolver-opt-in': 'THREADS_RESOLVER_URL' in app and 'resolveThreadsShareAlias' in app,
+  'threads-resolver-plugin-registry': 'SHARE_ENRICHER_PLUGINS' in app and "id: 'threads-share-resolver'" in app and 'runShareEnrichers' in app,
   'threads-resolver-no-credentials': "credentials: 'omit'" in app and "referrerPolicy: 'no-referrer'" in app,
   'threads-resolver-rewrites-alias-text': 'rewriteResolvedThreadsText' in app,
   'threads-share-alias-ui': 'Threads shared link' in app and 'Open Threads post' in app and 'Copy Threads link' in app,

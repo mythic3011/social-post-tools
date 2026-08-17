@@ -42,6 +42,44 @@ async function main() {
   assert.equal(incoming.supported, false);
   assert.equal(incoming.sharedUrl, 'https://example.com/page');
 
+
+  incoming = Core.parseIncomingShare({
+    url: 'https://www.threads.com/@bob/post/AbC?xmt=1',
+    text: 'https://www.threads.com/@bob/post/AbC?xmt=1 https://www.threads.com/@bob/post/AbC?xmt=1',
+    title: 'https://www.threads.com/@bob/post/AbC?xmt=1',
+  });
+  assert.equal(incoming.canonicalUrl, 'https://www.threads.com/@bob/post/AbC');
+  assert.equal(incoming.text, '');
+  assert.equal(incoming.title, '');
+  assert.equal(incoming.pipeline.schema, 'social-share-pipeline/v1');
+  assert.equal(incoming.pipeline.parser, 'threads-post');
+  assert.equal(incoming.pipeline.collection, 'threads');
+
+  incoming = Core.parseIncomingShare({
+    text: 'Caption https://www.threads.com/@bob/post/AbC https://www.threads.com/@bob/post/AbC',
+  });
+  assert.equal(incoming.text, 'Caption');
+  assert.equal(incoming.pipeline.stages[0].candidateCount, 1);
+
+  incoming = Core.parseIncomingShare({
+    url: 'https://www.threads.com/share/_l6aKbV0p/',
+    text: 'https://www.threads.com/share/_l6aKbV0p/ https://www.threads.com/share/_l6aKbV0p/',
+  });
+  assert.equal(incoming.shareKind, 'share-alias');
+  assert.equal(incoming.text, '');
+  assert.equal(incoming.pipeline.parser, 'threads-share-alias');
+
+  assert.equal(Core.SHARE_COLLECTIONS.x.parserIds[0], 'x-post');
+  assert(Core.SHARE_COLLECTIONS.threads.parserIds.includes('threads-share-alias'));
+  assert(Core.SHARE_COLLECTIONS.threads.enricherIds.includes('threads-share-resolver'));
+  assert.equal(
+    Core.normalizeSharedText(
+      'Caption https://www.threads.com/@bob/post/AbC https://www.threads.com/@bob/post/AbC?xmt=1',
+      ['https://www.threads.com/@bob/post/AbC'],
+    ),
+    'Caption',
+  );
+
   const portable = Core.makePortableLinkSettings({ links: { x: { builderId: 'self' }, threads: { builderId: 'vxthreads' } }, builders: { custom: [custom] }, security: { allowInsecureCustomUrls: false } });
   const restored = Core.sanitizePortableLinkSettings(JSON.parse(JSON.stringify(portable)));
   assert(restored);

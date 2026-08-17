@@ -12,6 +12,7 @@ privacy = (site / 'privacy.html').read_text(encoding='utf-8')
 settings = (site / 'settings.html').read_text(encoding='utf-8')
 share = (site / 'share-target.html').read_text(encoding='utf-8')
 not_found = (site / '404.html').read_text(encoding='utf-8')
+bridge = (site / 'capture-handoff.html').read_text(encoding='utf-8')
 robots = (site / 'robots.txt').read_text(encoding='utf-8')
 sitemap = (site / 'sitemap.xml').read_text(encoding='utf-8')
 preview = src / 'assets' / 'social-preview.png'
@@ -34,11 +35,12 @@ checks = {
     'seo-index-og': all(x in index for x in ['property="og:title"', 'property="og:description"', 'property="og:image"', 'name="twitter:card"']),
     'seo-install-canonical': '<link rel="canonical" href="https://share-tools.mythic3011.com/install.html">' in install,
     'seo-privacy-canonical': '<link rel="canonical" href="https://share-tools.mythic3011.com/privacy.html">' in privacy,
-    'seo-utility-pages-noindex': all('name="robots" content="noindex,nofollow,noarchive"' in page for page in [settings, share, not_found]),
+    'seo-utility-pages-noindex': all('name="robots" content="noindex,nofollow,noarchive"' in page for page in [settings, share, bridge, not_found]),
     'seo-share-no-referrer': 'name="referrer" content="no-referrer"' in share,
+    'seo-capture-bridge-no-referrer': 'name="referrer" content="no-referrer"' in bridge,
     'seo-og-image-self-hosted': 'https://share-tools.mythic3011.com/assets/social-preview.png' in index,
     'seo-robots-sitemap': 'Sitemap: https://share-tools.mythic3011.com/sitemap.xml' in robots,
-    'seo-robots-utility-disallow': 'Disallow: /settings.html' in robots and 'Disallow: /share-target.html' in robots,
+    'seo-robots-utility-disallow': all(rule in robots for rule in ['Disallow: /settings.html', 'Disallow: /share-target.html', 'Disallow: /capture-handoff.html']),
     'seo-sitemap-public-pages': all(url in sitemap for url in ['https://share-tools.mythic3011.com/</loc>', 'https://share-tools.mythic3011.com/install.html</loc>', 'https://share-tools.mythic3011.com/privacy.html</loc>']),
     'seo-no-unresolved-placeholders': not re.search(r'__(?:CANONICAL_URL|SOCIAL_IMAGE_URL)__', '\n'.join([index, install, privacy])),
 }

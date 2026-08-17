@@ -121,3 +121,9 @@ Threads for Android may share an intermediate `https://www.threads.com/share/<to
 The bundled Cloudflare Worker is deliberately not a general fetch proxy. It accepts only HTTPS Threads hosts with a strict `/share/<token>` path, follows redirects manually, validates every redirect hop before fetching it, and only returns canonical Threads post paths. It does not forward browser cookies or Threads credentials. If redirect resolution is insufficient, it reads at most the first 256 KiB of HTML to inspect canonical/OG metadata. CORS is restricted to the configured Social Post Tools origin.
 
 The PWA calls the resolver only for unresolved Threads `/share/` aliases. Requests use `credentials: omit`, `referrerPolicy: no-referrer`, `cache: no-store`, and a 5-second client timeout. If resolution succeeds, the alias is removed from outgoing share text and all normal actions use the canonical post permalink or the selected alternate frontend. If the resolver is absent or fails, the existing local fallback remains available.
+
+## AI browser bridge
+
+The Android PWA does not navigate directly to X/Threads for rich capture. It first opens a same-origin bridge in the configured Userscript browser, then the Userscript opens the real post with `GM_openInTab`. This reduces accidental Android App-Link handoff to the native social application.
+
+The bridge carries only source URL + capture mode, clears its visible query immediately, uses `no-referrer`, and is `noindex`. Once the PWA service worker controls the origin, bridge navigations are served from the cached shell so the query is not forwarded to static hosting. A first uncached bridge navigation can still reach the static host with that source URL in the request query; no extracted post text, comments, media binaries, tokens, or credentials are placed there.

@@ -33,3 +33,14 @@ Userscript adapter                        PWA share target
 ## UI boundary
 
 The native X/Threads menu remains host-styled. The PWA/Pages UI uses Pico CSS plus a small Social Post Tools product layer. This avoids framework leakage into host pages while removing duplicated form/button/card CSS from the standalone app.
+
+
+## Staged share parser
+
+Android share payloads use a CrowdSec-inspired staged model: acquisition → `s00-raw` normalization → `s01-parse` parser registry → optional `s02-enrich` plugins → destinations. This keeps platform quirks and network resolution out of action code. See [Share parsing pipeline](SHARE_PIPELINE.md).
+
+## Android capture browser broker
+
+The Android Share Target and rich DOM extraction have different browser requirements. The PWA is installed by Chrome for Android system-share integration, while the capture broker can explicitly route the same-origin bridge to Firefox, where the Userscript manager owns the next navigation. This prevents native X/Threads App Links from becoming an accidental execution surface.
+
+The bridge is an adapter, not a third capture implementation: the actual extractor remains in the Userscript.

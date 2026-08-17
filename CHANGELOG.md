@@ -1,19 +1,24 @@
 # Changelog
 
+## v4.3.0
+- Refactor Android incoming shares into a staged `s00-raw` → `s01-parse` → `s02-enrich` pipeline inspired by CrowdSec's parser/enricher separation.
+- Add static X/Threads collection metadata and source-controlled parser/enricher registries; no remote executable plugins are loaded.
+- Deduplicate repeated Android share URLs before parsing and again at the final Web Share destination boundary, so the same Threads/X permalink is not emitted in both `text` and `url`.
+- Fix **Open for AI capture** on Android with a browser bridge: the Chrome-installed Share Target PWA explicitly opens the bridge in the configured Userscript browser (Firefox by default), then `GM_openInTab` opens the social post as a browser tab instead of handing it to the native X/Threads app.
+- Add a same-origin `capture-handoff.html` bridge with noindex/no-referrer/CSP hardening and dynamic Userscript `@match` metadata for the deployed Pages origin.
+- Add configurable Firefox / Firefox Beta / Firefox Nightly / system-browser capture routing.
+- Preserve the constrained optional Threads `/share/<token>` resolver as an `s02-enrich` plugin and record parser/enricher provenance for diagnostics.
+- Keep Python tooling uv-native (`pyproject.toml` + `uv.lock`) and keep production Pages builds on pinned Pico CSS.
+
 ## v4.2.8
-- Migrate Python build/test tooling from `requirements-dev.txt` + direct `pip` installation to an uv project (`pyproject.toml` + `uv.lock`).
-- Add `.python-version` for the Python 3.13 toolchain and keep the repository itself non-packaged with `tool.uv.package = false`.
-- Pin `websocket-client==1.9.0` in the uv dev dependency group and record PyPI artifact SHA-256 hashes in `uv.lock`.
-- Move CI/Pages to Astral `setup-uv`, `uv python install`, `uv sync --locked`, and `uv run --locked`; remove `actions/setup-python` and direct `pip` commands.
-- Make the shell test runner use the uv-provided `python` executable instead of assuming `python3`, fixing macOS environments where only uv should own the project interpreter.
-- Add `docs/development/UV_WORKFLOW.md` and uv-specific regression assertions.
-- Provide a direct upgrade patch from v4.2.5 to v4.2.8 so repositories stuck on v4.2.5 do not need to apply v4.2.6 and v4.2.7 sequentially.
+- Move Python build/test tooling to uv-native project management with `pyproject.toml`, `uv.lock`, and `.python-version`.
+- Replace direct pip setup in CI with `setup-uv`, `uv sync --locked`, and `uv run --locked`.
+- Add a direct v4.2.5 → v4.2.8 upgrade patch for repositories that had not applied intermediate releases.
 
 ## v4.2.7
-- Resolve Threads `https://www.threads.com/share/<token>/` aliases through the optional constrained edge resolver before presenting normal post actions.
-- Convert successful alias resolutions to the canonical `/@user/post/<id>` URL and remove the alias from outgoing share text.
-- Keep the resolver narrowly scoped to Threads share aliases, validate redirect hops, omit credentials/referrer, and preserve a safe unresolved-alias fallback.
-- Add deployment docs/tests for the optional Cloudflare Worker resolver.
+- Add an optional constrained edge resolver for Threads `/share/<opaque-id>` aliases so successful resolution produces the canonical no-tracking post permalink.
+- Keep the resolver HTTPS-only, credentialless, allowlisted to Threads redirects, and separate from the static PWA parser.
+- Remove resolved alias URLs from outgoing text after canonicalization.
 
 ## v4.2.6
 - Treat Threads Android `https://www.threads.com/share/<id>` payloads as supported Threads share aliases instead of incorrectly showing **Unsupported share**.
