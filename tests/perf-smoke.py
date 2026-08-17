@@ -2,10 +2,9 @@
 from __future__ import annotations
 import importlib.util
 import json
-import subprocess
-import tempfile
-import time
 from pathlib import Path
+
+from chrome_cdp import ChromeController
 
 ROOT = Path(__file__).resolve().parents[1]
 runner_path = ROOT / 'tests' / 'run-fixtures.py'
@@ -53,33 +52,11 @@ bench = '''
 doc = f'''<!doctype html><html><head><base href="https://x.com/"></head><body>
 <script>window.__SPT_TEST_MODE__=true;</script>{body}<script>{source.replace('</script>', '<\\/script>')}</script></body></html>'''
 
-with tempfile.TemporaryDirectory(prefix='spt-perf-', ignore_cleanup_errors=True) as td:
-    debug_port = mod._free_port()
-    profile = Path(td) / 'profile'
-    cmd = [
-        chromium, '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
-        '--disable-background-networking', '--disable-default-apps', '--disable-extensions', '--disable-sync',
-        '--metrics-recording-only', '--mute-audio', '--no-first-run', '--remote-allow-origins=*',
-        f'--remote-debugging-port={debug_port}', f'--user-data-dir={profile}', 'about:blank'
-    ]
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+with ChromeController(chromium, prefix='spt-perf-', startup_timeout=30.0) as controller:
+    target = None
     ws = None
     try:
-        target = None
-        deadline = time.time() + 10
-        while time.time() < deadline:
-            try:
-                with mod.urllib.request.urlopen(f'http://127.0.0.1:{debug_port}/json', timeout=.4) as response:
-                    targets = json.load(response)
-                target = next((x for x in targets if x.get('type') == 'page' and x.get('webSocketDebuggerUrl')), None)
-                if target: break
-            except Exception:
-                pass
-            time.sleep(.1)
-        if not target:
-            raise SystemExit('CDP target unavailable')
-        import websocket
-        ws = websocket.create_connection(target['webSocketDebuggerUrl'], timeout=10, origin=f'http://127.0.0.1:{debug_port}')
+        target, ws = controller.connect_page('about:blank')
         call_id = 1
         mod._cdp_call(ws, 'Page.enable', {}, call_id); call_id += 1
         tree = mod._cdp_call(ws, 'Page.getFrameTree', {}, call_id); call_id += 1
@@ -95,7 +72,4 @@ with tempfile.TemporaryDirectory(prefix='spt-perf-', ignore_cleanup_errors=True)
         if ws:
             try: ws.close()
             except Exception: pass
-        proc.terminate()
-        try: proc.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            proc.kill(); proc.wait(timeout=2)
+        controller.close_target(target.get('id') if isinstance(target, dict) else None)

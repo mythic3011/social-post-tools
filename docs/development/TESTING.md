@@ -136,3 +136,9 @@ no-referrer on the Android share-target page
 ```
 
 The SEO audit is static and deterministic; it does not call search engines or external SEO-scoring services.
+
+## CI browser harness
+
+The browser-backed fixture, UI, and performance tests share `tests/chrome_cdp.py`. Chrome is started with a unique temporary `--user-data-dir` and `--remote-debugging-port=0`; the harness waits for Chrome's `DevToolsActivePort` marker, then creates test tabs explicitly through CDP `PUT /json/new`. This avoids assuming that an initial page target is already present and avoids a time-of-check/time-of-use race around Python selecting a free TCP port.
+
+`run-fixtures.py` keeps one Chrome process alive for the fixture suite and creates a fresh page target per case. Startup is allowed up to 30 seconds on CI, and Chrome stderr is retained and surfaced if startup or target creation fails. Browser tests must not silently turn a CDP startup failure into an X/Threads extraction failure.

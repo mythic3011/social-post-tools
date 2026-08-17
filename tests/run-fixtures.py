@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import html
 import json
-import re
-import subprocess
 import sys
-import tempfile
 import time
-import socket
-import os
-import shutil
-import urllib.request
-import websocket
 from pathlib import Path
+
+from chrome_cdp import ChromeController, ChromeLaunchError, cdp_call as _cdp_call, cdp_eval as _cdp_eval, find_browser
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'dist/social-post-tools.user.js'
@@ -361,34 +354,8 @@ def assertion_script(case: dict) -> str:
 """
 
 
-def _free_port() -> int:
-    sock = socket.socket()
-    sock.bind(('127.0.0.1', 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
 
-
-def _cdp_call(ws, method: str, params: dict | None, call_id: int) -> dict:
-    payload = {'id': call_id, 'method': method}
-    if params is not None:
-        payload['params'] = params
-    ws.send(json.dumps(payload))
-    while True:
-        message = json.loads(ws.recv())
-        if message.get('id') == call_id:
-            return message
-
-
-def _cdp_eval(ws, expression: str, call_id: int) -> dict:
-    return _cdp_call(ws, 'Runtime.evaluate', {
-        'expression': expression,
-        'returnByValue': True,
-        'awaitPromise': True,
-    }, call_id)
-
-
-def run_case(chromium: str, source: str, case: dict) -> tuple[bool, dict, str]:
+def run_case(controller: ChromeController, source: str, case: dict) -> tuple[bool, dict, str]:
     fragment = (FIXTURES / case['file']).read_text(encoding='utf-8')
     base = 'https://www.threads.com/' if case['platform'] == 'threads' else 'https://x.com/'
     doc = f"""<!doctype html><html><head><meta charset=\"utf-8\"><base href=\"{base}\"><style>body{{font-family:sans-serif}} article,[data-pressable-container=\"true\"]{{display:block;padding:4px}}</style></head><body>
@@ -397,99 +364,47 @@ def run_case(chromium: str, source: str, case: dict) -> tuple[bool, dict, str]:
 <script>{source.replace('</script>', '<\\/script>')}</script>
 {assertion_script(case)}
 </body></html>"""
-    with tempfile.TemporaryDirectory(prefix='spt-fixture-') as td:
-        debug_port = _free_port()
-        profile = Path(td) / 'profile'
-        cmd = [
-            chromium,
-            '--headless=new',
-            '--no-sandbox',
-            '--disable-gpu',
-            '--disable-dev-shm-usage',
-            '--disable-background-networking',
-            '--disable-default-apps',
-            '--disable-extensions',
-            '--disable-sync',
-            '--metrics-recording-only',
-            '--mute-audio',
-            '--no-first-run',
-            '--remote-allow-origins=*',
-            f'--remote-debugging-port={debug_port}',
-            f'--user-data-dir={profile}',
-            'about:blank',
-        ]
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-        ws = None
+    target = None
+    ws = None
+    try:
+        target, ws = controller.connect_page('about:blank')
+        call_id = 1
+        _cdp_call(ws, 'Page.enable', {}, call_id); call_id += 1
+        frame_tree = _cdp_call(ws, 'Page.getFrameTree', {}, call_id); call_id += 1
+        frame_id = frame_tree['result']['frameTree']['frame']['id']
+        set_doc = _cdp_call(ws, 'Page.setDocumentContent', {'frameId': frame_id, 'html': doc}, call_id); call_id += 1
+        if 'error' in set_doc:
+            return False, {'name': case['name'], 'ok': False, 'errors': [str(set_doc['error'])]}, controller.stderr_tail()
+
+        result_text = None
+        deadline = time.time() + 8
+        while time.time() < deadline:
+            response = _cdp_eval(ws, "document.querySelector('#spt-test-result')?.textContent || null", call_id)
+            call_id += 1
+            result_text = response.get('result', {}).get('result', {}).get('value')
+            if result_text:
+                break
+            time.sleep(.05)
+        if not result_text:
+            console = _cdp_eval(ws, "document.documentElement.outerHTML.slice(-6000)", call_id)
+            tail = console.get('result', {}).get('result', {}).get('value', '')
+            return False, {'name': case['name'], 'ok': False, 'errors': ['result marker missing', tail]}, controller.stderr_tail()
+        data = json.loads(result_text)
+        return bool(data.get('ok')), data, controller.stderr_tail()
+    except Exception as exc:
+        return False, {
+            'name': case['name'],
+            'ok': False,
+            'errors': [f'CDP fixture error: {type(exc).__name__}: {exc}'],
+        }, controller.stderr_tail()
+    finally:
         try:
-            target = None
-            deadline = time.time() + 10
-            while time.time() < deadline:
-                if proc.poll() is not None:
-                    break
-                try:
-                    with urllib.request.urlopen(f'http://127.0.0.1:{debug_port}/json', timeout=.4) as response:
-                        targets = json.load(response)
-                    target = next((item for item in targets if item.get('type') == 'page'), None)
-                    if target and target.get('webSocketDebuggerUrl'):
-                        break
-                except Exception:
-                    pass
-                time.sleep(.1)
-            if not target:
-                return False, {'name': case['name'], 'ok': False, 'errors': ['CDP page target unavailable']}, ''
+            if ws:
+                ws.close()
+        except Exception:
+            pass
+        controller.close_target(target.get('id') if isinstance(target, dict) else None)
 
-            ws = websocket.create_connection(target['webSocketDebuggerUrl'], timeout=5, origin=f'http://127.0.0.1:{debug_port}')
-            call_id = 1
-            _cdp_call(ws, 'Page.enable', {}, call_id); call_id += 1
-            frame_tree = _cdp_call(ws, 'Page.getFrameTree', {}, call_id); call_id += 1
-            frame_id = frame_tree['result']['frameTree']['frame']['id']
-            set_doc = _cdp_call(ws, 'Page.setDocumentContent', {'frameId': frame_id, 'html': doc}, call_id); call_id += 1
-            if 'error' in set_doc:
-                return False, {'name': case['name'], 'ok': False, 'errors': [str(set_doc['error'])]}, ''
-
-            result_text = None
-            deadline = time.time() + 8
-            while time.time() < deadline:
-                response = _cdp_eval(ws, "document.querySelector('#spt-test-result')?.textContent || null", call_id)
-                call_id += 1
-                result_text = response.get('result', {}).get('result', {}).get('value')
-                if result_text:
-                    break
-                time.sleep(.05)
-            if not result_text:
-                console = _cdp_eval(ws, "document.documentElement.outerHTML.slice(-6000)", call_id)
-                tail = console.get('result', {}).get('result', {}).get('value', '')
-                return False, {'name': case['name'], 'ok': False, 'errors': ['result marker missing', tail]}, ''
-            data = json.loads(result_text)
-            return bool(data.get('ok')), data, ''
-        finally:
-            try:
-                if ws:
-                    ws.close()
-            except Exception:
-                pass
-            proc.terminate()
-            try:
-                _, _ = proc.communicate(timeout=3)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.communicate(timeout=2)
-
-
-def find_browser() -> str | None:
-    override = os.environ.get('SPT_BROWSER', '').strip()
-    if override:
-        path = shutil.which(override) if '/' not in override else override
-        if path and Path(path).is_file():
-            return str(path)
-    for candidate in ('chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable'):
-        path = shutil.which(candidate)
-        if path:
-            return path
-    for candidate in ('/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'):
-        if Path(candidate).is_file():
-            return candidate
-    return None
 
 
 def main() -> int:
@@ -499,15 +414,22 @@ def main() -> int:
         return 77
     source = test_source()
     failures = 0
-    for case in CASES:
-        ok, data, stderr = run_case(chromium, source, case)
-        print(('PASS' if ok else 'FAIL'), data['name'])
-        for error in data.get('errors', []):
-            print('   ', error)
-        if not ok:
-            failures += 1
-            if stderr.strip():
-                print('    chromium:', stderr.strip().splitlines()[-1])
+    try:
+        with ChromeController(chromium, prefix='spt-fixtures-', startup_timeout=30.0) as controller:
+            for case in CASES:
+                ok, data, stderr = run_case(controller, source, case)
+                print(('PASS' if ok else 'FAIL'), data['name'])
+                for error in data.get('errors', []):
+                    print('   ', error)
+                if not ok:
+                    failures += 1
+                    if stderr.strip():
+                        lines = stderr.strip().splitlines()
+                        print('    chromium:', lines[-1])
+    except ChromeLaunchError as exc:
+        print('FAIL chrome-launch')
+        print('   ', exc)
+        return 1
     return 1 if failures else 0
 
 

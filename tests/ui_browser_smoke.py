@@ -5,11 +5,11 @@ import contextlib
 import importlib.util
 import json
 import re
-import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
+
+from chrome_cdp import ChromeController
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / 'site'
@@ -71,35 +71,11 @@ def main() -> int:
         return 77
 
     failures: list[str] = []
-    with tempfile.TemporaryDirectory(prefix='spt-ui-', ignore_cleanup_errors=True) as td:
-        debug_port = mod._free_port()
-        proc = subprocess.Popen([
-            browser, '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
-            '--disable-background-networking', '--disable-default-apps', '--disable-extensions', '--disable-sync',
-            '--metrics-recording-only', '--mute-audio', '--no-first-run', '--remote-allow-origins=*',
-            f'--remote-debugging-port={debug_port}', f'--user-data-dir={Path(td) / "profile"}', 'about:blank',
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    with ChromeController(browser, prefix='spt-ui-', startup_timeout=30.0) as controller:
+        target = None
         ws = None
         try:
-            target = None
-            deadline = time.time() + 10
-            while time.time() < deadline:
-                if proc.poll() is not None:
-                    break
-                try:
-                    with mod.urllib.request.urlopen(f'http://127.0.0.1:{debug_port}/json', timeout=.4) as response:
-                        targets = json.load(response)
-                    target = next((item for item in targets if item.get('type') == 'page' and item.get('webSocketDebuggerUrl')), None)
-                    if target:
-                        break
-                except Exception:
-                    pass
-                time.sleep(.1)
-            if not target:
-                raise RuntimeError('CDP page target unavailable')
-
-            import websocket
-            ws = websocket.create_connection(target['webSocketDebuggerUrl'], timeout=10, origin=f'http://127.0.0.1:{debug_port}')
+            target, ws = controller.connect_page('about:blank')
             call_id = 1
             mod._cdp_call(ws, 'Page.enable', {}, call_id); call_id += 1
             mod._cdp_call(ws, 'Emulation.setDeviceMetricsOverride', {
@@ -205,11 +181,7 @@ def main() -> int:
             with contextlib.suppress(Exception):
                 if ws:
                     ws.close()
-            proc.terminate()
-            try:
-                proc.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                proc.kill(); proc.wait(timeout=2)
+            controller.close_target(target.get('id') if isinstance(target, dict) else None)
 
     return 1 if failures else 0
 

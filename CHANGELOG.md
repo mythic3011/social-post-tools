@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.2.5
+
+- Harden the headless-Chrome test harness after intermittent GitHub Actions failures reported as `CDP page target unavailable`.
+- Use Chrome-assigned debugging ports (`--remote-debugging-port=0`) and wait for `DevToolsActivePort` instead of reserving a free TCP port in Python.
+- Explicitly create page targets through the CDP `/json/new` endpoint instead of assuming the initial headless tab has already appeared in `/json`.
+- Reuse one Chrome process for the five DOM extraction fixtures while keeping each fixture in a fresh page target, reducing cold-start churn on shared CI runners.
+- Centralize browser discovery, startup, CDP connection, stderr diagnostics, and target cleanup in `tests/chrome_cdp.py`; the fixture, UI, and performance browser tests now use the same launcher.
+- Increase browser startup tolerance to 30 seconds and preserve Chrome stderr on launch/target failures for actionable CI logs.
+- Add static regression checks for port-zero startup, `DevToolsActivePort`, explicit page-target creation, and the shared CDP controller.
+
 ## v4.2.4
 - Make the public landing page platform-adaptive: Android visitors see the PWA install path as the primary action instead of the Userscript funnel.
 - Detect Android/mobile platform in the head-loaded install bootstrap before CSS loads, avoiding a desktop-first flash.

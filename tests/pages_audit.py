@@ -68,9 +68,14 @@ if failed:
 requirements = (root / 'requirements-dev.txt').read_text(encoding='utf-8')
 assert 'websocket-client==' in requirements, 'test WebSocket dependency must be declared'
 fixture_runner = (root / 'tests' / 'run-fixtures.py').read_text(encoding='utf-8')
-assert 'import requests' not in fixture_runner, 'requests dependency should not be required by fixture runner'
-assert 'urllib.request' in fixture_runner, 'CDP discovery should use Python stdlib HTTP client'
-assert 'def find_browser()' in fixture_runner, 'browser executable must be discovered portably'
+chrome_helper = (root / 'tests' / 'chrome_cdp.py').read_text(encoding='utf-8')
+assert 'import requests' not in fixture_runner and 'import requests' not in chrome_helper, 'requests dependency should not be required by browser tests'
+assert 'urllib.request' in chrome_helper, 'CDP discovery should use Python stdlib HTTP client'
+assert 'def find_browser()' in chrome_helper, 'browser executable must be discovered portably'
+assert "--remote-debugging-port=0" in chrome_helper, 'Chrome must choose the CDP port to avoid a free-port race'
+assert 'DevToolsActivePort' in chrome_helper, "browser tests must wait for Chrome's active debugging port marker"
+assert '/json/new?' in chrome_helper and "method='PUT'" in chrome_helper, 'browser tests must explicitly create page targets'
+assert 'ChromeController' in fixture_runner, 'fixture suite must use the shared Chrome controller'
 for workflow_name in ('ci.yml', 'pages.yml'):
     wf = (root / '.github' / 'workflows' / workflow_name).read_text(encoding='utf-8')
     assert 'requirements-dev.txt' in wf, f'{workflow_name} must install test dependencies'
@@ -78,3 +83,5 @@ for workflow_name in ('ci.yml', 'pages.yml'):
 print('PASS pages-ci-test-dependencies')
 print('PASS pages-ci-ui-dependencies')
 print('PASS pages-ci-browser-discovery')
+print('PASS pages-ci-cdp-port-zero')
+print('PASS pages-ci-explicit-page-target')
