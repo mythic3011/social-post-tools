@@ -1,5 +1,18 @@
 # Changelog
 
+## v4.4.0 — 2026-09-19
+
+- Refactor provider lifecycle into the shared core: active defaults, capability metadata, retirement state, migration compatibility, and selection policy now have one source of truth instead of PWA/build-time duplicates.
+- Default X share previews to FixupX, retain XCancel as an optional reader, and prevent retired Nitter IDs from becoming active selections while keeping legacy IDs readable for imported settings.
+- Refactor the Threads alias Worker with bounded request bodies, response inspection, redirect validation, cancellation-aware timeouts, successful-result caching, injected-fetch tests, and distinct failure classes.
+- Add a real Cloudflare Worker validation/deployment workflow with pinned Wrangler tooling.
+- Add `mise.toml` + cross-platform `mise.lock` as the reviewed Node/Python/uv toolchain, including checksums and upstream provenance where available; CI regenerates the lock and fails on drift.
+- Pin external GitHub Actions to immutable commit SHAs, add GitHub Dependency Review, and add weekly Dependabot update groups with a seven-day cooldown.
+- Move public Userscript updates to a generated Raw GitHub `dist` branch; keep GitHub Pages as the install UI and use immutable `dist-v<version>` jsDelivr URLs as fallback mirrors.
+- Add SHA-256 release evidence and GitHub/Sigstore Artifact Attestations for generated Userscript artifacts.
+- Make distribution versions immutable: an already-published `dist-v<version>` tag is never rewritten, so a source change requires a new Userscript version before it can become a new CDN release.
+- Redesign the landing, settings, share-target, and browser-install experiences into denser task/distribution workspaces with mobile browser regression coverage.
+
 ## v4.3.1 — 2026-08-17
 
 - Production `share-tools.mythic3011.com` builds now enable the project-owned Threads alias resolver automatically; the old deployment-time `THREADS_RESOLVER_URL` variable is no longer required.
