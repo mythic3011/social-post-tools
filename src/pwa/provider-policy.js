@@ -69,6 +69,13 @@
     }
   }
 
+  function textNode(tag, text, className = '') {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = text;
+    return node;
+  }
+
   function renderProviderSummary() {
     const host = document.getElementById('provider-status-list');
     if (!host) return;
@@ -84,7 +91,21 @@
     for (const [id, state, capability, description] of entries) {
       const row = document.createElement('div');
       row.className = 'provider-row';
-      row.innerHTML = `<div><strong>${META[id]?.label || id}</strong><small>${capability}</small></div><div class="provider-copy"><span class="status-chip">${state}</span><p>${description}</p></div>`;
+
+      const identity = document.createElement('div');
+      identity.append(
+        textNode('strong', META[id]?.label || id),
+        textNode('small', capability),
+      );
+
+      const copy = document.createElement('div');
+      copy.className = 'provider-copy';
+      copy.append(
+        textNode('span', state, 'status-chip'),
+        textNode('p', description),
+      );
+
+      row.append(identity, copy);
       host.append(row);
     }
   }
