@@ -1,0 +1,70 @@
+name: Deploy Threads Resolver
+
+on:
+  pull_request:
+    paths:
+      - 'edge/threads-resolver/**'
+      - 'tests/threads_resolver.test.mjs'
+      - '.github/workflows/edge-resolver.yml'
+      - '.github/actions/setup-toolchain/**'
+      - 'mise.toml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'edge/threads-resolver/**'
+      - 'tests/threads_resolver.test.mjs'
+      - '.github/workflows/edge-resolver.yml'
+      - '.github/actions/setup-toolchain/**'
+      - 'mise.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Test resolver
+        run: node tests/threads_resolver.test.mjs
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Deploy resolver
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: edge/threads-resolver
+          wranglerVersion: '4.128.0'
+          command: deploy
+
+      - name: Verify production health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            --retry 3 --retry-delay 2 --max-time 15 \
+            https://resolver.mythic3011.com/healthz
