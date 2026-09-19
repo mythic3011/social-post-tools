@@ -1,7 +1,7 @@
 # Social Post Tools
 
 [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
-[![Version](https://img.shields.io/badge/version-v4.3.1-2f81f7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.4.0-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
 [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
@@ -130,7 +130,7 @@ The development toolchain is declared once in `mise.toml`. `mise.lock` records r
 
 GitHub Actions dependencies are pinned to immutable commit SHAs. Dependabot groups npm and GitHub Actions version updates on a weekly schedule with a seven-day cooldown, while security updates remain eligible immediately. Pull requests also pass GitHub Dependency Review so newly introduced vulnerable dependencies fail before merge.
 
-The distribution workflow runs the full test suite before generating checksums, creates a GitHub/Sigstore build-provenance attestation for the checksummed artifacts, and only then force-publishes the generated `dist` branch.
+The distribution workflow runs the full test suite before generating checksums, creates a GitHub/Sigstore build-provenance attestation for the checksummed artifacts, and only then force-publishes the generated `dist` branch. Each CDN fallback points at an immutable `dist-v<version>` tag; an existing distribution tag is never moved or replaced.
 
 ## Development
 
