@@ -7,11 +7,22 @@ async function main() {
   assert.equal(Core.canonicalize('x', 'https://twitter.com/alice/status/123?s=20&t=abc'), 'https://x.com/alice/status/123');
   assert.equal(Core.canonicalize('threads', 'https://threads.net/@bob/post/Ab_C-9/foo?xmt=track'), 'https://www.threads.com/@bob/post/Ab_C-9');
   assert.equal(Core.canonicalize('x', 'https://evil.example/alice/status/123'), null);
-  assert.equal(Core.transformedUrl('x', 'https://x.com/alice/status/123', 'nitter-net'), 'https://nitter.net/alice/status/123');
+
+  assert.equal(Core.defaultBuilderId('x'), 'fixupx');
+  assert.equal(Core.defaultBuilderId('threads'), 'vxthreads');
+  assert.equal(Core.builderById('nitter-net').retired, true);
+  assert.equal(Core.builderById('fixupx').capability, 'embed');
+  assert.equal(Core.builderById('xcancel').capability, 'reader');
+  assert(!Core.compatibleBuilders('x').some((builder) => builder.retired));
+  assert.equal(Core.selectBuilder('x', 'nitter-net').id, 'fixupx');
+  assert.equal(Core.transformedUrl('x', 'https://x.com/alice/status/123', 'nitter-net'), 'https://fixupx.com/alice/status/123');
+  assert.equal(Core.buildUrl(Core.builderById('nitter-net'), 'x', 'https://x.com/alice/status/123'), 'https://nitter.net/alice/status/123');
   assert.equal(Core.transformedUrl('threads', 'https://www.threads.com/@bob/post/AbC', 'vxthreads'), 'https://vxthreads.net/@bob/post/AbC');
 
-  const custom = Core.normalizeCustomBuilder({ name: 'Self', id: 'self', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://n.example' });
+  const custom = Core.normalizeCustomBuilder({ name: 'Self', id: 'self', platforms: ['x'], type: 'replace-origin', capability: 'reader', baseUrl: 'https://n.example' });
   assert(custom);
+  assert.equal(custom.capability, 'reader');
+  assert.equal(custom.status, 'custom');
   assert.equal(Core.buildUrl(custom, 'x', 'https://x.com/a/status/9'), 'https://n.example/a/status/9');
   assert.equal(Core.normalizeCustomBuilder({ name: 'Bad', id: 'bad', platforms: ['x'], type: 'replace-origin', baseUrl: 'javascript:alert(1)' }), null);
   assert.equal(Core.normalizeCustomBuilder({ name: 'Cred', id: 'cred', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://u:p@example.com' }), null);
@@ -41,7 +52,6 @@ async function main() {
   incoming = Core.parseIncomingShare({ url: 'https://example.com/page' });
   assert.equal(incoming.supported, false);
   assert.equal(incoming.sharedUrl, 'https://example.com/page');
-
 
   incoming = Core.parseIncomingShare({
     url: 'https://www.threads.com/@bob/post/AbC?xmt=1',
@@ -86,6 +96,17 @@ async function main() {
   assert.equal(restored.links.x.builderId, 'self');
   assert.equal(restored.builders.custom.length, 1);
 
+  const retiredPortable = Core.sanitizePortableLinkSettings({
+    schema: 'social-post-tools-links/v1',
+    links: { x: { builderId: 'nitter-net' }, threads: { builderId: 'vxthreads' } },
+    builders: { custom: [] },
+    security: { allowInsecureCustomUrls: false },
+  });
+  assert.equal(retiredPortable.links.x.builderId, 'fixupx');
+
+  const defaults = Core.makePortableLinkSettings({});
+  assert.equal(defaults.links.x.builderId, 'fixupx');
+  assert.equal(defaults.links.threads.builderId, 'vxthreads');
 
   const handoff = Core.makeCaptureHandoffUrl('https://twitter.com/alice/status/123?s=20', { mode: 'smart' });
   assert.equal(handoff, 'https://x.com/alice/status/123#sptCapture=v1&mode=smart');
