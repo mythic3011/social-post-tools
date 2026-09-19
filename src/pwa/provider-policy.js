@@ -18,19 +18,28 @@
     vxthreads: Object.freeze({ capability: 'embed', status: 'available', label: 'vxThreads', detail: 'Chat-friendly Threads previews' }),
   });
 
+  function writeSettings(value) {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(value));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function migrateSettings() {
     let parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch {}
 
     if (!parsed || typeof parsed !== 'object') {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      const seeded = {
         schemaVersion: 1,
         links: {
           x: { builderId: DEFAULT_X_BUILDER },
           threads: { builderId: DEFAULT_THREADS_BUILDER },
         },
-      }));
-      return { changed: true, from: null, to: DEFAULT_X_BUILDER };
+      };
+      return { changed: writeSettings(seeded), from: null, to: DEFAULT_X_BUILDER };
     }
 
     const current = String(parsed.links?.x?.builderId || '');
@@ -38,8 +47,7 @@
 
     parsed.links ||= {};
     parsed.links.x = { ...(parsed.links.x || {}), builderId: DEFAULT_X_BUILDER };
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(parsed));
-    return { changed: true, from: current, to: DEFAULT_X_BUILDER };
+    return { changed: writeSettings(parsed), from: current, to: DEFAULT_X_BUILDER };
   }
 
   function decorateSelect(select) {
