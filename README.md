@@ -31,10 +31,16 @@
 ### Browser: X / Threads Userscript
 
 1. Install a Userscript manager. **[Tampermonkey](https://www.tampermonkey.net/)** is the recommended default; **[Violentmonkey](https://violentmonkey.github.io/)** is also supported.
-2. Open **[Browser setup](https://share-tools.mythic3011.com/install.html)** or install **[Social Post Tools.user.js](https://share-tools.mythic3011.com/install/social-post-tools.user.js)** directly if your manager is already installed.
+2. Open **[Browser setup](https://share-tools.mythic3011.com/install.html)**. The project site is the human-friendly install surface; the generated Raw GitHub `dist` branch is the canonical update channel and jsDelivr is a fallback mirror.
 3. Open X or Threads, open a post's Share menu, then choose **Post tools**.
 
-If a `.user.js` link only displays JavaScript source, install or enable a Userscript manager first, then retry the link.
+If a `.user.js` link only displays JavaScript source, install or enable a Userscript manager first, then retry the link. Tampermonkey can also import the Raw GitHub `.user.js` URL through **Options → Utilities → Import from URL**.
+
+Published distribution files include `SHA256SUMS.txt` and GitHub Artifact Attestations. After downloading the Userscript, provenance can be verified with:
+
+```bash
+gh attestation verify social-post-tools.user.js -R mythic3011/social-post-tools
+```
 
 ### Android: native-app sharing
 
@@ -71,7 +77,7 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 
 Public alternative-front-end instance lists are intentionally not treated as a stable product dependency. Built-in providers are curated by capability instead of assuming that many interchangeable domains provide reliability.
 
-The PWA defaults X preview links to **FixupX**, keeps **XCancel** as an optional reader, and uses **vxThreads** for Threads preview links. Older Nitter instance selections are migrated away from retired built-ins. Release artifacts also strip those retired providers so newly built PWA/Userscript packages do not silently fall back to them.
+The shared core defaults X preview links to **FixupX**, keeps **XCancel** as an optional reader, and uses **vxThreads** for Threads preview links. Provider metadata, lifecycle state, and defaults live in one registry in `src/core/social-post-core.js`. Normal consumers receive only active built-ins; the full legacy registry remains addressable for migrations and old imported settings. Retired Nitter IDs can therefore still be understood without becoming selectable defaults or fallbacks.
 
 Social Post Tools deliberately does **not** health-probe every provider at runtime. Doing so would generate background cross-origin requests that leak browsing/share intent and would weaken the current restrictive CSP model. Self-hosted or replacement services can still be added through custom URL builders.
 
@@ -82,29 +88,31 @@ Social Post Tools deliberately does **not** health-probe every provider at runti
 | Userscript | JavaScript | Native X / Threads Share-menu integration and structured capture |
 | Android companion | PWA + Web Share Target | Receives links from the Android share sheet |
 | UI | Semantic HTML + Pico CSS 2.1.1 | Task-oriented, progressively disclosed interface |
-| Shared core | JavaScript | Canonical URLs, URL builders, portable settings, hashing helpers |
-| Build / audits | Python 3.13 | Static build, provider-release policy, packaging, SEO generation, security/UI checks |
-| Hosting | GitHub Pages | Static HTTPS distribution and stable Userscript endpoints |
-| CI | GitHub Actions | Build, security, DOM fixture, UI, SEO, and performance regression tests |
+| Shared core | JavaScript | Canonical URLs, provider lifecycle, URL builders, portable settings, hashing helpers |
+| Build / audits | Python 3.13 | Static build, packaging, SEO generation, security/UI checks |
+| Toolchain | mise + uv + npm locks | Exact tool versions, checksums/provenance, reproducible dependency setup |
+| Hosting | GitHub Pages + Raw GitHub | Human install UI plus generated Userscript update distribution |
+| CI | GitHub Actions | Build, dependency review, provenance, security, UI, SEO, and regression tests |
 
 ## Privacy and security
 
-The PWA processes ordinary shared URLs locally and has no analytics. Threads `/share/<token>` aliases use the project-owned constrained resolver because a static browser page cannot read the final cross-origin redirect target. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
+The PWA processes ordinary shared URLs locally and has no analytics. Threads `/share/<token>` aliases use the project-owned constrained resolver because a static browser page cannot read the final cross-origin redirect target. The resolver has bounded request/response sizes, a fixed upstream deadline, strict Threads-host redirect validation, and no generic proxy behavior. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
 
-Archive hashes verify archived bytes; they do **not** prove authorship, account ownership, publication time, or historical authenticity. See [SECURITY.md](SECURITY.md) and the [security model](docs/architecture/SECURITY_MODEL.md).
+Archive hashes verify archived bytes; they do **not** prove authorship, account ownership, publication time, or historical authenticity. Distribution provenance is a separate concern: generated Userscript artifacts are SHA-256 hashed and attested by GitHub Actions/Sigstore so a downloaded file can be tied back to the workflow that produced it. See [SECURITY.md](SECURITY.md) and the [security model](docs/architecture/SECURITY_MODEL.md).
 
 ## Repository layout
 
 ```text
 src/
-├── core/        shared canonical URL / builder logic
+├── core/        shared canonical URL / provider / builder logic
 ├── pwa/         Pages + Android share-target source
 └── userscript/  native X / Threads integration
 
+.github/        CI, Pages, resolver, dependency review, distribution and Dependabot config
 scripts/        maintainer helpers, including GitHub repository metadata setup
 docs/           product, architecture, deployment, development docs
 tests/          DOM fixtures, security/UI/SEO audits, browser/perf smoke tests
-dist/           generated Userscript artifacts (ignored)
+dist/           generated Userscript artifacts (ignored in source; published on dist branch)
 site/           generated GitHub Pages artifact (ignored)
 ```
 
@@ -114,20 +122,41 @@ See [docs/development/REPOSITORY_LAYOUT.md](docs/development/REPOSITORY_LAYOUT.m
 
 Incoming Android shares are normalized through a staged parser/enricher pipeline inspired by CrowdSec's separation of acquisition, parsing, and enrichment. Platform parsers and network enrichers stay isolated from copy/share/AI destinations. See [`docs/architecture/SHARE_PIPELINE.md`](docs/architecture/SHARE_PIPELINE.md).
 
-Provider lifecycle is deliberately split between compatibility and release policy. Source fixtures may retain legacy provider IDs so imported settings and regression tests remain understandable, while `build.py` removes retired built-ins and rewrites unsafe defaults from shipped `site/` and Userscript artifacts.
+Provider lifecycle is source-level policy rather than a build-time text transformation. `SocialPostCore.BUILTIN_BUILDERS` exposes active providers for normal UI/selection, while `SocialPostCore.ALL_BUILTIN_BUILDERS` and `builderById()` keep retired IDs readable for migrations and compatibility. `build.py` packages that source directly; it no longer rewrites provider IDs or lifecycle flags.
+
+## Supply-chain model
+
+The development toolchain is declared once in `mise.toml`. `mise.lock` records reviewed cross-platform artifact URLs and SHA-256 checksums, plus upstream provenance when supported. CI re-generates the Linux x64, macOS arm64, and Windows x64 lock entries and fails on drift. Locked installs also re-verify available provenance.
+
+GitHub Actions dependencies are pinned to immutable commit SHAs. Dependabot groups npm and GitHub Actions version updates on a weekly schedule with a seven-day cooldown, while security updates remain eligible immediately. Pull requests also pass GitHub Dependency Review so newly introduced vulnerable dependencies fail before merge.
+
+The distribution workflow runs the full test suite before generating checksums, creates a GitHub/Sigstore build-provenance attestation for the checksummed artifacts, and only then force-publishes the generated `dist` branch.
 
 ## Development
 
-Production-equivalent local build:
+Install the reviewed toolchain and locked project dependencies:
 
 ```bash
-uv sync --locked
+mise install --locked
+mise run bootstrap
+```
+
+Production-equivalent build and full checks:
+
+```bash
+mise run check
+```
+
+Equivalent explicit commands are:
+
+```bash
 npm ci --ignore-scripts --no-audit --no-fund
+uv sync --locked
 uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
 uv run --locked bash tests/run.sh
 ```
 
-Production builds for `https://share-tools.mythic3011.com` automatically use `https://resolver.mythic3011.com/v1/threads/resolve`. Forks can override it with `--threads-resolver-url` or disable it with `--no-threads-resolver`. Python build/test dependencies are managed only through the locked uv project; direct `pip install` is not part of the supported workflow.
+Production builds for `https://share-tools.mythic3011.com` automatically use `https://resolver.mythic3011.com/v1/threads/resolve`. Forks can override it with `--threads-resolver-url` or disable it with `--no-threads-resolver`. Direct `pip install` is not part of the supported workflow.
 
 Generated output:
 
@@ -137,7 +166,7 @@ dist/social-post-tools.meta.js
 site/
 ```
 
-`site/` is the GitHub Pages deployment artifact. `dist/` and `site/` are generated; edit files under `src/` instead.
+`site/` is the GitHub Pages deployment artifact. `dist/` and `site/` are generated; edit files under `src/` instead. On `main`, the distribution workflow publishes tested `dist/` contents to the dedicated `dist` branch rather than committing generated artifacts into the source branch.
 
 ## Repository discovery / SEO
 
