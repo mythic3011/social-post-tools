@@ -11,6 +11,8 @@ workflow = (root / '.github/workflows/pages.yml').read_text(encoding='utf-8')
 ci_workflow = (root / '.github/workflows/ci.yml').read_text(encoding='utf-8')
 edge_workflow = (root / '.github/workflows/edge-resolver.yml').read_text(encoding='utf-8')
 dist_workflow = (root / '.github/workflows/distribution.yml').read_text(encoding='utf-8')
+dep_review_workflow = (root / '.github/workflows/dependency-review.yml').read_text(encoding='utf-8')
+dependabot = (root / '.github/dependabot.yml').read_text(encoding='utf-8')
 setup_toolchain = (root / '.github/actions/setup-toolchain/action.yml').read_text(encoding='utf-8')
 mise_text = (root / 'mise.toml').read_text(encoding='utf-8')
 
@@ -73,7 +75,13 @@ checks = {
     'edge-resolver-custom-domain': 'resolver.mythic3011.com' in (root / 'edge' / 'threads-resolver' / 'wrangler.jsonc').read_text(),
     'production-resolver-default': 'PUBLIC_THREADS_RESOLVER_URL' in (root / 'build.py').read_text() and 'resolver.mythic3011.com/v1/threads/resolve' in (root / 'build.py').read_text(),
     'distribution-workflow': 'HEAD:dist' in dist_workflow and 'SHA256SUMS.txt' in dist_workflow and 'release.json' in dist_workflow,
-    'distribution-runs-tests-first': dist_workflow.index('Run full regression suite') < dist_workflow.index('Publish generated dist branch'),
+    'distribution-runs-tests-first': dist_workflow.index('Run full regression suite') < dist_workflow.index('Prepare immutable evidence') < dist_workflow.index('Publish generated dist branch'),
+    'distribution-attestation-pinned': 'actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6' in dist_workflow and 'subject-checksums: dist/SHA256SUMS.txt' in dist_workflow,
+    'distribution-attestation-permissions': 'id-token: write' in dist_workflow and 'attestations: write' in dist_workflow,
+    'dependency-review-pinned': 'actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294' in dep_review_workflow,
+    'dependency-review-pr-only': 'pull_request:' in dep_review_workflow and 'fail-on-severity: moderate' in dep_review_workflow,
+    'dependabot-github-actions': 'package-ecosystem: github-actions' in dependabot and 'default-days: 7' in dependabot,
+    'dependabot-npm': 'package-ecosystem: npm' in dependabot and dependabot.count('default-days: 7') >= 2,
     'ci-ignores-generated-dist': '- dist' in ci_workflow,
     'no-jekyll-dependency': 'jekyll' not in workflow.lower(),
 }
