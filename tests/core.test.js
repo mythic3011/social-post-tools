@@ -10,6 +10,8 @@ async function main() {
 
   assert.equal(Core.defaultBuilderId('x'), 'fixupx');
   assert.equal(Core.defaultBuilderId('threads'), 'vxthreads');
+  assert(Core.BUILTIN_BUILDERS.every((builder) => !builder.retired));
+  assert(Core.ALL_BUILTIN_BUILDERS.some((builder) => builder.id === 'nitter-net' && builder.retired));
   assert.equal(Core.builderById('nitter-net').retired, true);
   assert.equal(Core.builderById('fixupx').capability, 'embed');
   assert.equal(Core.builderById('xcancel').capability, 'reader');
