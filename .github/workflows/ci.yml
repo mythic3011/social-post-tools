@@ -24,14 +24,12 @@ jobs:
       - name: Set up pinned toolchain
         uses: ./.github/actions/setup-toolchain
 
-      - name: Generate mise lock candidate
+      - name: Verify mise lock is canonical
         shell: bash
         run: |
           set -euo pipefail
           mise lock --platform linux-x64,macos-arm64,windows-x64
-          printf 'MISE_LOCK_BASE64='
-          base64 -w0 mise.lock
-          printf '\n'
+          git diff --exit-code -- mise.lock
 
       - name: Build
         run: uv run --locked python build.py
