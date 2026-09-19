@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '4.3.1'
+VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 PICO_VERSION = '2.1.1'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
@@ -21,7 +21,7 @@ PUBLIC_SITE_URL = 'https://share-tools.mythic3011.com'
 PUBLIC_GITHUB_REPO = 'mythic3011/social-post-tools'
 PUBLIC_GITHUB_URL = f'https://github.com/{PUBLIC_GITHUB_REPO}'
 PUBLIC_RAW_BASE = f'https://raw.githubusercontent.com/{PUBLIC_GITHUB_REPO}/dist'
-PUBLIC_CDN_BASE = f'https://cdn.jsdelivr.net/gh/{PUBLIC_GITHUB_REPO}@dist'
+PUBLIC_CDN_BASE = f'https://cdn.jsdelivr.net/gh/{PUBLIC_GITHUB_REPO}@dist-v{VERSION}'
 PUBLIC_RAW_USER_URL = f'{PUBLIC_RAW_BASE}/social-post-tools.user.js'
 PUBLIC_RAW_META_URL = f'{PUBLIC_RAW_BASE}/social-post-tools.meta.js'
 PUBLIC_CDN_USER_URL = f'{PUBLIC_CDN_BASE}/social-post-tools.user.js'
