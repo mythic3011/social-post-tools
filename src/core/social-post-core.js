@@ -627,11 +627,14 @@
     return out;
   }
 
+  const ACTIVE_BUILTIN_BUILDERS = Object.freeze(BUILTIN_BUILDERS.filter((builder) => !builder.retired));
+
   return Object.freeze({
     VERSION,
     PLATFORMS,
     DEFAULT_BUILDERS,
-    BUILTIN_BUILDERS,
+    ALL_BUILTIN_BUILDERS: BUILTIN_BUILDERS,
+    BUILTIN_BUILDERS: ACTIVE_BUILTIN_BUILDERS,
     MAX_BUILDER_URL_CHARS,
     MAX_CUSTOM_BUILDERS,
     parseUrl,
