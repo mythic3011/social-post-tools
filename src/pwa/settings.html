@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#0b0d10">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
   <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
   <script src="./install-bootstrap.js?v=__APP_VERSION__"></script>
@@ -14,94 +14,126 @@
 </head>
 <body data-page="settings">
 <div class="pico spt-app">
-<main class="container spt-shell">
-  <header class="spt-header"><div><h1>Settings</h1><p class="eyebrow">Social Post Tools</p></div><a role="button" class="secondary outline compact" href="./">Home</a></header>
+<main class="container spt-shell settings-shell">
+  <header class="spt-header">
+    <div class="brand-block"><span class="product-mark" aria-hidden="true">SP</span><div><h1>Settings</h1><p class="eyebrow">Routing, actions, capture, and providers</p></div></div>
+    <a role="button" class="secondary outline compact" href="./">Home</a>
+  </header>
 
-  <article class="hero-card">
-    <h2>Ready with the recommended defaults</h2>
-    <p>You do not need to configure anything. Install the app, then use Android Share from X or Threads and choose <strong>Social Post Tools</strong>.</p>
-    <div class="step-list" aria-label="Setup steps">
-      <div><span>1</span><p><strong>Install this app</strong><br><small>If the button is unavailable, use your browser menu → Install app / Add to Home screen.</small></p></div>
-      <div><span>2</span><p><strong>Share a post</strong><br><small>From X or Threads, tap Share and choose Social Post Tools.</small></p></div>
+  <section class="settings-intro">
+    <div>
+      <span class="eyebrow">Recommended path</span>
+      <h2>Defaults should work without configuration.</h2>
+      <p>Social Post Tools now treats preview links and alternate readers as different capabilities. X defaults to a chat-preview builder; reader frontends remain optional.</p>
     </div>
     <button id="install-app" type="button" aria-haspopup="dialog">Install app</button>
-    <p id="install-help" class="muted compact-copy">Tap Install. If the browser cannot open its native prompt, manual install steps will be shown.</p>
-  </article>
+    <p id="install-help" class="muted compact-copy">If your browser cannot show a native prompt, manual install steps will be shown.</p>
+  </section>
 
-  <article>
-    <h2>Quick setup</h2>
-    <p class="muted">These are the only settings most people need.</p>
-    <div class="form-grid">
-      <label for="x-builder">X link style<select id="x-builder"></select></label>
-      <label for="threads-builder">Threads link style<select id="threads-builder"></select></label>
-    </div>
-    <button class="full" id="settings-save" type="button">Save</button>
-  </article>
-
-  <details class="settings-group">
-    <summary>Customize actions</summary>
-    <div class="settings-group-body">
-      <p class="muted">Hide actions you never use. Disabled actions are not rendered.</p>
-      <fieldset class="checks" id="action-checks"></fieldset>
-    </div>
-  </details>
-
-  <details class="settings-group">
-    <summary>Sharing details</summary>
-    <div class="settings-group-body">
-      <label for="share-link-source">Link source<select id="share-link-source"><option value="selected">Selected share link</option><option value="clean">Original clean link</option></select></label>
-      <label for="share-template">Share text<textarea id="share-template" spellcheck="false"></textarea></label>
-      <p class="muted">Variables: {title}, {text}, {url}, {alternateUrl}, {platform}.</p>
-    </div>
-  </details>
-
-  <details class="settings-group">
-    <summary>AI capture</summary>
-    <div class="settings-group-body">
-      <label for="android-capture-browser">Android capture browser
-        <select id="android-capture-browser">
-          <option value="firefox">Firefox (recommended for Userscripts)</option>
-          <option value="firefoxBeta">Firefox Beta</option>
-          <option value="firefoxNightly">Firefox Nightly</option>
-          <option value="system">System browser / app chooser</option>
-        </select>
-      </label>
-      <p class="muted">The Android PWA may be installed by Chrome for Share Target support, while rich capture opens in the browser that has Tampermonkey/Violentmonkey. Firefox is the recommended default.</p>
-    </div>
-  </details>
-
-  <details class="settings-group">
-    <summary>Custom link builders</summary>
-    <div class="settings-group-body">
-      <p class="muted">Advanced: add a self-hosted frontend or your own URL template.</p>
-      <div id="builder-list" class="builder-list"></div>
-      <section class="builder" aria-label="Add custom link builder">
+  <section class="settings-layout">
+    <div class="settings-main">
+      <article class="settings-card">
+        <div class="section-heading-row"><div><span class="eyebrow">01 · Output routing</span><h2>Default link behavior</h2></div><span class="status-chip">Recommended</span></div>
+        <p class="muted">Pick what a “share link” means per platform. This does not change the original clean URL.</p>
         <div class="form-grid">
-          <label for="builder-name">Name<input id="builder-name" maxlength="80"></label>
-          <label for="builder-platform">Platform<select id="builder-platform"><option value="x">X</option><option value="threads">Threads</option></select></label>
-          <label for="builder-type">Type<select id="builder-type"><option value="replace-origin">Replace website</option><option value="template">URL template</option></select></label>
-          <label for="builder-value">Website / template<input id="builder-value" spellcheck="false" placeholder="https://example.com"></label>
+          <label for="x-builder">X share link<select id="x-builder"></select></label>
+          <label for="threads-builder">Threads share link<select id="threads-builder"></select></label>
         </div>
-        <p id="builder-preview" class="url muted"></p>
-        <button id="builder-add" class="secondary" type="button">Add builder</button>
-      </section>
-    </div>
-  </details>
+        <button class="full" id="settings-save" type="button">Save settings</button>
+      </article>
 
-  <details class="settings-group">
-    <summary>Transfer or reset settings</summary>
-    <div class="settings-group-body">
-      <p class="muted">Use portable settings only if you want the same link builders in the browser userscript and this Android companion.</p>
-      <label for="portable-json">Portable settings JSON<textarea id="portable-json" spellcheck="false"></textarea></label>
-      <div class="toolbar"><button class="secondary" id="portable-export" type="button">Export</button><button class="secondary" id="portable-import" type="button">Import</button><button class="contrast outline" id="settings-reset" type="button">Reset defaults</button></div>
+      <article class="settings-card provider-card">
+        <div class="section-heading-row"><div><span class="eyebrow">Provider lifecycle</span><h2>Built-in providers</h2></div><span class="status-chip">No live probing</span></div>
+        <p class="muted">The app keeps a curated built-in set instead of shipping a long list of public instances. Runtime health probing stays disabled for privacy and CSP simplicity.</p>
+        <div id="provider-status-list" class="provider-status-list" aria-live="polite"></div>
+      </article>
+
+      <details class="settings-group" open>
+        <summary>02 · Actions shown after sharing</summary>
+        <div class="settings-group-body">
+          <p class="muted">Disable actions you never use. Hidden actions are not rendered into the share screen.</p>
+          <fieldset class="checks" id="action-checks"></fieldset>
+        </div>
+      </details>
+
+      <details class="settings-group">
+        <summary>03 · Share text and URL source</summary>
+        <div class="settings-group-body">
+          <label for="share-link-source">Link source<select id="share-link-source"><option value="selected">Selected share link</option><option value="clean">Original clean link</option></select></label>
+          <label for="share-template">Share text<textarea id="share-template" spellcheck="false"></textarea></label>
+          <p class="muted">Variables: {title}, {text}, {url}, {alternateUrl}, {platform}.</p>
+        </div>
+      </details>
+
+      <details class="settings-group">
+        <summary>04 · AI capture handoff</summary>
+        <div class="settings-group-body">
+          <label for="android-capture-browser">Android capture browser
+            <select id="android-capture-browser">
+              <option value="firefox">Firefox (recommended for Userscripts)</option>
+              <option value="firefoxBeta">Firefox Beta</option>
+              <option value="firefoxNightly">Firefox Nightly</option>
+              <option value="system">System browser / app chooser</option>
+            </select>
+          </label>
+          <p class="muted">The PWA can be installed by Chrome for Share Target support while rich capture opens in the browser that has the Userscript.</p>
+        </div>
+      </details>
+
+      <details class="settings-group">
+        <summary>05 · Custom providers</summary>
+        <div class="settings-group-body">
+          <p class="muted">Advanced: add a self-hosted reader, embed service, or URL template. HTTPS is required except loopback.</p>
+          <div id="builder-list" class="builder-list"></div>
+          <section class="builder" aria-label="Add custom link builder">
+            <div class="form-grid">
+              <label for="builder-name">Name<input id="builder-name" maxlength="80"></label>
+              <label for="builder-platform">Platform<select id="builder-platform"><option value="x">X</option><option value="threads">Threads</option></select></label>
+              <label for="builder-type">Type<select id="builder-type"><option value="replace-origin">Replace website</option><option value="template">URL template</option></select></label>
+              <label for="builder-value">Website / template<input id="builder-value" spellcheck="false" placeholder="https://example.com"></label>
+            </div>
+            <p id="builder-preview" class="url muted"></p>
+            <button id="builder-add" class="secondary" type="button">Add custom provider</button>
+          </section>
+        </div>
+      </details>
+
+      <details class="settings-group">
+        <summary>06 · Transfer or reset</summary>
+        <div class="settings-group-body">
+          <p class="muted">Portable settings let the browser Userscript and Android companion share the same custom link builders.</p>
+          <label for="portable-json">Portable settings JSON<textarea id="portable-json" spellcheck="false"></textarea></label>
+          <div class="toolbar"><button class="secondary" id="portable-export" type="button">Export</button><button class="secondary" id="portable-import" type="button">Import</button><button class="contrast outline" id="settings-reset" type="button">Reset defaults</button></div>
+        </div>
+      </details>
     </div>
-  </details>
+
+    <aside class="settings-side">
+      <article class="side-card">
+        <span class="eyebrow">Mental model</span>
+        <h3>Three different outputs</h3>
+        <dl class="compact-dl">
+          <div><dt>Clean</dt><dd>Canonical source URL.</dd></div>
+          <div><dt>Embed</dt><dd>Link optimized for chat previews.</dd></div>
+          <div><dt>Reader</dt><dd>Alternative frontend for reading.</dd></div>
+        </dl>
+      </article>
+      <article class="side-card">
+        <span class="eyebrow">Privacy</span>
+        <h3>Provider checks stay explicit</h3>
+        <p class="muted">The PWA does not silently contact every alternate frontend to test availability. That would leak browsing intent and complicate the current CSP.</p>
+      </article>
+      <nav class="side-nav" aria-label="Settings navigation">
+        <a href="share-target.html">Open share screen</a>
+        <a href="./privacy.html">Privacy & security</a>
+        <a href="./install.html">Installation</a>
+      </nav>
+    </aside>
+  </section>
 
   <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-dialog-title">
     <article>
-      <header>
-        <h2 id="install-dialog-title">Install Social Post Tools</h2>
-      </header>
+      <header><h2 id="install-dialog-title">Install Social Post Tools</h2></header>
       <p id="install-guidance">Open your browser menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
       <p class="muted">The custom install prompt is browser-dependent. Manual installation can still work even when this website cannot trigger the browser prompt directly.</p>
       <details class="install-diagnostics">
@@ -113,17 +145,15 @@
           <div><dt>App mode</dt><dd id="diag-mode">Checking…</dd></div>
         </dl>
       </details>
-      <footer class="toolbar">
-        <button id="install-dialog-close" type="button" class="secondary">Close</button>
-      </footer>
+      <footer class="toolbar"><button id="install-dialog-close" type="button" class="secondary">Close</button></footer>
     </article>
   </dialog>
 
-  <nav class="toolbar secondary-nav" aria-label="Settings navigation"><a role="button" class="secondary outline" href="./">Home</a><a role="button" class="secondary outline" href="share-target.html">Open share screen</a></nav>
   <p id="status" class="status" aria-live="polite"></p>
 </main>
 </div>
 <script src="./social-post-core.js?v=__APP_VERSION__"></script>
+<script src="./provider-policy.js?v=__APP_VERSION__"></script>
 <script src="./app.js?v=__APP_VERSION__"></script>
 </body>
 </html>
