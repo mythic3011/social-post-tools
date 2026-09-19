@@ -7,9 +7,10 @@
   const SETTINGS_KEY = 'social-post-tools:pwa-settings:v1';
   const DEFAULT_X_BUILDER = Core.defaultBuilderId('x');
   const DEFAULT_THREADS_BUILDER = Core.defaultBuilderId('threads');
-  const RETIRED = new Set(Core.BUILTIN_BUILDERS.filter((builder) => builder.retired).map((builder) => builder.id));
+  const ALL_BUILDERS = Core.ALL_BUILTIN_BUILDERS || Core.BUILTIN_BUILDERS;
+  const RETIRED = new Set(ALL_BUILDERS.filter((builder) => builder.retired).map((builder) => builder.id));
   const META = Object.freeze(Object.fromEntries(
-    Core.BUILTIN_BUILDERS.map((builder) => [builder.id, Object.freeze({
+    ALL_BUILDERS.map((builder) => [builder.id, Object.freeze({
       capability: builder.capability || 'custom',
       status: builder.status || (builder.retired ? 'retired' : 'available'),
       label: builder.name,
@@ -103,7 +104,7 @@
     if (!host) return;
     host.replaceChildren();
 
-    for (const builder of Core.BUILTIN_BUILDERS.filter((entry) => !entry.retired)) {
+    for (const builder of Core.BUILTIN_BUILDERS) {
       const row = document.createElement('div');
       row.className = 'provider-row';
 
