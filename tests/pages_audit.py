@@ -15,6 +15,7 @@ dep_review_workflow = (root / '.github/workflows/dependency-review.yml').read_te
 dependabot = (root / '.github/dependabot.yml').read_text(encoding='utf-8')
 setup_toolchain = (root / '.github/actions/setup-toolchain/action.yml').read_text(encoding='utf-8')
 mise_text = (root / 'mise.toml').read_text(encoding='utf-8')
+release_helper = (root / 'scripts/set-version.py').read_text(encoding='utf-8')
 
 spec = importlib.util.spec_from_file_location('spt_build', root / 'build.py')
 build = importlib.util.module_from_spec(spec)
@@ -64,6 +65,7 @@ checks = {
     'sample-pages-meta': f'@downloadURL  {sample_base}/install/social-post-tools.user.js' in meta_sample and f'@updateURL    {sample_base}/install/social-post-tools.meta.js' in meta_sample,
     'public-meta-raw-github': f'@downloadURL  {build.PUBLIC_RAW_USER_URL}' in public_meta and f'@updateURL    {build.PUBLIC_RAW_META_URL}' in public_meta,
     'public-meta-support-github': f'@supportURL   {build.PUBLIC_GITHUB_URL}/issues' in public_meta,
+    'public-cdn-version-immutable': f'@dist-v{build.VERSION}/social-post-tools.user.js' in build.PUBLIC_CDN_USER_URL and '@dist/social-post-tools.user.js' not in build.PUBLIC_CDN_USER_URL,
     'pages-workflow-configure-pinned': 'actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b' in workflow,
     'pages-workflow-base-url': 'steps.pages.outputs.base_url' in workflow and '--pages-base' in workflow,
     'pages-workflow-artifact-pinned': 'actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b' in workflow and 'path: ./site' in workflow,
@@ -78,11 +80,14 @@ checks = {
     'distribution-runs-tests-first': dist_workflow.index('Run full regression suite') < dist_workflow.index('Prepare immutable evidence') < dist_workflow.index('Publish generated dist branch'),
     'distribution-attestation-pinned': 'actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6' in dist_workflow and 'subject-checksums: dist/SHA256SUMS.txt' in dist_workflow,
     'distribution-attestation-permissions': 'id-token: write' in dist_workflow and 'attestations: write' in dist_workflow,
+    'distribution-version-tag-immutable': 'TAG="dist-v${VERSION}"' in dist_workflow and 'git ls-remote --exit-code --tags origin' in dist_workflow and 'publish=false' in dist_workflow and 'git tag -a "${{ steps.release.outputs.tag }}"' in dist_workflow,
     'dependency-review-pinned': 'actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294' in dep_review_workflow,
     'dependency-review-pr-only': 'pull_request:' in dep_review_workflow and 'fail-on-severity: moderate' in dep_review_workflow,
     'dependabot-github-actions': 'package-ecosystem: github-actions' in dependabot and 'default-days: 7' in dependabot,
     'dependabot-npm': 'package-ecosystem: npm' in dependabot and dependabot.count('default-days: 7') >= 2,
     'ci-ignores-generated-dist': '- dist' in ci_workflow,
+    'ci-release-metadata-canonical': 'python scripts/set-version.py "$(cat VERSION)"' in ci_workflow and 'git diff --exit-code -- VERSION package.json package-lock.json pyproject.toml uv.lock README.md' in ci_workflow,
+    'release-helper-semver-guard': 'SEMVER = re.compile' in release_helper and 'version must be plain semver x.y.z' in release_helper,
     'no-jekyll-dependency': 'jekyll' not in workflow.lower(),
 }
 failed = []
