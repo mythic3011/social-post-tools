@@ -19,6 +19,13 @@ PICO_CSS = ROOT / 'node_modules' / '@picocss' / 'pico' / 'css' / 'pico.condition
 PICO_FALLBACK = PWA_SRC / 'assets' / 'pico-fallback.css'
 PUBLIC_SITE_URL = 'https://share-tools.mythic3011.com'
 PUBLIC_THREADS_RESOLVER_URL = 'https://resolver.mythic3011.com/v1/threads/resolve'
+DEFAULT_X_BUILDER = 'fixupx'
+RETIRED_BUILDER_IDS = (
+    'nitter-net',
+    'nitter-catsarch',
+    'nitter-privacyredirect',
+    'nitter-tiekoetter',
+)
 
 
 def normalize_base_url(value: str | None) -> str | None:
@@ -41,6 +48,20 @@ def normalize_resolver_url(value: str | None) -> str | None:
     if parsed.query or parsed.fragment:
         raise SystemExit('--threads-resolver-url must not contain a query string or fragment')
     return value
+
+
+def apply_provider_release_policy(text: str) -> str:
+    """Remove retired built-in providers from shipped code while retaining source compatibility fixtures."""
+    lines = []
+    for line in text.splitlines():
+        if any(f"id: '{builder_id}'" in line for builder_id in RETIRED_BUILDER_IDS):
+            continue
+        lines.append(line)
+    output = '\n'.join(lines)
+    # Source fixtures can still exercise the legacy ID, but a release must never
+    # select it as a fallback/default after those providers have been removed.
+    output = output.replace("'nitter-net'", f"'{DEFAULT_X_BUILDER}'")
+    return output + ('\n' if text.endswith('\n') else '')
 
 
 def distribution_meta(base_url: str | None) -> str:
@@ -70,7 +91,7 @@ def render_userscript(pages_base: str | None) -> str:
     bundle = template.replace(CORE_MARKER, core)
     bundle = bundle.replace(DIST_META_MARKER, distribution_meta(pages_base))
     bundle = bundle.replace('__APP_VERSION__', VERSION)
-    return bundle
+    return apply_provider_release_policy(bundle)
 
 
 def extract_metadata(bundle: str) -> str:
@@ -102,7 +123,8 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
         shutil.rmtree(site)
     shutil.copytree(PWA_SRC, site, ignore=shutil.ignore_patterns('pico-fallback.css'))
     install_ui_framework(site, dev_fallback=dev_fallback)
-    shutil.copy2(SRC / 'core/social-post-core.js', site / 'social-post-core.js')
+    core_text = (SRC / 'core/social-post-core.js').read_text(encoding='utf-8')
+    (site / 'social-post-core.js').write_text(apply_provider_release_policy(core_text), encoding='utf-8')
     install = site / 'install'
     install.mkdir(parents=True, exist_ok=True)
     (install / 'social-post-tools.user.js').write_text(bundle, encoding='utf-8')
@@ -129,6 +151,7 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
 
     app_js = site / 'app.js'
     app_text = app_js.read_text(encoding='utf-8')
+    app_text = apply_provider_release_policy(app_text)
     app_text = app_text.replace('__THREADS_RESOLVER_URL__', threads_resolver_url or '')
     app_js.write_text(app_text, encoding='utf-8')
 
