@@ -51,17 +51,24 @@ def normalize_resolver_url(value: str | None) -> str | None:
 
 
 def apply_provider_release_policy(text: str) -> str:
-    """Remove retired built-in providers from shipped code while retaining source compatibility fixtures."""
-    lines = []
-    for line in text.splitlines():
-        if any(f"id: '{builder_id}'" in line for builder_id in RETIRED_BUILDER_IDS):
-            continue
-        lines.append(line)
-    output = '\n'.join(lines)
-    # Source fixtures can still exercise the legacy ID, but a release must never
-    # select it as a fallback/default after those providers have been removed.
-    output = output.replace("'nitter-net'", f"'{DEFAULT_X_BUILDER}'")
-    return output + ('\n' if text.endswith('\n') else '')
+    """Keep legacy builder IDs readable, but never expose/select retired providers in shipped code."""
+    output = text
+    for builder_id in RETIRED_BUILDER_IDS:
+        marker = f"id: '{builder_id}',"
+        output = output.replace(marker, f"id: '{builder_id}', retired: true,")
+
+    compatible_source = "return builderRegistry(customBuilders, options).filter((builder) => builder.platforms.includes(p.id));"
+    compatible_release = "return builderRegistry(customBuilders, options).filter((builder) => !builder.retired && builder.platforms.includes(p.id));"
+    output = output.replace(compatible_source, compatible_release)
+
+    # Retired IDs remain addressable for imported legacy settings and regression
+    # fixtures, but fresh/default selection moves to a maintained preview builder.
+    output = output.replace("'nitter-net'", f"'{DEFAULT_X_BUILDER}'", 0)
+    # Replace only default/fallback occurrences, not the legacy builder object's id.
+    output = output.replace("builderId: 'nitter-net'", f"builderId: '{DEFAULT_X_BUILDER}'")
+    output = output.replace("builderId || 'nitter-net'", f"builderId || '{DEFAULT_X_BUILDER}'")
+    output = output.replace("{ builderId: 'nitter-net' }", f"{{ builderId: '{DEFAULT_X_BUILDER}' }}")
+    return output
 
 
 def distribution_meta(base_url: str | None) -> str:
