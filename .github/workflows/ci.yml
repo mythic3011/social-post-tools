@@ -5,6 +5,7 @@ on:
   push:
     branches-ignore:
       - gh-pages
+      - dist
   workflow_dispatch:
 
 permissions:
@@ -13,30 +14,15 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: '24'
-          cache: 'npm'
+          persist-credentials: false
 
-      - name: Install UI dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          version: '0.12.5'
-          enable-cache: true
-
-      - name: Install Python
-        run: uv python install 3.13
-
-      - name: Sync locked Python dependencies
-        run: uv sync --locked
+      - name: Set up pinned toolchain
+        uses: ./.github/actions/setup-toolchain
 
       - name: Build
         run: uv run --locked python build.py
