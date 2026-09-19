@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '1.3.0';
+  const VERSION = '1.4.0';
   const MAX_BUILDER_URL_CHARS = 8192;
   const MAX_CUSTOM_BUILDERS = 32;
 
@@ -24,15 +24,20 @@
     }),
   });
 
+  const DEFAULT_BUILDERS = Object.freeze({
+    x: 'fixupx',
+    threads: 'vxthreads',
+  });
+
   const BUILTIN_BUILDERS = Object.freeze([
-    Object.freeze({ id: 'nitter-net', name: 'Nitter.net', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.net', builtin: true, group: 'Nitter' }),
-    Object.freeze({ id: 'nitter-catsarch', name: 'Nitter · catsarch.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.catsarch.com', builtin: true, group: 'Nitter' }),
-    Object.freeze({ id: 'nitter-privacyredirect', name: 'Nitter · privacyredirect.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.privacyredirect.com', builtin: true, group: 'Nitter' }),
-    Object.freeze({ id: 'nitter-tiekoetter', name: 'Nitter · tiekoetter.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.tiekoetter.com', builtin: true, group: 'Nitter' }),
-    Object.freeze({ id: 'xcancel', name: 'XCancel', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://xcancel.com', builtin: true, group: 'Nitter' }),
-    Object.freeze({ id: 'fixupx', name: 'FixupX', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://fixupx.com', builtin: true, group: 'Embed fixer' }),
-    Object.freeze({ id: 'fixvx', name: 'FixVX', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://fixvx.com', builtin: true, group: 'Embed fixer' }),
-    Object.freeze({ id: 'vxthreads', name: 'vxThreads', platforms: ['threads'], type: 'replace-origin', baseUrl: 'https://vxthreads.net', builtin: true, group: 'Threads' }),
+    Object.freeze({ id: 'fixupx', name: 'FixupX', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://fixupx.com', builtin: true, group: 'Embed fixer', capability: 'embed', status: 'recommended', detail: 'Chat-friendly X previews', retired: false }),
+    Object.freeze({ id: 'fixvx', name: 'FixVX', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://fixvx.com', builtin: true, group: 'Embed fixer', capability: 'embed', status: 'available', detail: 'Alternative X embed fixer', retired: false }),
+    Object.freeze({ id: 'xcancel', name: 'XCancel', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://xcancel.com', builtin: true, group: 'Reader', capability: 'reader', status: 'available', detail: 'Alternative X reader', retired: false }),
+    Object.freeze({ id: 'vxthreads', name: 'vxThreads', platforms: ['threads'], type: 'replace-origin', baseUrl: 'https://vxthreads.net', builtin: true, group: 'Embed fixer', capability: 'embed', status: 'available', detail: 'Chat-friendly Threads previews', retired: false }),
+    Object.freeze({ id: 'nitter-net', name: 'Nitter.net', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.net', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
+    Object.freeze({ id: 'nitter-catsarch', name: 'Nitter · catsarch.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.catsarch.com', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
+    Object.freeze({ id: 'nitter-privacyredirect', name: 'Nitter · privacyredirect.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.privacyredirect.com', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
+    Object.freeze({ id: 'nitter-tiekoetter', name: 'Nitter · tiekoetter.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.tiekoetter.com', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
   ]);
 
   function parseUrl(raw, base = 'https://example.invalid/') {
@@ -80,6 +85,11 @@
     if (!url) return null;
     const host = url.hostname.toLowerCase();
     return Object.values(PLATFORMS).find((platform) => platform.hosts.includes(host)) || null;
+  }
+
+  function defaultBuilderId(platform) {
+    const p = platformById(platform);
+    return p ? DEFAULT_BUILDERS[p.id] || null : null;
   }
 
   function canonicalize(platform, rawUrl, base) {
@@ -158,9 +168,10 @@
     const name = cleanText(raw.name).slice(0, maxNameChars);
     const platforms = uniqueValues((raw.platforms || []).filter((platform) => Boolean(PLATFORMS[platform])));
     const type = ['replace-origin', 'template', 'structured'].includes(raw.type) ? raw.type : 'replace-origin';
+    const capability = ['embed', 'reader', 'archive', 'custom'].includes(raw.capability) ? raw.capability : 'custom';
     if (!name || !platforms.length || !id) return null;
 
-    const builder = { id, name, platforms, type, builtin: false };
+    const builder = { id, name, platforms, type, capability, status: 'custom', retired: false, builtin: false };
     if (type === 'replace-origin') {
       const base = parseUrl(boundedString(raw.baseUrl, 2048));
       if (!customUrlAllowed(base, allowInsecureHttp)) return null;
@@ -193,7 +204,7 @@
     return builder;
   }
 
-  function builderRegistry(customBuilders = [], { allowInsecureHttp = false } = {}) {
+  function builderRegistry(customBuilders = [], { allowInsecureHttp = false, includeRetired = true } = {}) {
     const used = new Set(BUILTIN_BUILDERS.map((builder) => builder.id));
     const normalized = [];
     for (const raw of (Array.isArray(customBuilders) ? customBuilders : []).slice(0, MAX_CUSTOM_BUILDERS)) {
@@ -202,17 +213,20 @@
       used.add(builder.id);
       normalized.push(builder);
     }
-    return [...BUILTIN_BUILDERS, ...normalized];
+    const registry = [...BUILTIN_BUILDERS, ...normalized];
+    return includeRetired ? registry : registry.filter((builder) => !builder.retired);
   }
 
   function compatibleBuilders(platform, customBuilders = [], options = {}) {
     const p = platformById(platform);
     if (!p) return [];
-    return builderRegistry(customBuilders, options).filter((builder) => builder.platforms.includes(p.id));
+    return builderRegistry(customBuilders, { ...options, includeRetired: false })
+      .filter((builder) => builder.platforms.includes(p.id));
   }
 
   function builderById(id, customBuilders = [], options = {}) {
-    return builderRegistry(customBuilders, options).find((builder) => builder.id === id) || null;
+    return builderRegistry(customBuilders, { ...options, includeRetired: true })
+      .find((builder) => builder.id === id) || null;
   }
 
   function builderVars(platform, canonicalUrl) {
@@ -285,7 +299,10 @@
 
   function selectBuilder(platform, builderId, customBuilders = [], options = {}) {
     const compatible = compatibleBuilders(platform, customBuilders, options);
-    return compatible.find((builder) => builder.id === builderId) || compatible[0] || null;
+    const requested = compatible.find((builder) => builder.id === builderId);
+    if (requested) return requested;
+    const preferred = defaultBuilderId(platform);
+    return compatible.find((builder) => builder.id === preferred) || compatible[0] || null;
   }
 
   function transformedUrl(platform, canonicalUrl, builderId, customBuilders = [], options = {}) {
@@ -580,8 +597,8 @@
     return {
       schema: 'social-post-tools-links/v1',
       links: {
-        x: { builderId: String(links.x?.builderId || 'nitter-net') },
-        threads: { builderId: String(links.threads?.builderId || 'vxthreads') },
+        x: { builderId: String(links.x?.builderId || defaultBuilderId('x')) },
+        threads: { builderId: String(links.threads?.builderId || defaultBuilderId('threads')) },
       },
       builders: { custom: Array.isArray(custom) ? custom.slice(0, MAX_CUSTOM_BUILDERS) : [] },
       security: { allowInsecureCustomUrls: Boolean(security.allowInsecureCustomUrls) },
@@ -595,13 +612,16 @@
     const custom = registry.filter((builder) => !builder.builtin);
     const out = {
       schema: 'social-post-tools-links/v1',
-      links: { x: { builderId: 'nitter-net' }, threads: { builderId: 'vxthreads' } },
+      links: {
+        x: { builderId: defaultBuilderId('x') },
+        threads: { builderId: defaultBuilderId('threads') },
+      },
       builders: { custom },
       security: { allowInsecureCustomUrls },
     };
     for (const platform of ['x', 'threads']) {
       const selected = String(raw.links?.[platform]?.builderId || '');
-      const exists = registry.some((builder) => builder.id === selected && builder.platforms.includes(platform));
+      const exists = registry.some((builder) => builder.id === selected && !builder.retired && builder.platforms.includes(platform));
       if (exists) out.links[platform].builderId = selected;
     }
     return out;
@@ -610,6 +630,7 @@
   return Object.freeze({
     VERSION,
     PLATFORMS,
+    DEFAULT_BUILDERS,
     BUILTIN_BUILDERS,
     MAX_BUILDER_URL_CHARS,
     MAX_CUSTOM_BUILDERS,
@@ -618,6 +639,7 @@
     boundedString,
     platformById,
     platformForUrl,
+    defaultBuilderId,
     canonicalize,
     postParts,
     hasUrlCredentials,
