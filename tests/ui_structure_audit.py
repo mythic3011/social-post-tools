@@ -10,7 +10,8 @@ build = (root/'build.py').read_text()
 ci = (root/'.github/workflows/ci.yml').read_text()
 pages = (root/'.github/workflows/pages.yml').read_text()
 setup_toolchain = (root/'.github/actions/setup-toolchain/action.yml').read_text()
-mise = tomllib.loads((root/'mise.toml').read_text())
+mise_text = (root/'mise.toml').read_text()
+mise = tomllib.loads(mise_text)
 app_css = (root/'src/pwa/assets/app.css').read_text()
 install_css = (root/'src/pwa/assets/install.css').read_text()
 
@@ -20,13 +21,14 @@ checks = {
     'ui-lock-integrity': lock.get('packages',{}).get('node_modules/@picocss/pico',{}).get('integrity','').startswith('sha512-'),
     'ui-build-localizes-pico': "pico.conditional.min.css" in build and 'node_modules' in build and 'shutil.copy2(PICO_CSS' in build,
     'ui-build-fails-closed': 'Run `npm ci` first' in build and '--dev-ui-fallback' in build,
-    'ui-dependencies-installed-once': 'npm ci --ignore-scripts --no-audit --no-fund' in setup_toolchain and 'npm ci ' not in ci and 'npm ci ' not in pages,
+    'ui-dependencies-installed-once': 'mise run bootstrap' in setup_toolchain and 'npm ci --ignore-scripts --no-audit --no-fund' in mise_text and 'npm ci ' not in ci and 'npm ci ' not in pages,
     'ui-csp-remains-self': "style-src 'self'" in (root/'src/pwa/index.html').read_text(),
     'ui-hidden-invariant': '[hidden], .hidden { display: none !important; }' in app_css,
     'ui-token-layer': '--spt-content-width' in app_css and '--spt-space-4' in app_css,
     'ui-install-workspace-layer': '.distribution-grid' in install_css and '.install-workspace' in install_css,
     'toolchain-mise-exact': mise['tools']['node'] == '24.20.0' and mise['tools']['python'] == '3.13.15' and mise['tools']['aqua:astral-sh/uv'] == '0.12.5',
     'toolchain-release-age-policy': mise['settings']['minimum_release_age'] == '7d',
+    'toolchain-lock-enforced': mise['tool_config']['locked'] is True and mise['settings']['locked_verify_provenance'] is True and (root/'mise.lock').is_file(),
     'toolchain-mise-action-pinned': 'jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c' in setup_toolchain and "version: '2026.9.5'" in setup_toolchain,
     'toolchain-workflows-reuse-local-action': 'uses: ./.github/actions/setup-toolchain' in ci and 'uses: ./.github/actions/setup-toolchain' in pages,
     'toolchain-no-duplicate-node-uv-actions': 'actions/setup-node' not in ci + pages and 'astral-sh/setup-uv' not in ci + pages,
