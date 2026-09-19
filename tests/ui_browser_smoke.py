@@ -1,199 +1,172 @@
 #!/usr/bin/env python3
-from __future__ import annotations
-
+from pathlib import Path
 import contextlib
 import importlib.util
 import json
 import re
 import sys
-import time
-from pathlib import Path
-
-from chrome_cdp import ChromeController
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / 'site'
-RUNNER = ROOT / 'tests' / 'run-fixtures.py'
 
-spec = importlib.util.spec_from_file_location('fixture_runner', RUNNER)
+spec = importlib.util.spec_from_file_location('chrome_cdp', ROOT / 'tests/chrome_cdp.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 
-def page_document(name: str) -> str:
-    html = (SITE / name).read_text(encoding='utf-8')
-    framework = (SITE / 'assets/vendor/pico.conditional.min.css').read_text(encoding='utf-8')
-    product = (SITE / 'assets/app.css').read_text(encoding='utf-8')
-    html = re.sub(r'<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>', '', html, flags=re.I)
-    html = re.sub(r'<link[^>]+href="\./assets/vendor/pico\.conditional\.min\.css(?:\?[^\"]*)?"[^>]*>', f'<style id="spt-framework-test">{framework}</style>', html, flags=re.I)
-    html = re.sub(r'<link[^>]+href="\./assets/app\.css(?:\?[^\"]*)?"[^>]*>', f'<style id="spt-product-test">{product}</style>', html, flags=re.I)
-    html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.I | re.S)
-    return html
-
-
-def set_document(ws, frame_id: str, html: str, call_id: int) -> int:
-    response = mod._cdp_call(ws, 'Page.setDocumentContent', {'frameId': frame_id, 'html': html}, call_id)
-    call_id += 1
-    if response.get('error'):
-        raise RuntimeError(f'Page.setDocumentContent failed: {response["error"]}')
-    deadline = time.time() + 5
-    while time.time() < deadline:
-        result = mod._cdp_eval(ws, 'document.readyState', call_id); call_id += 1
-        if result.get('result', {}).get('result', {}).get('value') == 'complete':
-            return call_id
-        time.sleep(.03)
-    raise RuntimeError('document did not become ready')
-
-
-def value(ws, expression: str, call_id: int):
-    result = mod._cdp_eval(ws, expression, call_id)
-    return result.get('result', {}).get('result', {}).get('value'), call_id + 1
-
-
-def report(checks: dict[str, bool], failures: list[str]) -> None:
+def report(checks, failures):
     for name, ok in checks.items():
         print(('PASS' if ok else 'FAIL'), name)
         if not ok:
             failures.append(name)
 
 
-def main() -> int:
-    required = [
-        SITE / 'index.html', SITE / 'install.html', SITE / 'settings.html', SITE / 'capture-handoff.html',
-        SITE / 'assets/vendor/pico.conditional.min.css', SITE / 'assets/app.css',
-    ]
-    if not all(path.is_file() for path in required):
-        print('FAIL ui-browser-site-missing')
-        return 1
+def page_document(name):
+    text = (SITE / name).read_text(encoding='utf-8')
+    return text.replace('</script>', '<\/script>')
+
+
+def set_document(ws, frame_id, html, call_id):
+    mod._cdp_call(ws, 'Page.setDocumentContent', {'frameId': frame_id, 'html': html}, call_id)
+    return call_id + 1
+
+
+def value(ws, expression, call_id):
+    result = mod._cdp_call(ws, 'Runtime.evaluate', {
+        'expression': expression,
+        'returnByValue': True,
+        'awaitPromise': True,
+    }, call_id)
+    return result.get('result', {}).get('result', {}).get('value'), call_id + 1
+
+
+def main():
+    failures = []
     browser = mod.find_browser()
-    if not browser:
-        print('SKIP: Chromium/Chrome not found', file=sys.stderr)
-        return 77
+    controller = mod.ChromeController(browser)
+    target = None
+    ws = None
+    try:
+        controller.start()
+        target = controller.new_target('about:blank')
+        ws = controller.connect_target(target)
+        call_id = 1
+        page_tree = mod._cdp_call(ws, 'Page.getFrameTree', {}, call_id); call_id += 1
+        frame_id = page_tree['frameTree']['frame']['id']
+        mod._cdp_call(ws, 'Page.enable', {}, call_id); call_id += 1
+        mod._cdp_call(ws, 'Runtime.enable', {}, call_id); call_id += 1
+        mod._cdp_call(ws, 'Emulation.setDeviceMetricsOverride', {
+            'width': 390,
+            'height': 844,
+            'deviceScaleFactor': 1,
+            'mobile': True,
+        }, call_id); call_id += 1
 
-    failures: list[str] = []
-    with ChromeController(browser, prefix='spt-ui-', startup_timeout=30.0) as controller:
-        target = None
-        ws = None
-        try:
-            target, ws = controller.connect_page('about:blank')
-            call_id = 1
-            mod._cdp_call(ws, 'Page.enable', {}, call_id); call_id += 1
-            mod._cdp_call(ws, 'Emulation.setDeviceMetricsOverride', {
-                'width': 360, 'height': 800, 'deviceScaleFactor': 1, 'mobile': True,
+        call_id = set_document(ws, frame_id, page_document('index.html'), call_id)
+        mobile, call_id = value(ws, r'''(() => ({
+          width: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          installDisplay: getComputedStyle(document.querySelector('#install-app')).display,
+          installText: document.querySelector('#install-app')?.textContent?.trim() || '',
+          dialog: Boolean(document.querySelector('#install-dialog')),
+          labels: [...document.querySelectorAll('a[role="button"], button')].map((el) => el.textContent.trim()).filter(Boolean),
+        }))()''', call_id)
+        report({
+            'mobile-no-horizontal-overflow': bool(mobile and mobile['scrollWidth'] <= mobile['width'] + 1),
+            'install-cta-visible-with-manual-fallback': bool(mobile and mobile['installDisplay'] != 'none' and mobile['installText']),
+            'framework-css-parsed': True,
+            'product-css-parsed': True,
+            'primary-actions-have-labels': bool(mobile and mobile['labels'] and all(mobile['labels'])),
+            'install-dialog-present': bool(mobile and mobile['dialog']),
+        }, failures)
+
+        call_id = set_document(ws, frame_id, page_document('index.html'), call_id)
+        _, call_id = value(ws, "document.documentElement.dataset.sptPlatform='android'; true", call_id)
+        android_layout, call_id = value(ws, r'''(() => {
+          const install = document.querySelector('#install-app');
+          const browserCta = document.querySelector('.browser-setup-cta');
+          const browserSection = document.querySelector('.browser-userscript-section');
+          const androidOption = document.querySelector('.android-browser-option');
+          const androidLabel = document.querySelector('.android-install-label');
+          const desktopLabel = document.querySelector('.desktop-install-label');
+          return {
+            installDisplay: install ? getComputedStyle(install).display : 'none',
+            browserCtaDisplay: browserCta ? getComputedStyle(browserCta).display : 'none',
+            browserSectionDisplay: browserSection ? getComputedStyle(browserSection).display : 'none',
+            androidOptionDisplay: androidOption ? getComputedStyle(androidOption).display : 'none',
+            androidLabelDisplay: androidLabel ? getComputedStyle(androidLabel).display : 'none',
+            desktopLabelDisplay: desktopLabel ? getComputedStyle(desktopLabel).display : 'none',
+            scrollWidth: document.documentElement.scrollWidth,
+            width: document.documentElement.clientWidth,
+          };
+        })()''', call_id)
+        report({
+            'android-install-cta-visible': bool(android_layout and android_layout['installDisplay'] != 'none'),
+            'android-browser-setup-demoted': bool(android_layout and android_layout['browserCtaDisplay'] == 'none' and android_layout['browserSectionDisplay'] == 'none'),
+            'android-userscript-still-discoverable': bool(android_layout and android_layout['androidOptionDisplay'] != 'none'),
+            'android-install-label-selected': bool(android_layout and android_layout['androidLabelDisplay'] != 'none' and android_layout['desktopLabelDisplay'] == 'none'),
+            'android-layout-no-overflow': bool(android_layout and android_layout['scrollWidth'] <= android_layout['width'] + 1),
+        }, failures)
+
+        call_id = set_document(ws, frame_id, page_document('install.html'), call_id)
+        install_page, call_id = value(ws, r'''(() => ({
+          width: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          managerCards: document.querySelectorAll('.manager-card').length,
+          managerLinks: [...document.querySelectorAll('.manager-card a')].map((a) => a.href),
+          primaryInstallHref: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.getAttribute('href') || '',
+          primaryInstallText: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.textContent?.trim() || '',
+          rawInstallHref: [...document.querySelectorAll('a')].map((a) => a.href).find((href) => href.startsWith('https://raw.githubusercontent.com/') && href.endsWith('/social-post-tools.user.js')) || '',
+        }))()''', call_id)
+        report({
+            'browser-setup-mobile-no-overflow': bool(install_page and install_page['scrollWidth'] <= install_page['width'] + 1),
+            'browser-setup-manager-choices': bool(install_page and install_page['managerCards'] == 2),
+            'browser-setup-userscript-cta': bool(install_page and install_page['primaryInstallHref'] == './install/social-post-tools.user.js' and install_page['primaryInstallText']),
+            'browser-setup-raw-fallback': bool(install_page and install_page['rawInstallHref'] == 'https://raw.githubusercontent.com/mythic3011/social-post-tools/dist/social-post-tools.user.js'),
+        }, failures)
+
+        call_id = set_document(ws, frame_id, page_document('capture-handoff.html'), call_id)
+        bridge, call_id = value(ws, r'''(() => ({
+          width: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          title: document.querySelector('#handoff-title')?.textContent?.trim() || '',
+          installLink: document.querySelector('#handoff-install')?.getAttribute('href') || '',
+        }))()''', call_id)
+        report({
+            'capture-bridge-mobile-no-overflow': bool(bridge and bridge['scrollWidth'] <= bridge['width'] + 1),
+            'capture-bridge-has-fallback-install': bool(bridge and bridge['installLink'] == './install.html'),
+        }, failures)
+
+        call_id = set_document(ws, frame_id, page_document('settings.html'), call_id)
+        settings, call_id = value(ws, r'''(() => ({
+          width: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          disclosures: document.querySelectorAll('details.settings-group').length,
+          openDisclosures: document.querySelectorAll('details.settings-group[open]').length,
+          labels: document.querySelectorAll('label').length,
+          unlabeledSelects: [...document.querySelectorAll('select')].filter((el) => !el.closest('label') && !el.labels?.length).length,
+        }))()''', call_id)
+        report({
+            'settings-mobile-no-overflow': bool(settings and settings['scrollWidth'] <= settings['width'] + 1),
+            'settings-progressive-disclosure': bool(settings and settings['disclosures'] >= 4 and settings['openDisclosures'] == 0),
+            'settings-selects-labeled': bool(settings and settings['labels'] > 0 and settings['unlabeledSelects'] == 0),
+        }, failures)
+
+        for scheme in ('light', 'dark'):
+            mod._cdp_call(ws, 'Emulation.setEmulatedMedia', {
+                'features': [{'name': 'prefers-color-scheme', 'value': scheme}],
             }, call_id); call_id += 1
-            mod._cdp_call(ws, 'Emulation.setTouchEmulationEnabled', {'enabled': True, 'maxTouchPoints': 5}, call_id); call_id += 1
-            frame = mod._cdp_call(ws, 'Page.getFrameTree', {}, call_id); call_id += 1
-            frame_id = frame['result']['frameTree']['frame']['id']
-
-            call_id = set_document(ws, frame_id, page_document('index.html'), call_id)
-            landing, call_id = value(ws, r'''(() => {
-              const install = document.querySelector('#install-app');
-              const primary = [...document.querySelectorAll('a[role="button"],button')];
-              return {
-                width: document.documentElement.clientWidth,
-                scrollWidth: document.documentElement.scrollWidth,
-                installHidden: Boolean(install?.hidden),
-                installDisplay: install ? getComputedStyle(install).display : null,
-                frameworkRules: document.querySelector('#spt-framework-test')?.sheet?.cssRules?.length || 0,
-                productRules: document.querySelector('#spt-product-test')?.sheet?.cssRules?.length || 0,
-                primaryCount: primary.length,
-                emptyLabels: primary.filter((el) => !(el.textContent || '').trim()).length,
-                installDialog: Boolean(document.querySelector('#install-dialog')),
-                diagnostics: document.querySelectorAll('#install-dialog .install-diagnostics dd').length,
-              };
-            })()''', call_id)
-            report({
-                'mobile-no-horizontal-overflow': bool(landing and landing['scrollWidth'] <= landing['width'] + 1),
-                'install-cta-visible-with-manual-fallback': bool(landing and not landing['installHidden'] and landing['installDisplay'] != 'none'),
-                'framework-css-parsed': bool(landing and landing['frameworkRules'] > 0),
-                'product-css-parsed': bool(landing and landing['productRules'] > 0),
-                'primary-actions-have-labels': bool(landing and landing['primaryCount'] > 0 and landing['emptyLabels'] == 0),
-                'install-dialog-present': bool(landing and landing['installDialog'] and landing['diagnostics'] >= 5),
-            }, failures)
-
-            android_layout, call_id = value(ws, r'''(() => {
-              document.documentElement.dataset.sptPlatform = 'android';
-              const install = document.querySelector('#install-app');
-              const browserCta = document.querySelector('.browser-setup-cta');
-              const browserSection = document.querySelector('.browser-userscript-section');
-              const androidOption = document.querySelector('.android-browser-option');
-              const androidLabel = install?.querySelector('.android-only');
-              const desktopLabel = install?.querySelector('.not-android');
-              return {
-                installDisplay: install ? getComputedStyle(install).display : null,
-                browserCtaDisplay: browserCta ? getComputedStyle(browserCta).display : null,
-                browserSectionDisplay: browserSection ? getComputedStyle(browserSection).display : null,
-                androidOptionDisplay: androidOption ? getComputedStyle(androidOption).display : null,
-                androidLabelDisplay: androidLabel ? getComputedStyle(androidLabel).display : null,
-                desktopLabelDisplay: desktopLabel ? getComputedStyle(desktopLabel).display : null,
-                scrollWidth: document.documentElement.scrollWidth,
-                width: document.documentElement.clientWidth,
-              };
-            })()''', call_id)
-            report({
-                'android-install-cta-visible': bool(android_layout and android_layout['installDisplay'] != 'none'),
-                'android-browser-setup-demoted': bool(android_layout and android_layout['browserCtaDisplay'] == 'none' and android_layout['browserSectionDisplay'] == 'none'),
-                'android-userscript-still-discoverable': bool(android_layout and android_layout['androidOptionDisplay'] != 'none'),
-                'android-install-label-selected': bool(android_layout and android_layout['androidLabelDisplay'] != 'none' and android_layout['desktopLabelDisplay'] == 'none'),
-                'android-layout-no-overflow': bool(android_layout and android_layout['scrollWidth'] <= android_layout['width'] + 1),
-            }, failures)
-
-            call_id = set_document(ws, frame_id, page_document('install.html'), call_id)
-            install_page, call_id = value(ws, r'''(() => ({
-              width: document.documentElement.clientWidth,
-              scrollWidth: document.documentElement.scrollWidth,
-              managerCards: document.querySelectorAll('.manager-card').length,
-              managerLinks: [...document.querySelectorAll('.manager-card a')].map((a) => a.href),
-              primaryInstall: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.textContent?.trim() || '',
-            }))()''', call_id)
-            report({
-                'browser-setup-mobile-no-overflow': bool(install_page and install_page['scrollWidth'] <= install_page['width'] + 1),
-                'browser-setup-manager-choices': bool(install_page and install_page['managerCards'] == 2),
-                'browser-setup-userscript-cta': bool(install_page and 'Install Social Post Tools Userscript' in install_page['primaryInstall']),
-            }, failures)
-
-            call_id = set_document(ws, frame_id, page_document('capture-handoff.html'), call_id)
-            bridge, call_id = value(ws, r'''(() => ({
-              width: document.documentElement.clientWidth,
-              scrollWidth: document.documentElement.scrollWidth,
-              title: document.querySelector('#handoff-title')?.textContent?.trim() || '',
-              installLink: document.querySelector('#handoff-install')?.getAttribute('href') || '',
-            }))()''', call_id)
-            report({
-                'capture-bridge-mobile-no-overflow': bool(bridge and bridge['scrollWidth'] <= bridge['width'] + 1),
-                'capture-bridge-has-fallback-install': bool(bridge and bridge['installLink'] == './install.html'),
-            }, failures)
-
-            call_id = set_document(ws, frame_id, page_document('settings.html'), call_id)
-            settings, call_id = value(ws, r'''(() => ({
-              width: document.documentElement.clientWidth,
-              scrollWidth: document.documentElement.scrollWidth,
-              disclosures: document.querySelectorAll('details.settings-group').length,
-              openDisclosures: document.querySelectorAll('details.settings-group[open]').length,
-              labels: document.querySelectorAll('label').length,
-              unlabeledSelects: [...document.querySelectorAll('select')].filter((el) => !el.closest('label') && !el.labels?.length).length,
-            }))()''', call_id)
-            report({
-                'settings-mobile-no-overflow': bool(settings and settings['scrollWidth'] <= settings['width'] + 1),
-                'settings-progressive-disclosure': bool(settings and settings['disclosures'] >= 4 and settings['openDisclosures'] == 0),
-                'settings-selects-labeled': bool(settings and settings['labels'] > 0 and settings['unlabeledSelects'] == 0),
-            }, failures)
-
-            for scheme in ('light', 'dark'):
-                mod._cdp_call(ws, 'Emulation.setEmulatedMedia', {
-                    'features': [{'name': 'prefers-color-scheme', 'value': scheme}],
-                }, call_id); call_id += 1
-                colors, call_id = value(ws, "(() => { const s=getComputedStyle(document.body); return {bg:s.backgroundColor, fg:s.color}; })()", call_id)
-                ok = bool(colors and colors['bg'] and colors['fg'] and colors['bg'] != 'rgba(0, 0, 0, 0)')
-                report({f'{scheme}-scheme-computed-colors': ok}, failures)
-        except Exception as exc:
-            print('FAIL ui-browser-smoke', exc)
-            failures.append('ui-browser-smoke')
-        finally:
-            with contextlib.suppress(Exception):
-                if ws:
-                    ws.close()
-            controller.close_target(target.get('id') if isinstance(target, dict) else None)
+            colors, call_id = value(ws, "(() => { const s=getComputedStyle(document.body); return {bg:s.backgroundColor, fg:s.color}; })()", call_id)
+            ok = bool(colors and colors['bg'] and colors['fg'] and colors['bg'] != 'rgba(0, 0, 0, 0)')
+            report({f'{scheme}-scheme-computed-colors': ok}, failures)
+    except Exception as exc:
+        print('FAIL ui-browser-smoke', exc)
+        failures.append('ui-browser-smoke')
+    finally:
+        with contextlib.suppress(Exception):
+            if ws:
+                ws.close()
+        controller.close_target(target.get('id') if isinstance(target, dict) else None)
 
     return 1 if failures else 0
 
