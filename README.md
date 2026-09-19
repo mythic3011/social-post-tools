@@ -17,11 +17,12 @@
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-supported-00485b)](https://www.tampermonkey.net/)
 [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-supported-7B68EE)](https://violentmonkey.github.io/)
 
-**Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean link sharing, Nitter-compatible alternate links, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account or application backend.
+**Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean-link sharing, curated chat-preview links and alternate readers, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account or application backend.
 
 - **Browser:** integrates into the native X / Threads Share menu through Tampermonkey or Violentmonkey.
 - **Android:** install with **Google Chrome** for the supported Android Web Share Target path. Brave is experimental on some builds; Firefox may install the PWA without registering it in the Android share sheet.
 - **Default UX:** works without configuration; advanced URL builders, archive tools, and capture controls stay behind progressive disclosure.
+- **Provider model:** clean source links, embed fixers, and alternate readers are different capabilities instead of one interchangeable “alternative frontend” list.
 
 **Live app:** https://share-tools.mythic3011.com/
 
@@ -59,12 +60,20 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 ## What it does
 
 - **Clean X / Twitter and Threads links** — strip common tracking parameters and canonicalize post URLs.
-- **Alternative frontends and chat previews** — use Nitter-compatible readers, FixupX/FixVX-style destinations, vxThreads, or custom URL builders.
+- **Capability-based share links** — keep the canonical source URL separate from chat-preview builders such as FixupX/FixVX/vxThreads and reader frontends such as XCancel.
 - **Structured AI capture** — preserve the focal post, media ownership, quote/repost context, and optional visible discussion instead of flattening everything into one text blob.
 - **Android Share Target** — receive a native Android share and forward, copy, transform, or hand the source post back to the browser for richer capture.
 - **Telegram and system sharing** — use platform share destinations without storing bot credentials.
 - **Archive snapshots** — explicitly create canonical JSON + SHA-256 integrity metadata, with optional media packaging.
 - **Privacy-first defaults** — no analytics or application backend; network-heavy media preparation is explicit.
+
+### Provider lifecycle
+
+Public alternative-front-end instance lists are intentionally not treated as a stable product dependency. Built-in providers are curated by capability instead of assuming that many interchangeable domains provide reliability.
+
+The PWA defaults X preview links to **FixupX**, keeps **XCancel** as an optional reader, and uses **vxThreads** for Threads preview links. Older Nitter instance selections are migrated away from retired built-ins. Release artifacts also strip those retired providers so newly built PWA/Userscript packages do not silently fall back to them.
+
+Social Post Tools deliberately does **not** health-probe every provider at runtime. Doing so would generate background cross-origin requests that leak browsing/share intent and would weaken the current restrictive CSP model. Self-hosted or replacement services can still be added through custom URL builders.
 
 ## Tech stack
 
@@ -74,7 +83,7 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 | Android companion | PWA + Web Share Target | Receives links from the Android share sheet |
 | UI | Semantic HTML + Pico CSS 2.1.1 | Task-oriented, progressively disclosed interface |
 | Shared core | JavaScript | Canonical URLs, URL builders, portable settings, hashing helpers |
-| Build / audits | Python 3.13 | Static build, packaging, SEO generation, security/UI checks |
+| Build / audits | Python 3.13 | Static build, provider-release policy, packaging, SEO generation, security/UI checks |
 | Hosting | GitHub Pages | Static HTTPS distribution and stable Userscript endpoints |
 | CI | GitHub Actions | Build, security, DOM fixture, UI, SEO, and performance regression tests |
 
@@ -104,6 +113,8 @@ See [docs/development/REPOSITORY_LAYOUT.md](docs/development/REPOSITORY_LAYOUT.m
 ## Architecture
 
 Incoming Android shares are normalized through a staged parser/enricher pipeline inspired by CrowdSec's separation of acquisition, parsing, and enrichment. Platform parsers and network enrichers stay isolated from copy/share/AI destinations. See [`docs/architecture/SHARE_PIPELINE.md`](docs/architecture/SHARE_PIPELINE.md).
+
+Provider lifecycle is deliberately split between compatibility and release policy. Source fixtures may retain legacy provider IDs so imported settings and regression tests remain understandable, while `build.py` removes retired built-ins and rewrites unsafe defaults from shipped `site/` and Userscript artifacts.
 
 ## Development
 
