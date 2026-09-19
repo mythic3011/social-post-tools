@@ -15,11 +15,13 @@ provider_policy = (pwa/'provider-policy.js').read_text()
 bootstrap = (pwa/'install-bootstrap.js').read_text()
 sw = (pwa/'sw.js').read_text()
 styles = (pwa/'assets/app.css').read_text()
+install_styles = (pwa/'assets/install.css').read_text()
 fallback = (pwa/'assets/pico-fallback.css').read_text()
 core = (root/'src/core/social-post-core.js').read_text()
 userscript = (root/'src/userscript/userscript.template.js').read_text()
 build = (root/'build.py').read_text()
 html_pages = [index, install, settings, share, bridge_page, privacy]
+external_stylesheet = re.compile(r'<link[^>]+rel=["\']stylesheet["\'][^>]+href=["\']https?://', re.I)
 checks = {
   'manifest-share-target': manifest.get('share_target',{}).get('action') == './share-target.html',
   'manifest-basic-get': manifest.get('share_target',{}).get('method') == 'GET',
@@ -42,6 +44,7 @@ checks = {
   'service-worker-capture-bridge-cache': "capture-handoff.html" in sw and "caches.match('./capture-handoff.html')" in sw,
   'service-worker-settings-cache': "./settings.html" in sw,
   'service-worker-install-guide-cache': "./install.html" in sw,
+  'service-worker-install-css-cache': "./assets/install.css" in sw,
   'service-worker-provider-policy-cache': "./provider-policy.js" in sw,
   'service-worker-install-network-only': "url.pathname.includes('/install/')" in sw and 'fetch(event.request)' in sw,
   'service-worker-install-critical-network-first': 'async function networkFirst' in sw and "webmanifest" in sw and "event.request.mode === 'navigate'" in sw,
@@ -63,17 +66,19 @@ checks = {
   'provider-policy-no-health-probe': 'fetch(' not in provider_policy and 'XMLHttpRequest' not in provider_policy,
   'ux-landing-primary-tasks': 'One share surface for clean links' in index and 'Browser setup' in index,
   'ux-landing-pipeline': 'Default pipeline' in index and 'Detect post' in index and 'Choose output' in index and 'Send or capture' in index,
-  'ux-browser-setup-page': 'Two steps, then you are done.' in install and 'Install Social Post Tools Userscript' in install,
+  'ux-browser-setup-page': 'One script. Multiple delivery routes.' in install and 'Raw GitHub .user.js' in install,
+  'ux-install-distribution-sources': '__RAW_USER_URL__' in install and '__CDN_USER_URL__' in install and '__GITHUB_REPO_URL__/tree/dist' in install,
+  'ux-install-update-evidence': '__RAW_META_URL__' in install and 'SHA256SUMS.txt' in install and 'release.json' in install,
   'ux-tampermonkey-official-link': 'https://www.tampermonkey.net/' in install and 'Get Tampermonkey' in install,
   'ux-violentmonkey-official-link': 'https://violentmonkey.github.io/' in install and 'Get Violentmonkey' in install,
   'security-external-manager-links-noopener': install.count('rel="noopener noreferrer"') >= 4,
-  'ux-raw-source-troubleshooting': 'only see JavaScript source code' in install,
+  'ux-raw-source-troubleshooting': 'opens as JavaScript source instead of an install prompt' in install and 'Import from URL' in install,
   'ux-progressive-settings': '<details class="settings-group"' in settings,
   'ux-no-setup-required': 'Defaults should work without configuration.' in settings,
   'ux-provider-capabilities': 'Three different outputs' in settings and '<dt>Clean</dt>' in settings and '<dt>Embed</dt>' in settings and '<dt>Reader</dt>' in settings,
   'ux-install-button-always-actionable': 'id="install-app"' in index and 'showInstallHelp()' in app and "manual-fallback" in app,
   'ux-install-bridge-early': './install-bootstrap.js' in index and './install-bootstrap.js' in settings and 'beforeinstallprompt' in bootstrap,
-  'ux-versioned-install-assets': '?v=__APP_VERSION__' in index and '?v=__APP_VERSION__' in settings,
+  'ux-versioned-install-assets': '?v=__APP_VERSION__' in index and '?v=__APP_VERSION__' in settings and './assets/install.css?v=__APP_VERSION__' in install,
   'ux-install-dialog-fallback': 'id="install-dialog"' in index and 'id="install-guidance"' in index and 'Installation diagnostics' in index,
   'ux-install-firefox-fallback': 'Firefox can install the PWA' in app and 'Google Chrome' in app,
   'ux-install-brave-experimental': 'Brave can install the PWA' in app and 'developer Web App install setting' in app,
@@ -102,8 +107,9 @@ checks = {
   'ui-pico-wrapper': all('class="pico spt-app"' in text for text in html_pages),
   'ui-local-pico-link': all('./assets/vendor/pico.conditional.min.css' in text for text in html_pages),
   'ui-local-app-css': all('./assets/app.css' in text for text in html_pages),
-  'ui-no-runtime-css-cdn': all('cdn.jsdelivr.net' not in text and 'unpkg.com' not in text for text in html_pages),
-  'ui-product-css-does-not-own-button-skin': not re.search(r'(^|\n)button\s*\{', styles),
+  'ui-install-local-css': './assets/install.css?v=__APP_VERSION__' in install and 'https://' not in install_styles,
+  'ui-no-runtime-css-cdn': all(external_stylesheet.search(text) is None for text in html_pages),
+  'ui-product-css-does-not-own-button-skin': not re.search(r'(^|\n)button\s*\{', styles + install_styles),
   'ui-offline-fallback-scoped': fallback.startswith('/* SPT development fallback') and '.pico button' in fallback,
 }
 failed=[]
