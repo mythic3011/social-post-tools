@@ -1,22 +1,22 @@
 (() => {
   'use strict';
 
-  const SETTINGS_KEY = 'social-post-tools:pwa-settings:v1';
-  const DEFAULT_X_BUILDER = 'fixupx';
-  const DEFAULT_THREADS_BUILDER = 'vxthreads';
-  const RETIRED = new Set([
-    'nitter-net',
-    'nitter-catsarch',
-    'nitter-privacyredirect',
-    'nitter-tiekoetter',
-  ]);
+  const Core = globalThis.SocialPostCore;
+  if (!Core) return;
 
-  const META = Object.freeze({
-    fixupx: Object.freeze({ capability: 'embed', status: 'recommended', label: 'FixupX', detail: 'Chat-friendly X previews' }),
-    fixvx: Object.freeze({ capability: 'embed', status: 'available', label: 'FixVX', detail: 'Alternative X embed fixer' }),
-    xcancel: Object.freeze({ capability: 'reader', status: 'available', label: 'XCancel', detail: 'Alternative X reader' }),
-    vxthreads: Object.freeze({ capability: 'embed', status: 'available', label: 'vxThreads', detail: 'Chat-friendly Threads previews' }),
-  });
+  const SETTINGS_KEY = 'social-post-tools:pwa-settings:v1';
+  const DEFAULT_X_BUILDER = Core.defaultBuilderId('x');
+  const DEFAULT_THREADS_BUILDER = Core.defaultBuilderId('threads');
+  const RETIRED = new Set(Core.BUILTIN_BUILDERS.filter((builder) => builder.retired).map((builder) => builder.id));
+  const META = Object.freeze(Object.fromEntries(
+    Core.BUILTIN_BUILDERS.map((builder) => [builder.id, Object.freeze({
+      capability: builder.capability || 'custom',
+      status: builder.status || (builder.retired ? 'retired' : 'available'),
+      label: builder.name,
+      detail: builder.detail || builder.group || '',
+      retired: Boolean(builder.retired),
+    })]),
+  ));
 
   function writeSettings(value) {
     try {
@@ -53,11 +53,11 @@
   function decorateSelect(select) {
     if (!select) return;
     for (const option of [...select.options]) {
-      if (RETIRED.has(option.value)) {
+      const meta = META[option.value];
+      if (meta?.retired) {
         option.remove();
         continue;
       }
-      const meta = META[option.value];
       if (!meta) continue;
       option.textContent = `${meta.label} — ${meta.detail}`;
       option.dataset.capability = meta.capability;
@@ -84,33 +84,40 @@
     return node;
   }
 
+  function displayStatus(status) {
+    if (status === 'recommended') return 'Recommended';
+    if (status === 'available') return 'Available';
+    if (status === 'custom') return 'Custom';
+    return status || 'Available';
+  }
+
+  function displayCapability(capability) {
+    if (capability === 'embed') return 'Embed fixer';
+    if (capability === 'reader') return 'Reader';
+    if (capability === 'archive') return 'Archive';
+    return 'Custom';
+  }
+
   function renderProviderSummary() {
     const host = document.getElementById('provider-status-list');
     if (!host) return;
     host.replaceChildren();
 
-    const entries = [
-      ['fixupx', 'Recommended', 'Embed fixer', 'Default for X sharing. Optimized for rich previews rather than acting as a full reader.'],
-      ['xcancel', 'Available', 'Reader', 'Use when you want an alternate reading frontend instead of only a preview-friendly link.'],
-      ['fixvx', 'Available', 'Embed fixer', 'Secondary X preview-link option.'],
-      ['vxthreads', 'Available', 'Embed fixer', 'Threads preview-link option.'],
-    ];
-
-    for (const [id, state, capability, description] of entries) {
+    for (const builder of Core.BUILTIN_BUILDERS.filter((entry) => !entry.retired)) {
       const row = document.createElement('div');
       row.className = 'provider-row';
 
       const identity = document.createElement('div');
       identity.append(
-        textNode('strong', META[id]?.label || id),
-        textNode('small', capability),
+        textNode('strong', builder.name),
+        textNode('small', displayCapability(builder.capability)),
       );
 
       const copy = document.createElement('div');
       copy.className = 'provider-copy';
       copy.append(
-        textNode('span', state, 'status-chip'),
-        textNode('p', description),
+        textNode('span', displayStatus(builder.status), 'status-chip'),
+        textNode('p', builder.detail || builder.group || ''),
       );
 
       row.append(identity, copy);
