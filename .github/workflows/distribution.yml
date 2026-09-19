@@ -72,6 +72,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout --orphan spt-dist-publish
           git rm -rf .
+          git clean -fdx
           cp -a "${export_dir}/." .
           git add -f .
           git commit -m "dist: publish ${GITHUB_SHA}"
