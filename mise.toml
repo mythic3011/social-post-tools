@@ -1,6 +1,10 @@
 [settings]
 minimum_release_age = "7d"
 lockfile = true
+locked_verify_provenance = true
+
+[tool_config]
+locked = true
 
 [tools]
 node = "24.20.0"
