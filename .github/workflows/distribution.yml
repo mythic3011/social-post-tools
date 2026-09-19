@@ -1,0 +1,78 @@
+name: Publish Userscript Distribution
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: userscript-distribution
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: true
+
+      - name: Set up pinned toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Build canonical public distribution
+        run: uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
+
+      - name: Run full regression suite
+        run: uv run --locked bash tests/run.sh
+
+      - name: Prepare immutable evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum social-post-tools.user.js social-post-tools.meta.js social-post-tools-v*.user.txt > SHA256SUMS.txt
+          VERSION="$(grep -m1 '^// @version' social-post-tools.user.js | awk '{print $3}')"
+          USER_SHA="$(sha256sum social-post-tools.user.js | awk '{print $1}')"
+          cat > release.json <<EOF
+          {
+            "schema": "social-post-tools-distribution/v1",
+            "version": "${VERSION}",
+            "sourceCommit": "${GITHUB_SHA}",
+            "sha256": "${USER_SHA}"
+          }
+          EOF
+          cat > README.md <<EOF
+          # Social Post Tools distribution
+
+          Generated from source commit \`${GITHUB_SHA}\` after the full repository test suite passed.
+
+          - \`social-post-tools.user.js\`: canonical install/update artifact
+          - \`social-post-tools.meta.js\`: metadata-only update check
+          - \`SHA256SUMS.txt\`: release checksums
+          - \`release.json\`: source commit and userscript digest
+
+          Do not edit this branch manually. Source lives on \`main\`.
+          EOF
+
+      - name: Publish generated dist branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          export_dir="$(mktemp -d)"
+          cp -a dist/. "${export_dir}/"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout --orphan spt-dist-publish
+          git rm -rf .
+          cp -a "${export_dir}/." .
+          git add -f .
+          git commit -m "dist: publish ${GITHUB_SHA}"
+          git push --force origin HEAD:dist
