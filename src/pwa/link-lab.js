@@ -6,6 +6,7 @@
 
   const SETTINGS_KEY = 'social-post-tools:pwa-settings:v1';
   const $ = (id) => document.getElementById(id);
+  let current = null;
 
   function loadProviderSettings() {
     try {
@@ -24,6 +25,10 @@
     return Core.compatibleBuilders(platform, settings.custom, {
       allowInsecureHttp: settings.allowInsecureHttp,
     });
+  }
+
+  function providersForCapability(platform, capability, settings) {
+    return compatibleProviders(platform, settings).filter((builder) => builder.capability === capability);
   }
 
   function providerForCapability(platform, capability, settings) {
@@ -45,6 +50,33 @@
     return `${builder.name} · ${capability} · ${status}${builder.builtin ? '' : ' · custom'}`;
   }
 
+  function providerOptionLabel(builder) {
+    if (!builder) return 'No active provider';
+    const suffix = builder.status === 'recommended' ? ' · recommended' : builder.builtin ? '' : ' · custom';
+    return `${builder.name}${suffix}`;
+  }
+
+  function populateProviderSelect(selectId, providers, selected) {
+    const select = $(selectId);
+    select.replaceChildren();
+    if (!providers.length) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'No active provider';
+      select.append(option);
+      select.disabled = true;
+      return;
+    }
+    for (const builder of providers) {
+      const option = document.createElement('option');
+      option.value = builder.id;
+      option.textContent = providerOptionLabel(builder);
+      option.selected = builder.id === selected?.id;
+      select.append(option);
+    }
+    select.disabled = false;
+  }
+
   function actionButtonsFor(outputId) {
     return [
       ...document.querySelectorAll(`[data-copy-output="${outputId}"], [data-open-output="${outputId}"]`),
@@ -61,15 +93,44 @@
     if ($(stateId)) $(stateId).textContent = state;
   }
 
+  function clearProviderSelects() {
+    populateProviderSelect('preview-provider', [], null);
+    populateProviderSelect('reader-provider', [], null);
+  }
+
   function resetOutputs() {
+    current = null;
     setOutput('clean-output', '', 'clean-meta', 'Canonical source URL.', 'clean-state', 'Canonical');
     setOutput('preview-output', '', 'preview-meta', 'Waiting for a supported post URL.', 'preview-state', 'Embed');
     setOutput('reader-output', '', 'reader-meta', 'Waiting for a supported post URL.', 'reader-state', 'Optional');
+    clearProviderSelects();
     $('lab-results').hidden = true;
   }
 
   function setStatus(message) {
     $('lab-status').textContent = message;
+  }
+
+  function capabilityState(capability) {
+    if (!current) return null;
+    const selectId = capability === 'embed' ? 'preview-provider' : 'reader-provider';
+    const providers = current.providers[capability] || [];
+    const selectedId = String($(selectId)?.value || '');
+    return providers.find((builder) => builder.id === selectedId) || providers[0] || null;
+  }
+
+  function renderCapability(capability) {
+    if (!current) return;
+    const builder = capabilityState(capability);
+    const isPreview = capability === 'embed';
+    const outputId = isPreview ? 'preview-output' : 'reader-output';
+    const metaId = isPreview ? 'preview-meta' : 'reader-meta';
+    const stateId = isPreview ? 'preview-state' : 'reader-state';
+    const label = isPreview ? 'Embed' : 'Reader';
+    const url = builder
+      ? Core.buildUrl(builder, current.platform.id, current.canonicalUrl, current.options)
+      : null;
+    setOutput(outputId, url, metaId, providerDescription(builder), stateId, builder ? label : 'Unavailable');
   }
 
   function analyze(rawValue) {
@@ -92,6 +153,8 @@
     $('lab-results').hidden = false;
 
     if (!canonicalUrl && threadsAlias) {
+      current = null;
+      clearProviderSelects();
       setOutput('clean-output', threadsAlias, 'clean-meta', 'Threads share alias recognized. Canonical post resolution requires the normal share-target resolver.', 'clean-state', 'Alias');
       setOutput('preview-output', '', 'preview-meta', 'Unavailable until the Threads share alias resolves to a canonical post URL.', 'preview-state', 'Pending');
       setOutput('reader-output', '', 'reader-meta', 'Unavailable until the Threads share alias resolves to a canonical post URL.', 'reader-state', 'Pending');
@@ -106,11 +169,18 @@
     }
 
     const settings = loadProviderSettings();
+    const previewProviders = providersForCapability(platform.id, 'embed', settings);
+    const readerProviders = providersForCapability(platform.id, 'reader', settings);
     const previewProvider = providerForCapability(platform.id, 'embed', settings);
     const readerProvider = providerForCapability(platform.id, 'reader', settings);
     const options = { allowInsecureHttp: settings.allowInsecureHttp };
-    const previewUrl = previewProvider ? Core.buildUrl(previewProvider, platform.id, canonicalUrl, options) : null;
-    const readerUrl = readerProvider ? Core.buildUrl(readerProvider, platform.id, canonicalUrl, options) : null;
+
+    current = {
+      platform,
+      canonicalUrl,
+      options,
+      providers: { embed: previewProviders, reader: readerProviders },
+    };
 
     setOutput(
       'clean-output',
@@ -120,24 +190,12 @@
       'clean-state',
       'Canonical',
     );
-    setOutput(
-      'preview-output',
-      previewUrl,
-      'preview-meta',
-      providerDescription(previewProvider),
-      'preview-state',
-      previewProvider ? 'Embed' : 'Unavailable',
-    );
-    setOutput(
-      'reader-output',
-      readerUrl,
-      'reader-meta',
-      providerDescription(readerProvider),
-      'reader-state',
-      readerProvider ? 'Reader' : 'Unavailable',
-    );
+    populateProviderSelect('preview-provider', previewProviders, previewProvider);
+    populateProviderSelect('reader-provider', readerProviders, readerProvider);
+    renderCapability('embed');
+    renderCapability('reader');
 
-    const available = [previewProvider && 'preview', readerProvider && 'reader'].filter(Boolean).join(' + ');
+    const available = [previewProviders.length && 'preview', readerProviders.length && 'reader'].filter(Boolean).join(' + ');
     setStatus(`${platform.name} post normalized locally${available ? ` · ${available} output${available.includes('+') ? 's' : ''} available` : ''}.`);
     return true;
   }
@@ -189,6 +247,16 @@
       window.open(url.href, '_blank', 'noopener,noreferrer');
       setStatus('Opened output link in a new tab.');
     }
+  });
+
+  $('preview-provider')?.addEventListener('change', () => {
+    renderCapability('embed');
+    setStatus('Preview provider changed for this comparison only.');
+  });
+
+  $('reader-provider')?.addEventListener('change', () => {
+    renderCapability('reader');
+    setStatus('Reader provider changed for this comparison only.');
   });
 
   $('link-lab-form')?.addEventListener('submit', (event) => {
