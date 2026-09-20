@@ -25,4 +25,4 @@ node "$ROOT/tests/threads_resolver.test.mjs"
 "$PYTHON_BIN" "$ROOT/tests/pages_audit.py"
 "$PYTHON_BIN" "$ROOT/tests/seo_audit.py"
 "$PYTHON_BIN" "$ROOT/tests/version_audit.py"
-node "$ROOT/tests/core_perf.js"}
+node "$ROOT/tests/core_perf.js"
