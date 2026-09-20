@@ -34,6 +34,9 @@ checks = {
     'link-lab-handles-threads-alias': 'Core.threadsShareAlias(raw)' in lab_js,
     'link-lab-user-initiated-open': "window.open(url.href, '_blank', 'noopener,noreferrer')" in lab_js,
     'link-lab-copy-actions': 'navigator.clipboard.writeText' in lab_js and 'data-copy-output' in lab_html,
+    'link-lab-fragment-deep-link': 'new URLSearchParams(location.hash.slice(1))' in lab_js and "params.get('url')" in lab_js,
+    'link-lab-fragment-cleared-after-consume': 'history.replaceState' in lab_js and 'location.pathname' in lab_js and 'location.search' in lab_js,
+    'link-lab-no-query-input-read': "new URLSearchParams(location.search)" not in lab_js and "searchParams.get('url')" not in lab_js,
     'link-lab-offline-shell': "'./link-lab.html'" in sw and "'./link-lab.js'" in sw,
 }
 
