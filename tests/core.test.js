@@ -4,12 +4,16 @@ const Core = require('../src/core/social-post-core.js');
 
 async function main() {
 
+  assert.equal(Core.VERSION, '1.5.0');
   assert.equal(Core.canonicalize('x', 'https://twitter.com/alice/status/123?s=20&t=abc'), 'https://x.com/alice/status/123');
   assert.equal(Core.canonicalize('threads', 'https://threads.net/@bob/post/Ab_C-9/foo?xmt=track'), 'https://www.threads.com/@bob/post/Ab_C-9');
   assert.equal(Core.canonicalize('x', 'https://evil.example/alice/status/123'), null);
 
   assert.equal(Core.defaultBuilderId('x'), 'fixupx');
   assert.equal(Core.defaultBuilderId('threads'), 'vxthreads');
+  assert.equal(Core.normalizeBuilderId('x', 'nitter-net'), 'fixupx');
+  assert.equal(Core.normalizeBuilderId('x', 'fixvx'), 'fixvx');
+  assert.equal(Core.normalizeBuilderId('threads', 'fixupx'), 'vxthreads');
   assert(Core.BUILTIN_BUILDERS.every((builder) => !builder.retired));
   assert(Core.ALL_BUILTIN_BUILDERS.some((builder) => builder.id === 'nitter-net' && builder.retired));
   assert.equal(Core.builderById('nitter-net').retired, true);
@@ -105,6 +109,28 @@ async function main() {
     security: { allowInsecureCustomUrls: false },
   });
   assert.equal(retiredPortable.links.x.builderId, 'fixupx');
+
+  const retiredExport = Core.makePortableLinkSettings({
+    links: { x: { builderId: 'nitter-net' }, threads: { builderId: 'fixupx' } },
+    builders: { custom: [] },
+    security: { allowInsecureCustomUrls: false },
+  });
+  assert.equal(retiredExport.links.x.builderId, 'fixupx');
+  assert.equal(retiredExport.links.threads.builderId, 'vxthreads');
+
+  const filteredExport = Core.makePortableLinkSettings({
+    links: { x: { builderId: 'self' }, threads: { builderId: 'vxthreads' } },
+    builders: {
+      custom: [
+        custom,
+        { name: 'Bad JS', id: 'bad-js', platforms: ['x'], type: 'replace-origin', baseUrl: 'javascript:alert(1)' },
+        { name: 'Remote HTTP', id: 'remote-http', platforms: ['x'], type: 'replace-origin', baseUrl: 'http://example.com' },
+      ],
+    },
+    security: { allowInsecureCustomUrls: false },
+  });
+  assert.deepEqual(filteredExport.builders.custom.map((builder) => builder.id), ['self']);
+  assert.equal(filteredExport.links.x.builderId, 'self');
 
   const defaults = Core.makePortableLinkSettings({});
   assert.equal(defaults.links.x.builderId, 'fixupx');
