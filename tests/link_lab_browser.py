@@ -33,13 +33,33 @@ def submit_value(ws, raw: str, call_id: int):
         preview: document.querySelector('#preview-output').value,
         previewDisabled: document.querySelector('#preview-output').disabled,
         previewMeta: document.querySelector('#preview-meta').textContent,
+        previewProvider: document.querySelector('#preview-provider').value,
+        previewProviderCount: document.querySelector('#preview-provider').options.length,
+        previewProviderDisabled: document.querySelector('#preview-provider').disabled,
         reader: document.querySelector('#reader-output').value,
         readerDisabled: document.querySelector('#reader-output').disabled,
         readerMeta: document.querySelector('#reader-meta').textContent,
         readerState: document.querySelector('#reader-state').textContent,
+        readerProvider: document.querySelector('#reader-provider').value,
+        readerProviderCount: document.querySelector('#reader-provider').options.length,
+        readerProviderDisabled: document.querySelector('#reader-provider').disabled,
         status: document.querySelector('#lab-status').textContent,
         width: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
+      }};
+    }})()'''
+    return smoke.value(ws, expression, call_id)
+
+
+def switch_provider(ws, select_id: str, provider_id: str, output_id: str, call_id: int):
+    expression = f'''(() => {{
+      const select = document.querySelector({json.dumps('#' + select_id)});
+      select.value = {json.dumps(provider_id)};
+      select.dispatchEvent(new Event('change', {{ bubbles: true }}));
+      return {{
+        selected: select.value,
+        output: document.querySelector({json.dumps('#' + output_id)}).value,
+        status: document.querySelector('#lab-status').textContent,
       }};
     }})()'''
     return smoke.value(ws, expression, call_id)
@@ -89,8 +109,16 @@ def main() -> int:
                 'link-lab-x-results-visible': bool(x_result and not x_result['hidden']),
                 'link-lab-x-clean-canonical': bool(x_result and x_result['clean'] == 'https://x.com/alice/status/123'),
                 'link-lab-x-preview-fixupx': bool(x_result and x_result['preview'] == 'https://fixupx.com/alice/status/123' and 'FixupX' in x_result['previewMeta']),
+                'link-lab-x-preview-provider-list': bool(x_result and x_result['previewProvider'] == 'fixupx' and x_result['previewProviderCount'] >= 2 and not x_result['previewProviderDisabled']),
                 'link-lab-x-reader-xcancel': bool(x_result and x_result['reader'] == 'https://xcancel.com/alice/status/123' and 'XCancel' in x_result['readerMeta']),
+                'link-lab-x-reader-provider-list': bool(x_result and x_result['readerProvider'] == 'xcancel' and x_result['readerProviderCount'] >= 1 and not x_result['readerProviderDisabled']),
                 'link-lab-mobile-no-overflow': bool(x_result and x_result['scrollWidth'] <= x_result['width'] + 1),
+            }, failures)
+
+            fixvx_result, call_id = switch_provider(ws, 'preview-provider', 'fixvx', 'preview-output', call_id)
+            report({
+                'link-lab-x-preview-switch-fixvx': bool(fixvx_result and fixvx_result['selected'] == 'fixvx' and fixvx_result['output'] == 'https://fixvx.com/alice/status/123'),
+                'link-lab-provider-switch-local-only': bool(fixvx_result and 'comparison only' in fixvx_result['status']),
             }, failures)
 
             threads_result, call_id = submit_value(ws, 'https://threads.net/@bob/post/Ab_C-9?xmt=tracking', call_id)
@@ -98,6 +126,7 @@ def main() -> int:
                 'link-lab-threads-clean-canonical': bool(threads_result and threads_result['clean'] == 'https://www.threads.com/@bob/post/Ab_C-9'),
                 'link-lab-threads-preview-vxthreads': bool(threads_result and threads_result['preview'] == 'https://vxthreads.net/@bob/post/Ab_C-9' and 'vxThreads' in threads_result['previewMeta']),
                 'link-lab-threads-reader-unavailable': bool(threads_result and threads_result['reader'] == '' and threads_result['readerDisabled'] and threads_result['readerState'] == 'Unavailable'),
+                'link-lab-threads-reader-select-disabled': bool(threads_result and threads_result['readerProviderDisabled']),
             }, failures)
 
             alias_result, call_id = submit_value(ws, 'https://www.threads.com/share/ABC_123/?xmt=tracking', call_id)
