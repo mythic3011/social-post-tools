@@ -74,6 +74,8 @@
       <div class="panel-heading"><span class="eyebrow">Preview</span><span id="preview-state" class="status-chip">Embed</span></div>
       <h2>Chat-friendly preview</h2>
       <p id="preview-meta" class="muted">Waiting for a supported post URL.</p>
+      <label for="preview-provider">Provider</label>
+      <select id="preview-provider" disabled><option>No active provider</option></select>
       <label for="preview-output">Output</label>
       <input id="preview-output" type="url" readonly>
       <div class="toolbar">
@@ -86,6 +88,8 @@
       <div class="panel-heading"><span class="eyebrow">Reader</span><span id="reader-state" class="status-chip">Optional</span></div>
       <h2>Alternate reader</h2>
       <p id="reader-meta" class="muted">Waiting for a supported post URL.</p>
+      <label for="reader-provider">Provider</label>
+      <select id="reader-provider" disabled><option>No active provider</option></select>
       <label for="reader-output">Output</label>
       <input id="reader-output" type="url" readonly>
       <div class="toolbar">
@@ -98,7 +102,7 @@
   <details class="settings-group">
     <summary>How provider selection works</summary>
     <div class="settings-group-body">
-      <p class="muted">Link Lab reads the same local provider registry and custom-builder settings as the PWA. A configured provider is preferred when it matches the requested capability; otherwise the first active compatible provider is used.</p>
+      <p class="muted">Link Lab reads the same local provider registry and custom-builder settings as the PWA. A configured provider is preferred when it matches the requested capability; otherwise a recommended active provider is selected. Changing a provider inside Link Lab affects only this comparison and does not rewrite your global Settings.</p>
       <p class="muted">Retired providers remain readable only for migration compatibility and are not offered as active outputs. Link Lab does not send background requests to providers to check whether they are online.</p>
     </div>
   </details>
