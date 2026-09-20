@@ -28,27 +28,66 @@
     }
   }
 
+  function portableSnapshot(settings) {
+    return Core.makePortableLinkSettings(settings || {});
+  }
+
+  function applyPortableSettings(target, portable) {
+    target.links ||= {};
+    for (const platform of ['x', 'threads']) {
+      target.links[platform] = {
+        ...(target.links[platform] || {}),
+        builderId: portable.links[platform].builderId,
+      };
+    }
+    target.builders = {
+      ...(target.builders || {}),
+      custom: portable.builders.custom,
+    };
+    target.security = {
+      ...(target.security || {}),
+      allowInsecureCustomUrls: portable.security.allowInsecureCustomUrls,
+    };
+    return target;
+  }
+
   function migrateSettings() {
     let parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch {}
 
-    if (!parsed || typeof parsed !== 'object') {
-      const seeded = {
-        schemaVersion: 1,
-        links: {
-          x: { builderId: DEFAULT_X_BUILDER },
-          threads: { builderId: DEFAULT_THREADS_BUILDER },
-        },
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      const seeded = applyPortableSettings({ schemaVersion: 1 }, portableSnapshot({}));
+      return {
+        changed: writeSettings(seeded),
+        from: null,
+        to: { x: DEFAULT_X_BUILDER, threads: DEFAULT_THREADS_BUILDER },
       };
-      return { changed: writeSettings(seeded), from: null, to: DEFAULT_X_BUILDER };
     }
 
-    const current = String(parsed.links?.x?.builderId || '');
-    if (!RETIRED.has(current)) return { changed: false };
-
-    parsed.links ||= {};
-    parsed.links.x = { ...(parsed.links.x || {}), builderId: DEFAULT_X_BUILDER };
-    return { changed: writeSettings(parsed), from: current, to: DEFAULT_X_BUILDER };
+    const before = {
+      links: {
+        x: String(parsed.links?.x?.builderId || ''),
+        threads: String(parsed.links?.threads?.builderId || ''),
+      },
+      builders: Array.isArray(parsed.builders?.custom) ? parsed.builders.custom : [],
+      allowInsecureCustomUrls: Boolean(parsed.security?.allowInsecureCustomUrls),
+    };
+    const portable = portableSnapshot(parsed);
+    const next = applyPortableSettings(parsed, portable);
+    const after = {
+      links: {
+        x: portable.links.x.builderId,
+        threads: portable.links.threads.builderId,
+      },
+      builders: portable.builders.custom,
+      allowInsecureCustomUrls: portable.security.allowInsecureCustomUrls,
+    };
+    const changed = JSON.stringify(before) !== JSON.stringify(after);
+    return {
+      changed: changed ? writeSettings(next) : false,
+      from: before.links,
+      to: after.links,
+    };
   }
 
   function decorateSelect(select) {
@@ -134,6 +173,9 @@
     META,
     migration,
     isRetired(id) { return RETIRED.has(String(id || '')); },
+    normalizeBuilderId(platform, id, customBuilders = [], options = {}) {
+      return Core.normalizeBuilderId(platform, id, customBuilders, options);
+    },
   });
 
   if (document.readyState === 'loading') {
