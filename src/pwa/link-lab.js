@@ -200,6 +200,18 @@
     return true;
   }
 
+  function consumeFragmentInput() {
+    if (!location.hash) return false;
+    const params = new URLSearchParams(location.hash.slice(1));
+    const raw = String(params.get('url') || '').trim();
+    if (!raw) return false;
+    try { history.replaceState(history.state, '', `${location.pathname}${location.search}`); } catch {}
+    $('source-url').value = raw;
+    const accepted = analyze(raw);
+    if (accepted) setStatus(`${$('lab-status').textContent} Loaded from a local URL fragment.`);
+    return accepted;
+  }
+
   async function copyText(value) {
     try {
       await navigator.clipboard.writeText(value);
@@ -276,4 +288,5 @@
   });
 
   resetOutputs();
+  consumeFragmentInput();
 })();
