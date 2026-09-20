@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '1.4.0';
+  const VERSION = '1.5.0';
   const MAX_BUILDER_URL_CHARS = 8192;
   const MAX_CUSTOM_BUILDERS = 32;
 
@@ -305,6 +305,10 @@
     return compatible.find((builder) => builder.id === preferred) || compatible[0] || null;
   }
 
+  function normalizeBuilderId(platform, builderId, customBuilders = [], options = {}) {
+    return selectBuilder(platform, builderId, customBuilders, options)?.id || defaultBuilderId(platform);
+  }
+
   function transformedUrl(platform, canonicalUrl, builderId, customBuilders = [], options = {}) {
     const builder = selectBuilder(platform, builderId, customBuilders, options);
     return buildUrl(builder, platform, canonicalUrl, options);
@@ -592,16 +596,20 @@
 
   function makePortableLinkSettings(settings = {}) {
     const links = settings.links && typeof settings.links === 'object' ? settings.links : {};
-    const custom = settings.builders?.custom;
+    const rawCustom = Array.isArray(settings.builders?.custom) ? settings.builders.custom : [];
     const security = settings.security && typeof settings.security === 'object' ? settings.security : {};
+    const allowInsecureCustomUrls = Boolean(security.allowInsecureCustomUrls);
+    const registry = builderRegistry(rawCustom, { allowInsecureHttp: allowInsecureCustomUrls });
+    const custom = registry.filter((builder) => !builder.builtin);
+    const options = { allowInsecureHttp: allowInsecureCustomUrls };
     return {
       schema: 'social-post-tools-links/v1',
       links: {
-        x: { builderId: String(links.x?.builderId || defaultBuilderId('x')) },
-        threads: { builderId: String(links.threads?.builderId || defaultBuilderId('threads')) },
+        x: { builderId: normalizeBuilderId('x', links.x?.builderId, custom, options) },
+        threads: { builderId: normalizeBuilderId('threads', links.threads?.builderId, custom, options) },
       },
-      builders: { custom: Array.isArray(custom) ? custom.slice(0, MAX_CUSTOM_BUILDERS) : [] },
-      security: { allowInsecureCustomUrls: Boolean(security.allowInsecureCustomUrls) },
+      builders: { custom },
+      security: { allowInsecureCustomUrls },
     };
   }
 
@@ -610,21 +618,16 @@
     const allowInsecureCustomUrls = Boolean(raw.security?.allowInsecureCustomUrls);
     const registry = builderRegistry(raw.builders?.custom || [], { allowInsecureHttp: allowInsecureCustomUrls });
     const custom = registry.filter((builder) => !builder.builtin);
-    const out = {
+    const options = { allowInsecureHttp: allowInsecureCustomUrls };
+    return {
       schema: 'social-post-tools-links/v1',
       links: {
-        x: { builderId: defaultBuilderId('x') },
-        threads: { builderId: defaultBuilderId('threads') },
+        x: { builderId: normalizeBuilderId('x', raw.links?.x?.builderId, custom, options) },
+        threads: { builderId: normalizeBuilderId('threads', raw.links?.threads?.builderId, custom, options) },
       },
       builders: { custom },
       security: { allowInsecureCustomUrls },
     };
-    for (const platform of ['x', 'threads']) {
-      const selected = String(raw.links?.[platform]?.builderId || '');
-      const exists = registry.some((builder) => builder.id === selected && !builder.retired && builder.platforms.includes(platform));
-      if (exists) out.links[platform].builderId = selected;
-    }
-    return out;
   }
 
   const ACTIVE_BUILTIN_BUILDERS = Object.freeze(BUILTIN_BUILDERS.filter((builder) => !builder.retired));
@@ -657,6 +660,7 @@
     finalizeBuiltUrl,
     buildUrl,
     selectBuilder,
+    normalizeBuilderId,
     transformedUrl,
     httpUrlsInText,
     firstHttpUrlInText,
