@@ -60,12 +60,18 @@ class ChromeController:
     Chrome chooses the debugging port itself (`--remote-debugging-port=0`),
     avoiding a free-port TOCTOU race. A fresh, non-default profile is always
     used because modern Chrome requires that for remote debugging.
+
+    On headless Linux CI runners Chrome occasionally stalls during startup
+    (dbus/OOM-score setup) and never writes DevToolsActivePort within the
+    timeout. To absorb that flakiness the launch is retried once, and a set
+    of CI-safe flags is passed to reduce external dependencies.
     """
 
-    def __init__(self, browser: str, *, prefix: str = 'spt-chrome-', startup_timeout: float = 30.0):
+    def __init__(self, browser: str, *, prefix: str = 'spt-chrome-', startup_timeout: float = 30.0, retries: int = 1):
         self.browser = browser
         self.prefix = prefix
         self.startup_timeout = startup_timeout
+        self.retries = retries
         self._tmp: tempfile.TemporaryDirectory[str] | None = None
         self._stderr_file = None
         self.proc: subprocess.Popen | None = None
@@ -73,6 +79,21 @@ class ChromeController:
         self.port: int | None = None
 
     def __enter__(self) -> 'ChromeController':
+        last_error: Exception | None = None
+        for attempt in range(self.retries + 1):
+            try:
+                self._launch()
+                return self
+            except Exception as exc:
+                last_error = exc
+                self.close()
+                if attempt >= self.retries:
+                    break
+                time.sleep(0.5)
+        assert last_error is not None
+        raise last_error
+
+    def _launch(self) -> None:
         self._tmp = tempfile.TemporaryDirectory(prefix=self.prefix, ignore_cleanup_errors=True)
         root = Path(self._tmp.name)
         self.profile = root / 'profile'
@@ -93,6 +114,16 @@ class ChromeController:
             '--no-first-run',
             '--remote-allow-origins=*',
             '--remote-debugging-port=0',
+            # Reduce CI startup flakiness: avoid hanging on dbus / zygote /
+            # crashpad / hardware VP setup that headless runners often lack.
+            '--disable-features=dbus,Translate',
+            '--no-zygote',
+            '--disable-crashpad',
+            '--disable-breakpad',
+            '--no-default-browser-check',
+            '--password-store=basic',
+            '--use-mock-keychain',
+            '--disable-software-rasterizer',
             f'--user-data-dir={self.profile}',
             'data:,',
         ]
@@ -108,7 +139,6 @@ class ChromeController:
         except Exception:
             self.close()
             raise
-        return self
 
     def _wait_for_debug_port(self) -> int:
         assert self.profile is not None
@@ -213,6 +243,9 @@ class ChromeController:
                 self.proc.kill()
                 with contextlib.suppress(subprocess.TimeoutExpired):
                     self.proc.wait(timeout=2)
+        self.proc = None
+        self.port = None
+        self.profile = None
         if self._stderr_file is not None:
             with contextlib.suppress(Exception):
                 self._stderr_file.close()
