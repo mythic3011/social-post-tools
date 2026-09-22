@@ -6,12 +6,12 @@ inputs it needs.  The runner evaluates them and reports pass/fail.
 """
 from pathlib import Path
 from urllib.parse import urlparse
-import importlib.util
 import json
 import re
 import tomllib
 
-ROOT = Path(__file__).resolve().parents[1]
+from audit_helpers import ROOT, load_build_module
+
 SITE = ROOT / 'site'
 
 
@@ -26,13 +26,6 @@ def read_rel(*parts: str) -> str:
 # ---------------------------------------------------------------------------
 # Inputs
 # ---------------------------------------------------------------------------
-
-def load_build_module():
-    spec = importlib.util.spec_from_file_location('spt_build', ROOT / 'build.py')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
 
 build = load_build_module()
 
