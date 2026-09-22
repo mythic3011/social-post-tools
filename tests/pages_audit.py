@@ -179,8 +179,8 @@ def _site_content() -> dict[str, bool]:
             and '__USERSCRIPT_DISTRIBUTION_META__' not in user
         ),
         'sample-pages-meta': (
-            f'@downloadURL  {SAMPLE_BASE}/install/social-post-tools.user.js' in meta_sample
-            and f'@updateURL    {SAMPLE_BASE}/install/social-post-tools.meta.js' in meta_sample
+            f'@downloadURL  {build.PUBLIC_RAW_USER_URL}' in meta_sample
+            and f'@updateURL    {build.PUBLIC_RAW_META_URL}' in meta_sample
         ),
         'public-meta-raw-github': (
             f'@downloadURL  {build.PUBLIC_RAW_USER_URL}' in public_meta
@@ -200,21 +200,26 @@ def _site_content() -> dict[str, bool]:
     }
 
 
+def _action_pinned_to_sha(workflow_text: str, action: str) -> bool:
+    """True when *action* is used with a full-length commit SHA pin.
+
+    Asserts the security invariant (pin to an immutable SHA) without
+    hardcoding a specific digest, so dependabot bumps do not break the audit.
+    """
+    return re.search(rf'{re.escape(action)}@[0-9a-f]{{40}}\b', workflow_text) is not None
+
+
 def _workflow_checks() -> dict[str, bool]:
     return {
-        'pages-workflow-configure-pinned': (
-            'actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b' in workflow
-        ),
+        'pages-workflow-configure-pinned': _action_pinned_to_sha(workflow, 'actions/configure-pages'),
         'pages-workflow-base-url': (
             'steps.pages.outputs.base_url' in workflow and '--pages-base' in workflow
         ),
         'pages-workflow-artifact-pinned': (
-            'actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b' in workflow
+            _action_pinned_to_sha(workflow, 'actions/upload-pages-artifact')
             and 'path: ./site' in workflow
         ),
-        'pages-workflow-deploy-pinned': (
-            'actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e' in workflow
-        ),
+        'pages-workflow-deploy-pinned': _action_pinned_to_sha(workflow, 'actions/deploy-pages'),
         'pages-workflow-least-privilege': (
             'pages: read' in workflow
             and 'pages: write' in workflow

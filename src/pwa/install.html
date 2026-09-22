@@ -37,8 +37,8 @@
       <h2>One script. Multiple delivery routes.</h2>
       <p>Use the project site for the normal install flow. If your browser or Userscript manager does not intercept that link, use the direct Raw GitHub <code>.user.js</code> artifact instead.</p>
       <div class="install-primary-actions">
-        <a role="button" href="./install/social-post-tools.user.js">Install from project site</a>
-        <a role="button" class="secondary outline" href="__RAW_USER_URL__">Open Raw GitHub .user.js</a>
+        <a role="button" href="__RAW_USER_URL__">Install from Raw GitHub</a>
+        <a role="button" class="secondary outline" href="__CDN_USER_URL__">Open CDN mirror</a>
       </div>
     </div>
     <aside class="install-status-panel" aria-label="Distribution policy">
@@ -75,17 +75,11 @@
         <div class="section-heading-row"><div><span class="eyebrow">02 · Distribution</span><h2>Choose an install source</h2></div><span class="status-chip">Same generated artifact</span></div>
         <p class="muted">The tested build is published to a generated <code>dist</code> branch. Raw GitHub is the canonical update path; the CDN is deliberately secondary because mutable aliases can remain cached.</p>
         <div class="distribution-grid">
-          <a class="distribution-card primary-source" href="./install/social-post-tools.user.js">
-            <span class="capability-key">PAGES</span>
-            <strong>Project site</strong>
-            <small>Best normal install path. Same build is served beside the PWA.</small>
-            <span class="source-action">Install →</span>
-          </a>
-          <a class="distribution-card" href="__RAW_USER_URL__">
+          <a class="distribution-card primary-source" href="__RAW_USER_URL__">
             <span class="capability-key">RAW</span>
             <strong>Raw GitHub</strong>
-            <small>Canonical direct <code>.user.js</code> and the script's update source.</small>
-            <span class="source-action">Open artifact →</span>
+            <small>Canonical direct <code>.user.js</code> and the script's update source. Recommended.</small>
+            <span class="source-action">Install →</span>
           </a>
           <a class="distribution-card" href="__CDN_USER_URL__">
             <span class="capability-key">CDN</span>

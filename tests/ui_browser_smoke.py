@@ -146,16 +146,16 @@ def main() -> int:
               managerCards: document.querySelectorAll('.manager-card').length,
               managerLinks: [...document.querySelectorAll('.manager-card a')].map((a) => a.href),
               installRules: document.querySelector('#spt-install-test')?.sheet?.cssRules?.length || 0,
-              primaryInstallHref: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.getAttribute('href') || '',
-              primaryInstallText: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.textContent?.trim() || '',
-              rawInstallHref: [...document.querySelectorAll('a')].map((a) => a.href).find((href) => href.startsWith('https://raw.githubusercontent.com/') && href.endsWith('/social-post-tools.user.js')) || '',
+              primaryInstallHref: document.querySelector('a[href^="https://raw.githubusercontent.com/"]')?.getAttribute('href') || '',
+              primaryInstallText: document.querySelector('a[href^="https://raw.githubusercontent.com/"]')?.textContent?.trim() || '',
+              cdnInstallHref: [...document.querySelectorAll('a')].map((a) => a.href).find((href) => href.startsWith('https://cdn.jsdelivr.net/') && href.endsWith('/social-post-tools.user.js')) || '',
             }))()''', call_id)
             report({
                 'browser-setup-mobile-no-overflow': bool(install_page and install_page['scrollWidth'] <= install_page['width'] + 1),
                 'browser-setup-manager-choices': bool(install_page and install_page['managerCards'] == 2),
                 'browser-setup-install-css-parsed': bool(install_page and install_page['installRules'] > 0),
-                'browser-setup-userscript-cta': bool(install_page and install_page['primaryInstallHref'] == './install/social-post-tools.user.js' and install_page['primaryInstallText']),
-                'browser-setup-raw-fallback': bool(install_page and install_page['rawInstallHref'] == 'https://raw.githubusercontent.com/mythic3011/social-post-tools/dist/social-post-tools.user.js'),
+                'browser-setup-userscript-cta': bool(install_page and install_page['primaryInstallHref'].endswith('/social-post-tools.user.js') and install_page['primaryInstallText']),
+                'browser-setup-cdn-fallback': bool(install_page and install_page['cdnInstallHref'].endswith('/social-post-tools.user.js')),
             }, failures)
 
             call_id = set_document(ws, frame_id, page_document('capture-handoff.html'), call_id)

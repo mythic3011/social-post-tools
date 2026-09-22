@@ -57,19 +57,18 @@ def public_distribution_urls(base_url: str | None) -> tuple[str, str, str, str]:
     branch is the canonical update channel. The raw URL ends in `.user.js`,
     which lets userscript managers intercept it directly without depending on
     a Pages MIME type or a mutable CDN cache.
+
+    Download and update URLs always point to the canonical GitHub raw
+    distribution, never to the Pages site, because the site does not serve
+    the `install/` directory with the correct MIME type for userscript
+    managers.
     """
-    if not base_url or base_url == PUBLIC_SITE_URL:
-        return (
-            PUBLIC_SITE_URL + '/',
-            PUBLIC_RAW_USER_URL,
-            PUBLIC_RAW_META_URL,
-            PUBLIC_GITHUB_URL + '/issues',
-        )
+    homepage = (base_url or PUBLIC_SITE_URL) + '/'
     return (
-        base_url + '/',
-        base_url + '/install/social-post-tools.user.js',
-        base_url + '/install/social-post-tools.meta.js',
-        base_url + '/',
+        homepage,
+        PUBLIC_RAW_USER_URL,
+        PUBLIC_RAW_META_URL,
+        PUBLIC_GITHUB_URL + '/issues',
     )
 
 
