@@ -18,16 +18,7 @@
 <body data-page="link-lab">
 <div class="pico spt-app">
 <main class="container spt-shell app-workspace">
-  <header class="spt-header site-header">
-    <div class="brand-block">
-      <span class="product-mark" aria-hidden="true">SP</span>
-      <div><h1>Link Lab</h1><p class="eyebrow">Inspect · compare · copy</p></div>
-    </div>
-    <nav class="header-actions" aria-label="Primary navigation">
-      <a class="text-link" href="./">Home</a>
-      <a role="button" class="secondary outline compact" href="./settings.html">Settings</a>
-    </nav>
-  </header>
+  <spt-header title="Link Lab" eyebrow="Inspect · compare · copy" brand links="./|Home" settings-href="./settings.html"></spt-header>
 
   <section class="workspace-hero" aria-labelledby="lab-title">
     <div class="hero-copy">
@@ -107,17 +98,11 @@
     </div>
   </details>
 
-  <footer class="app-footer">
-    <nav class="footer-nav" aria-label="Project links">
-      <a href="./">Home</a>
-      <a href="./settings.html">Settings</a>
-      <a href="./privacy.html">Privacy & security</a>
-    </nav>
-    <p class="build-info">Version __APP_VERSION__</p>
-  </footer>
+  <spt-footer version="__APP_VERSION__" links="./|Home,./settings.html|Settings,./privacy.html|Privacy & security"></spt-footer>
 </main>
 </div>
 <script src="./social-post-core.js?v=__APP_VERSION__"></script>
+<script src="./js/components.js?v=__APP_VERSION__"></script>
 <script src="./link-lab.js?v=__APP_VERSION__"></script>
 </body>
 </html>
