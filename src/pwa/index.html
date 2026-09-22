@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#0b0d10">
   <meta name="description" content="Share X and Threads posts with clean links, AI-ready capture, Telegram, alternative frontends, and Android Share.">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="__CANONICAL_URL__">
@@ -31,69 +31,94 @@
 </head>
 <body data-page="landing">
 <div class="pico spt-app">
-<main class="container spt-shell landing">
+<main class="container spt-shell landing app-workspace">
   <header class="spt-header site-header">
-    <div><h1>Social Post Tools</h1><p class="eyebrow">Share social posts your way</p></div>
-    <a role="button" class="secondary outline compact" href="./settings.html">Settings</a>
+    <div class="brand-block">
+      <span class="product-mark" aria-hidden="true">SP</span>
+      <div><h1>Social Post Tools</h1><p class="eyebrow">Capture · normalize · share</p></div>
+    </div>
+    <nav class="header-actions" aria-label="Primary navigation">
+      <a class="text-link" href="./link-lab.html">Link Lab</a>
+      <a class="text-link" href="./privacy.html">Privacy</a>
+      <a role="button" class="secondary outline compact" href="./settings.html">Settings</a>
+    </nav>
   </header>
 
-  <article class="hero-card landing-hero">
-    <div class="badge">X · Threads</div>
-    <p class="android-only platform-lead"><strong>Android detected.</strong> Install the app to add Social Post Tools to the Android Share sheet.</p>
-    <h2>Cleaner sharing. Better AI capture.</h2>
-    <p>Use clean or alternate links, send posts to Android apps or Telegram, and capture the post context you actually want for AI.</p>
-    <div class="cta-grid hero-install-actions">
-      <button id="install-app" type="button" aria-haspopup="dialog"><span class="android-only">Install Android app</span><span class="not-android">Install app</span></button>
-      <a role="button" class="browser-setup-cta" href="./install.html">Set up browser</a>
+  <section class="workspace-hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <div class="badge">X · Threads</div>
+      <h2 id="hero-title">One share surface for clean links, better previews, and AI capture.</h2>
+      <p>Keep the original post URL, create a chat-friendly link, or hand the source to the browser Userscript for structured capture. No account and no server-side post storage.</p>
+      <div class="cta-grid hero-install-actions">
+        <button id="install-app" type="button" aria-haspopup="dialog"><span class="android-only">Install Android app</span><span class="not-android">Install app</span></button>
+        <a role="button" class="secondary browser-setup-cta" href="./install.html">Browser setup</a>
+      </div>
+      <p id="install-help" class="muted compact-copy">If your browser cannot show a native install prompt, the same button opens the manual installation path.</p>
     </div>
-    <p id="install-help" class="muted compact-copy">Tap Install. If your browser cannot open its native prompt, Social Post Tools will show the manual Android steps instead.</p>
-    <p class="android-only muted compact-copy browser-support-note"><strong>Android Share-sheet support:</strong> Google Chrome is the supported install path. Brave is experimental on some builds and may require a developer Web App install setting; Firefox can install the PWA but may not register it as an Android share target.</p>
-    <p class="muted compact-copy">No account, analytics, or server-side post processing.</p>
-  </article>
 
-  <section class="feature-grid" aria-label="Main features">
-    <article class="feature-card"><h2>Share cleanly</h2><p>Remove tracking and choose an alternative reader or chat-friendly link.</p></article>
-    <article class="feature-card"><h2>Use with AI</h2><p>Capture the focal post, images, quote/repost context, or visible replies without flattening them together.</p></article>
-    <article class="feature-card"><h2>Android Share</h2><p>Install the companion, then choose Social Post Tools directly from Android's share sheet.</p></article>
-    <article class="feature-card"><h2>Advanced when needed</h2><p>Telegram, custom URL builders, archive snapshots, and expert settings stay out of the way until you need them.</p></article>
+    <aside class="pipeline-panel" aria-label="Share pipeline overview">
+      <div class="panel-heading"><span class="eyebrow">Default pipeline</span><span class="status-chip">Local first</span></div>
+      <ol class="pipeline-list">
+        <li><span>01</span><div><strong>Detect post</strong><small>Recognize X / Threads and normalize tracking-heavy URLs.</small></div></li>
+        <li><span>02</span><div><strong>Choose output</strong><small>Original link, preview link, alternate reader, or custom builder.</small></div></li>
+        <li><span>03</span><div><strong>Send or capture</strong><small>System Share, Telegram, clipboard, or rich AI capture.</small></div></li>
+      </ol>
+    </aside>
   </section>
 
-  <article>
-    <h2>Android setup</h2>
-    <div class="step-list" aria-label="Android setup steps">
-      <div><span>1</span><p><strong>Install with Google Chrome</strong><br><small>Chrome is the supported Android Share-sheet path. Other browsers may install the PWA without registering a system share target.</small></p></div>
-      <div><span>2</span><p><strong>Share from X or Threads</strong><br><small>Tap Share → Social Post Tools.</small></p></div>
-      <div><span>3</span><p><strong>Choose what happens next</strong><br><small>Share onward, copy a clean link, or open the source for richer AI capture.</small></p></div>
-    </div>
-  </article>
+  <section class="capability-strip" aria-label="Core capabilities">
+    <div><span class="capability-key">LINK</span><strong>Clean URL</strong><small>Canonical post link without tracking noise.</small></div>
+    <div><span class="capability-key">EMBED</span><strong>Chat preview</strong><small>FixupX / vxThreads style links when richer embeds matter.</small></div>
+    <div><span class="capability-key">READ</span><strong>Alternate reader</strong><small>Reader frontends stay separate from embed-fixer semantics.</small></div>
+    <div><span class="capability-key">CAPTURE</span><strong>AI context</strong><small>Post, media, quote/repost context, and visible discussion.</small></div>
+  </section>
 
-  <details class="android-only android-browser-option">
-    <summary>Use the browser Userscript instead</summary>
-    <p class="muted">Optional on Android. Use this only when your browser supports a Userscript manager. The installed PWA is the recommended Android share-sheet path.</p>
-    <a role="button" class="secondary outline" href="./install.html">Browser Userscript setup</a>
+  <section class="landing-grid">
+    <article class="task-card primary-task">
+      <span class="eyebrow">Android</span>
+      <h2>Share-sheet workflow</h2>
+      <p>Install the PWA with Chrome so Social Post Tools becomes an Android Share target. From X or Threads, share the post into this app and choose the next action.</p>
+      <div class="step-list compact-steps" aria-label="Android setup steps">
+        <div><span>1</span><p><strong>Install the PWA</strong><br><small>Chrome is the supported Share Target registration path.</small></p></div>
+        <div><span>2</span><p><strong>Share a post</strong><br><small>Use X / Threads → Share → Social Post Tools.</small></p></div>
+        <div><span>3</span><p><strong>Pick an output</strong><br><small>Copy, share, open a reader, or continue into AI capture.</small></p></div>
+      </div>
+    </article>
+
+    <article class="task-card browser-userscript-section">
+      <span class="eyebrow">Desktop / extension browser</span>
+      <h2>Userscript workflow</h2>
+      <p>The Userscript adds post-level tools directly inside X and Threads. Use it when you want capture controls without routing through Android Share.</p>
+      <div class="toolbar">
+        <a role="button" href="./install.html">Set up Userscript</a>
+        <a role="button" class="secondary outline" href="./install/social-post-tools.user.js">Direct install</a>
+      </div>
+      <p class="muted compact-copy">Tampermonkey is the recommended default; Violentmonkey remains supported.</p>
+    </article>
+
+    <article class="task-card">
+      <span class="eyebrow">Inspect links</span>
+      <h2>Compare outputs before sharing</h2>
+      <p>Use Link Lab to paste an X or Threads URL and compare the canonical source, chat-preview output, and alternate-reader output without background provider health checks.</p>
+      <div class="toolbar">
+        <a role="button" href="./link-lab.html">Open Link Lab</a>
+      </div>
+    </article>
+  </section>
+
+  <details class="android-only settings-group android-browser-option">
+    <summary>Use the browser Userscript on Android</summary>
+    <div class="settings-group-body">
+      <p class="muted">Optional path for browsers with a Userscript manager. The installed PWA remains the normal Android share-sheet entry point.</p>
+      <a role="button" class="secondary outline" href="./install.html">Browser Userscript setup</a>
+    </div>
   </details>
-
-  <article class="browser-userscript-section">
-    <div class="section-heading-row"><div><h2>Browser Userscript</h2><p class="muted compact-copy">Best for X / Threads in desktop or extension-capable browsers.</p></div><span class="badge">2-step setup</span></div>
-    <p>The Userscript adds <strong>Post tools</strong> to X and Threads while keeping the site's native menu style.</p>
-    <div class="browser-install-summary">
-      <div><strong>1. Get a Userscript manager</strong><small>Tampermonkey is the recommended default; Violentmonkey is also supported.</small></div>
-      <div><strong>2. Install Social Post Tools</strong><small>The manager handles the <code>.user.js</code> install and future updates.</small></div>
-    </div>
-    <div class="cta-grid">
-      <a role="button" href="./install.html">Browser setup</a>
-      <a role="button" class="secondary outline" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Get Tampermonkey ↗</a>
-    </div>
-    <p class="muted compact-copy">Already have Tampermonkey or Violentmonkey? <a href="./install/social-post-tools.user.js">Install the Userscript directly.</a></p>
-  </article>
 
   <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-dialog-title">
     <article>
-      <header>
-        <h2 id="install-dialog-title">Install Social Post Tools</h2>
-      </header>
+      <header><h2 id="install-dialog-title">Install Social Post Tools</h2></header>
       <p id="install-guidance">Open your browser menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
-      <p class="muted">The custom install prompt is browser-dependent. Manual installation can still work even when this website cannot trigger the browser prompt directly.</p>
+      <p class="muted">The native prompt is browser-dependent. Manual installation can still work when the page cannot trigger it directly.</p>
       <details class="install-diagnostics">
         <summary>Installation diagnostics</summary>
         <dl>
@@ -104,15 +129,15 @@
           <div><dt>Share target</dt><dd id="diag-share-target">Checking…</dd></div>
         </dl>
       </details>
-      <footer class="toolbar">
-        <button id="install-dialog-close" type="button" class="secondary">Close</button>
-      </footer>
+      <footer class="toolbar"><button id="install-dialog-close" type="button" class="secondary">Close</button></footer>
     </article>
   </dialog>
 
-  <footer>
+  <footer class="app-footer">
     <nav class="footer-nav" aria-label="Project links">
+      <a href="./link-lab.html">Link Lab</a>
       <a href="./settings.html">Settings</a>
+      <a href="./install.html">Install</a>
       <a href="./privacy.html">Privacy & security</a>
     </nav>
     <p class="build-info">Version __APP_VERSION__</p>
@@ -121,6 +146,7 @@
 </main>
 </div>
 <script src="./social-post-core.js?v=__APP_VERSION__"></script>
+<script src="./provider-policy.js?v=__APP_VERSION__"></script>
 <script src="./app.js?v=__APP_VERSION__"></script>
 </body>
 </html>

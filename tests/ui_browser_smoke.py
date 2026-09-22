@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import contextlib
 import importlib.util
-import json
 import re
 import sys
 import time
@@ -24,9 +23,11 @@ def page_document(name: str) -> str:
     html = (SITE / name).read_text(encoding='utf-8')
     framework = (SITE / 'assets/vendor/pico.conditional.min.css').read_text(encoding='utf-8')
     product = (SITE / 'assets/app.css').read_text(encoding='utf-8')
+    install = (SITE / 'assets/install.css').read_text(encoding='utf-8') if (SITE / 'assets/install.css').is_file() else ''
     html = re.sub(r'<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>', '', html, flags=re.I)
     html = re.sub(r'<link[^>]+href="\./assets/vendor/pico\.conditional\.min\.css(?:\?[^\"]*)?"[^>]*>', f'<style id="spt-framework-test">{framework}</style>', html, flags=re.I)
     html = re.sub(r'<link[^>]+href="\./assets/app\.css(?:\?[^\"]*)?"[^>]*>', f'<style id="spt-product-test">{product}</style>', html, flags=re.I)
+    html = re.sub(r'<link[^>]+href="\./assets/install\.css(?:\?[^\"]*)?"[^>]*>', f'<style id="spt-install-test">{install}</style>', html, flags=re.I)
     html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.I | re.S)
     return html
 
@@ -60,7 +61,7 @@ def report(checks: dict[str, bool], failures: list[str]) -> None:
 def main() -> int:
     required = [
         SITE / 'index.html', SITE / 'install.html', SITE / 'settings.html', SITE / 'capture-handoff.html',
-        SITE / 'assets/vendor/pico.conditional.min.css', SITE / 'assets/app.css',
+        SITE / 'assets/vendor/pico.conditional.min.css', SITE / 'assets/app.css', SITE / 'assets/install.css',
     ]
     if not all(path.is_file() for path in required):
         print('FAIL ui-browser-site-missing')
@@ -144,12 +145,17 @@ def main() -> int:
               scrollWidth: document.documentElement.scrollWidth,
               managerCards: document.querySelectorAll('.manager-card').length,
               managerLinks: [...document.querySelectorAll('.manager-card a')].map((a) => a.href),
-              primaryInstall: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.textContent?.trim() || '',
+              installRules: document.querySelector('#spt-install-test')?.sheet?.cssRules?.length || 0,
+              primaryInstallHref: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.getAttribute('href') || '',
+              primaryInstallText: document.querySelector('a[href="./install/social-post-tools.user.js"]')?.textContent?.trim() || '',
+              rawInstallHref: [...document.querySelectorAll('a')].map((a) => a.href).find((href) => href.startsWith('https://raw.githubusercontent.com/') && href.endsWith('/social-post-tools.user.js')) || '',
             }))()''', call_id)
             report({
                 'browser-setup-mobile-no-overflow': bool(install_page and install_page['scrollWidth'] <= install_page['width'] + 1),
                 'browser-setup-manager-choices': bool(install_page and install_page['managerCards'] == 2),
-                'browser-setup-userscript-cta': bool(install_page and 'Install Social Post Tools Userscript' in install_page['primaryInstall']),
+                'browser-setup-install-css-parsed': bool(install_page and install_page['installRules'] > 0),
+                'browser-setup-userscript-cta': bool(install_page and install_page['primaryInstallHref'] == './install/social-post-tools.user.js' and install_page['primaryInstallText']),
+                'browser-setup-raw-fallback': bool(install_page and install_page['rawInstallHref'] == 'https://raw.githubusercontent.com/mythic3011/social-post-tools/dist/social-post-tools.user.js'),
             }, failures)
 
             call_id = set_document(ws, frame_id, page_document('capture-handoff.html'), call_id)

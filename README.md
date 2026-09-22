@@ -1,7 +1,7 @@
 # Social Post Tools
 
 [![Live site](https://img.shields.io/badge/Live-share--tools.mythic3011.com-0a7?logo=googlechrome&logoColor=white)](https://share-tools.mythic3011.com/)
-[![Version](https://img.shields.io/badge/version-v4.3.1-2f81f7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.4.0-2f81f7)](CHANGELOG.md)
 [![CI](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/ci.yml)
 [![Pages](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/mythic3011/social-post-tools/actions/workflows/pages.yml)
 [![Last commit](https://img.shields.io/github/last-commit/mythic3011/social-post-tools)](https://github.com/mythic3011/social-post-tools/commits/main/)
@@ -17,11 +17,12 @@
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-supported-00485b)](https://www.tampermonkey.net/)
 [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-supported-7B68EE)](https://violentmonkey.github.io/)
 
-**Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean link sharing, Nitter-compatible alternate links, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account or application backend.
+**Social Post Tools is a privacy-first Userscript + Progressive Web App for X (Twitter) and Threads.** It adds clean-link sharing, curated chat-preview links and alternate readers, Android Web Share Target support, structured AI-ready post capture, Telegram sharing, and optional integrity-oriented archive snapshots without requiring an account or application backend.
 
 - **Browser:** integrates into the native X / Threads Share menu through Tampermonkey or Violentmonkey.
 - **Android:** install with **Google Chrome** for the supported Android Web Share Target path. Brave is experimental on some builds; Firefox may install the PWA without registering it in the Android share sheet.
 - **Default UX:** works without configuration; advanced URL builders, archive tools, and capture controls stay behind progressive disclosure.
+- **Provider model:** clean source links, embed fixers, and alternate readers are different capabilities instead of one interchangeable “alternative frontend” list.
 
 **Live app:** https://share-tools.mythic3011.com/
 
@@ -30,10 +31,16 @@
 ### Browser: X / Threads Userscript
 
 1. Install a Userscript manager. **[Tampermonkey](https://www.tampermonkey.net/)** is the recommended default; **[Violentmonkey](https://violentmonkey.github.io/)** is also supported.
-2. Open **[Browser setup](https://share-tools.mythic3011.com/install.html)** or install **[Social Post Tools.user.js](https://share-tools.mythic3011.com/install/social-post-tools.user.js)** directly if your manager is already installed.
+2. Open **[Browser setup](https://share-tools.mythic3011.com/install.html)**. The project site is the human-friendly install surface; the generated Raw GitHub `dist` branch is the canonical update channel and jsDelivr is a fallback mirror.
 3. Open X or Threads, open a post's Share menu, then choose **Post tools**.
 
-If a `.user.js` link only displays JavaScript source, install or enable a Userscript manager first, then retry the link.
+If a `.user.js` link only displays JavaScript source, install or enable a Userscript manager first, then retry the link. Tampermonkey can also import the Raw GitHub `.user.js` URL through **Options → Utilities → Import from URL**.
+
+Published distribution files include `SHA256SUMS.txt` and GitHub Artifact Attestations. After downloading the Userscript, provenance can be verified with:
+
+```bash
+gh attestation verify social-post-tools.user.js -R mythic3011/social-post-tools
+```
 
 ### Android: native-app sharing
 
@@ -59,12 +66,20 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 ## What it does
 
 - **Clean X / Twitter and Threads links** — strip common tracking parameters and canonicalize post URLs.
-- **Alternative frontends and chat previews** — use Nitter-compatible readers, FixupX/FixVX-style destinations, vxThreads, or custom URL builders.
+- **Capability-based share links** — keep the canonical source URL separate from chat-preview builders such as FixupX/FixVX/vxThreads and reader frontends such as XCancel.
 - **Structured AI capture** — preserve the focal post, media ownership, quote/repost context, and optional visible discussion instead of flattening everything into one text blob.
 - **Android Share Target** — receive a native Android share and forward, copy, transform, or hand the source post back to the browser for richer capture.
 - **Telegram and system sharing** — use platform share destinations without storing bot credentials.
 - **Archive snapshots** — explicitly create canonical JSON + SHA-256 integrity metadata, with optional media packaging.
 - **Privacy-first defaults** — no analytics or application backend; network-heavy media preparation is explicit.
+
+### Provider lifecycle
+
+Public alternative-front-end instance lists are intentionally not treated as a stable product dependency. Built-in providers are curated by capability instead of assuming that many interchangeable domains provide reliability.
+
+The shared core defaults X preview links to **FixupX**, keeps **XCancel** as an optional reader, and uses **vxThreads** for Threads preview links. Provider metadata, lifecycle state, and defaults live in one registry in `src/core/social-post-core.js`. Normal consumers receive only active built-ins; the full legacy registry remains addressable for migrations and old imported settings. Retired Nitter IDs can therefore still be understood without becoming selectable defaults or fallbacks.
+
+Social Post Tools deliberately does **not** health-probe every provider at runtime. Doing so would generate background cross-origin requests that leak browsing/share intent and would weaken the current restrictive CSP model. Self-hosted or replacement services can still be added through custom URL builders.
 
 ## Tech stack
 
@@ -73,29 +88,31 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 | Userscript | JavaScript | Native X / Threads Share-menu integration and structured capture |
 | Android companion | PWA + Web Share Target | Receives links from the Android share sheet |
 | UI | Semantic HTML + Pico CSS 2.1.1 | Task-oriented, progressively disclosed interface |
-| Shared core | JavaScript | Canonical URLs, URL builders, portable settings, hashing helpers |
+| Shared core | JavaScript | Canonical URLs, provider lifecycle, URL builders, portable settings, hashing helpers |
 | Build / audits | Python 3.13 | Static build, packaging, SEO generation, security/UI checks |
-| Hosting | GitHub Pages | Static HTTPS distribution and stable Userscript endpoints |
-| CI | GitHub Actions | Build, security, DOM fixture, UI, SEO, and performance regression tests |
+| Toolchain | mise + uv + npm locks | Exact tool versions, checksums/provenance, reproducible dependency setup |
+| Hosting | GitHub Pages + Raw GitHub | Human install UI plus generated Userscript update distribution |
+| CI | GitHub Actions | Build, dependency review, provenance, security, UI, SEO, and regression tests |
 
 ## Privacy and security
 
-The PWA processes ordinary shared URLs locally and has no analytics. Threads `/share/<token>` aliases use the project-owned constrained resolver because a static browser page cannot read the final cross-origin redirect target. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
+The PWA processes ordinary shared URLs locally and has no analytics. Threads `/share/<token>` aliases use the project-owned constrained resolver because a static browser page cannot read the final cross-origin redirect target. The resolver has bounded request/response sizes, a fixed upstream deadline, strict Threads-host redirect validation, and no generic proxy behavior. The Userscript uses userscript-manager storage for preferences and bounded capture cache. Cross-origin media access is restricted to known X / Threads media CDN families and only runs after an explicit media/archive action.
 
-Archive hashes verify archived bytes; they do **not** prove authorship, account ownership, publication time, or historical authenticity. See [SECURITY.md](SECURITY.md) and the [security model](docs/architecture/SECURITY_MODEL.md).
+Archive hashes verify archived bytes; they do **not** prove authorship, account ownership, publication time, or historical authenticity. Distribution provenance is a separate concern: generated Userscript artifacts are SHA-256 hashed and attested by GitHub Actions/Sigstore so a downloaded file can be tied back to the workflow that produced it. See [SECURITY.md](SECURITY.md) and the [security model](docs/architecture/SECURITY_MODEL.md).
 
 ## Repository layout
 
 ```text
 src/
-├── core/        shared canonical URL / builder logic
+├── core/        shared canonical URL / provider / builder logic
 ├── pwa/         Pages + Android share-target source
 └── userscript/  native X / Threads integration
 
+.github/        CI, Pages, resolver, dependency review, distribution and Dependabot config
 scripts/        maintainer helpers, including GitHub repository metadata setup
 docs/           product, architecture, deployment, development docs
 tests/          DOM fixtures, security/UI/SEO audits, browser/perf smoke tests
-dist/           generated Userscript artifacts (ignored)
+dist/           generated Userscript artifacts (ignored in source; published on dist branch)
 site/           generated GitHub Pages artifact (ignored)
 ```
 
@@ -105,18 +122,41 @@ See [docs/development/REPOSITORY_LAYOUT.md](docs/development/REPOSITORY_LAYOUT.m
 
 Incoming Android shares are normalized through a staged parser/enricher pipeline inspired by CrowdSec's separation of acquisition, parsing, and enrichment. Platform parsers and network enrichers stay isolated from copy/share/AI destinations. See [`docs/architecture/SHARE_PIPELINE.md`](docs/architecture/SHARE_PIPELINE.md).
 
+Provider lifecycle is source-level policy rather than a build-time text transformation. `SocialPostCore.BUILTIN_BUILDERS` exposes active providers for normal UI/selection, while `SocialPostCore.ALL_BUILTIN_BUILDERS` and `builderById()` keep retired IDs readable for migrations and compatibility. `build.py` packages that source directly; it no longer rewrites provider IDs or lifecycle flags.
+
+## Supply-chain model
+
+The development toolchain is declared once in `mise.toml`. `mise.lock` records reviewed cross-platform artifact URLs and SHA-256 checksums, plus upstream provenance when supported. CI re-generates the Linux x64, macOS arm64, and Windows x64 lock entries and fails on drift. Locked installs also re-verify available provenance.
+
+GitHub Actions dependencies are pinned to immutable commit SHAs. Dependabot groups npm and GitHub Actions version updates on a weekly schedule with a seven-day cooldown, while security updates remain eligible immediately. Pull requests also pass GitHub Dependency Review so newly introduced vulnerable dependencies fail before merge.
+
+The distribution workflow runs the full test suite before generating checksums, creates a GitHub/Sigstore build-provenance attestation for the checksummed artifacts, and only then force-publishes the generated `dist` branch. Each CDN fallback points at an immutable `dist-v<version>` tag; an existing distribution tag is never moved or replaced.
+
 ## Development
 
-Production-equivalent local build:
+Install the reviewed toolchain and locked project dependencies:
 
 ```bash
-uv sync --locked
+mise install --locked
+mise run bootstrap
+```
+
+Production-equivalent build and full checks:
+
+```bash
+mise run check
+```
+
+Equivalent explicit commands are:
+
+```bash
 npm ci --ignore-scripts --no-audit --no-fund
+uv sync --locked
 uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
 uv run --locked bash tests/run.sh
 ```
 
-Production builds for `https://share-tools.mythic3011.com` automatically use `https://resolver.mythic3011.com/v1/threads/resolve`. Forks can override it with `--threads-resolver-url` or disable it with `--no-threads-resolver`. Python build/test dependencies are managed only through the locked uv project; direct `pip install` is not part of the supported workflow.
+Production builds for `https://share-tools.mythic3011.com` automatically use `https://resolver.mythic3011.com/v1/threads/resolve`. Forks can override it with `--threads-resolver-url` or disable it with `--no-threads-resolver`. Direct `pip install` is not part of the supported workflow.
 
 Generated output:
 
@@ -126,7 +166,7 @@ dist/social-post-tools.meta.js
 site/
 ```
 
-`site/` is the GitHub Pages deployment artifact. `dist/` and `site/` are generated; edit files under `src/` instead.
+`site/` is the GitHub Pages deployment artifact. `dist/` and `site/` are generated; edit files under `src/` instead. On `main`, the distribution workflow publishes tested `dist/` contents to the dedicated `dist` branch rather than committing generated artifacts into the source branch.
 
 ## Repository discovery / SEO
 

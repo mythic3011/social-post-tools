@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '4.3.1'
+VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 PICO_VERSION = '2.1.1'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
@@ -18,6 +18,13 @@ PWA_SRC = SRC / 'pwa'
 PICO_CSS = ROOT / 'node_modules' / '@picocss' / 'pico' / 'css' / 'pico.conditional.min.css'
 PICO_FALLBACK = PWA_SRC / 'assets' / 'pico-fallback.css'
 PUBLIC_SITE_URL = 'https://share-tools.mythic3011.com'
+PUBLIC_GITHUB_REPO = 'mythic3011/social-post-tools'
+PUBLIC_GITHUB_URL = f'https://github.com/{PUBLIC_GITHUB_REPO}'
+PUBLIC_RAW_BASE = f'https://raw.githubusercontent.com/{PUBLIC_GITHUB_REPO}/dist'
+PUBLIC_CDN_BASE = f'https://cdn.jsdelivr.net/gh/{PUBLIC_GITHUB_REPO}@dist-v{VERSION}'
+PUBLIC_RAW_USER_URL = f'{PUBLIC_RAW_BASE}/social-post-tools.user.js'
+PUBLIC_RAW_META_URL = f'{PUBLIC_RAW_BASE}/social-post-tools.meta.js'
+PUBLIC_CDN_USER_URL = f'{PUBLIC_CDN_BASE}/social-post-tools.user.js'
 PUBLIC_THREADS_RESOLVER_URL = 'https://resolver.mythic3011.com/v1/threads/resolve'
 
 
@@ -43,21 +50,42 @@ def normalize_resolver_url(value: str | None) -> str | None:
     return value
 
 
+def public_distribution_urls(base_url: str | None) -> tuple[str, str, str, str]:
+    """Return homepage, full userscript, metadata, and support URLs.
+
+    The project-owned site remains the install UI, while the generated `dist`
+    branch is the canonical update channel. The raw URL ends in `.user.js`,
+    which lets userscript managers intercept it directly without depending on
+    a Pages MIME type or a mutable CDN cache.
+    """
+    if not base_url or base_url == PUBLIC_SITE_URL:
+        return (
+            PUBLIC_SITE_URL + '/',
+            PUBLIC_RAW_USER_URL,
+            PUBLIC_RAW_META_URL,
+            PUBLIC_GITHUB_URL + '/issues',
+        )
+    return (
+        base_url + '/',
+        base_url + '/install/social-post-tools.user.js',
+        base_url + '/install/social-post-tools.meta.js',
+        base_url + '/',
+    )
+
+
 def distribution_meta(base_url: str | None) -> str:
     public_base = base_url or PUBLIC_SITE_URL
     parsed = urlparse(public_base)
     base_path = parsed.path.rstrip('/')
     bridge_match = f'{parsed.scheme}://{parsed.netloc}{base_path}/capture-handoff.html*'
-    lines = [f'// @match        {bridge_match}']
-    if not base_url:
-        lines.append('// Distribution URLs are injected by the GitHub Pages build.')
-        return '\n'.join(lines)
-    lines.extend([
-        f'// @homepageURL  {base_url}/',
-        f'// @downloadURL  {base_url}/install/social-post-tools.user.js',
-        f'// @updateURL    {base_url}/install/social-post-tools.meta.js',
+    homepage, download_url, update_url, support_url = public_distribution_urls(base_url)
+    return '\n'.join([
+        f'// @match        {bridge_match}',
+        f'// @homepageURL  {homepage}',
+        f'// @supportURL   {support_url}',
+        f'// @downloadURL  {download_url}',
+        f'// @updateURL    {update_url}',
     ])
-    return '\n'.join(lines)
 
 
 def render_userscript(pages_base: str | None) -> str:
@@ -69,8 +97,7 @@ def render_userscript(pages_base: str | None) -> str:
         raise SystemExit('userscript distribution marker missing or duplicated')
     bundle = template.replace(CORE_MARKER, core)
     bundle = bundle.replace(DIST_META_MARKER, distribution_meta(pages_base))
-    bundle = bundle.replace('__APP_VERSION__', VERSION)
-    return bundle
+    return bundle.replace('__APP_VERSION__', VERSION)
 
 
 def extract_metadata(bundle: str) -> str:
@@ -102,7 +129,8 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
         shutil.rmtree(site)
     shutil.copytree(PWA_SRC, site, ignore=shutil.ignore_patterns('pico-fallback.css'))
     install_ui_framework(site, dev_fallback=dev_fallback)
-    shutil.copy2(SRC / 'core/social-post-core.js', site / 'social-post-core.js')
+    core_text = (SRC / 'core/social-post-core.js').read_text(encoding='utf-8')
+    (site / 'social-post-core.js').write_text(core_text, encoding='utf-8')
     install = site / 'install'
     install.mkdir(parents=True, exist_ok=True)
     (install / 'social-post-tools.user.js').write_text(bundle, encoding='utf-8')
@@ -113,6 +141,16 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
     social_image = canonical_base + '/assets/social-preview.png'
     resolver_origin = urlparse(threads_resolver_url).scheme + '://' + urlparse(threads_resolver_url).netloc if threads_resolver_url else ''
     resolver_connect_src = resolver_origin if resolver_origin else "'none'"
+    replacements = {
+        '__APP_VERSION__': html.escape(VERSION),
+        '__SITE_HOME__': html.escape(home, quote=True),
+        '__SOCIAL_IMAGE_URL__': html.escape(social_image, quote=True),
+        '__THREADS_CONNECT_SRC__': html.escape(resolver_connect_src, quote=True),
+        '__GITHUB_REPO_URL__': html.escape(PUBLIC_GITHUB_URL, quote=True),
+        '__RAW_USER_URL__': html.escape(PUBLIC_RAW_USER_URL, quote=True),
+        '__RAW_META_URL__': html.escape(PUBLIC_RAW_META_URL, quote=True),
+        '__CDN_USER_URL__': html.escape(PUBLIC_CDN_USER_URL, quote=True),
+    }
     for path in site.glob('*.html'):
         name = path.name
         if name in {'index.html', '404.html'}:
@@ -120,11 +158,9 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
         else:
             canonical_url = canonical_base + '/' + name
         text = path.read_text(encoding='utf-8')
-        text = text.replace('__APP_VERSION__', html.escape(VERSION))
-        text = text.replace('__SITE_HOME__', html.escape(home, quote=True))
         text = text.replace('__CANONICAL_URL__', html.escape(canonical_url, quote=True))
-        text = text.replace('__SOCIAL_IMAGE_URL__', html.escape(social_image, quote=True))
-        text = text.replace('__THREADS_CONNECT_SRC__', html.escape(resolver_connect_src, quote=True))
+        for marker, value in replacements.items():
+            text = text.replace(marker, value)
         path.write_text(text, encoding='utf-8')
 
     app_js = site / 'app.js'
@@ -180,6 +216,7 @@ def main() -> None:
     print(f'ui framework: @picocss/pico {PICO_VERSION}' + (' (dev fallback)' if args.dev_ui_fallback and not PICO_CSS.is_file() else ''))
     if pages_base:
         print(f'pages base: {pages_base}')
+    print('userscript update channel: ' + public_distribution_urls(pages_base)[2])
     print('threads alias resolver: ' + (threads_resolver_url or 'disabled'))
 
 

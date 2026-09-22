@@ -1,5 +1,27 @@
 # Changelog
 
+## v4.4.0 — 2026-09-20
+
+- Refactor provider lifecycle into the shared core: active defaults, capability metadata, retirement state, migration compatibility, and selection policy now have one source of truth instead of PWA/build-time duplicates.
+- Upgrade the shared provider/settings contract to Core 1.5.0 and add `normalizeBuilderId()` so runtime selection, portable export, and portable import all use the same active-provider resolver.
+- Canonicalize portable exports as well as imports: retired provider IDs, wrong-platform selections, malformed builders, disallowed remote HTTP builders, and credential-bearing/custom-invalid URLs are no longer propagated to another installation.
+- Default X share previews to FixupX, keep FixVX as another active preview provider, retain XCancel as an optional reader, and keep vxThreads for Threads previews while legacy Nitter IDs remain migration-readable only.
+- Generalize the PWA provider policy so fresh and existing X/Threads provider settings are normalized through the shared Core before the main controller reads them; unrelated PWA settings are preserved.
+- Add **Link Lab**, a network-silent local workspace that compares Clean / Preview / Reader outputs for X and Threads using the same shared provider registry and local custom builders.
+- Let Link Lab switch X preview output between FixupX and FixVX without modifying global settings; expose XCancel as the reader and explicitly show Threads reader unavailability instead of conflating reader and embed capabilities.
+- Add privacy-preserving Link Lab deep links through `#url=<encoded post URL>` fragments, consume and clear the fragment locally, reject query-string input, use `connect-src 'none'`, and keep provider health probing disabled.
+- Add an Android Share Target → Link Lab handoff: supported parsed posts expose **Compare clean / preview / reader**, re-validate the source through Core, and pass it through a fragment-only URL; unsupported sources keep the control hidden.
+- Add static and Chromium regression coverage for Link Lab provider switching, Threads share-alias behavior, mobile overflow, fragment privacy, Share Target DOM timing, and rejection of unsupported/evil handoff sources.
+- Refactor the Threads alias Worker with bounded request bodies, response inspection, redirect validation, cancellation-aware timeouts, successful-result caching, injected-fetch tests, and distinct failure classes.
+- Add a real Cloudflare Worker validation/deployment workflow with pinned Wrangler tooling.
+- Add `mise.toml` + cross-platform `mise.lock` as the reviewed Node/Python/uv toolchain, including checksums and upstream provenance where available; CI regenerates the lock and fails on drift.
+- Pin external GitHub Actions to immutable commit SHAs, add GitHub Dependency Review, add CodeQL security-extended analysis for JavaScript/TypeScript and Python, and add weekly Dependabot update groups with a seven-day cooldown.
+- Move public Userscript updates to a generated Raw GitHub `dist` branch; keep GitHub Pages as the install UI and use immutable `dist-v<version>` jsDelivr URLs as fallback mirrors.
+- Add SHA-256 release evidence and GitHub/Sigstore Artifact Attestations for generated Userscript artifacts.
+- Split distribution into a read-only build/test job and a privileged publish job so project build/test code never receives publish/OIDC permissions; the publish job re-verifies the tested artifact before attestation and publication.
+- Make distribution versions immutable: an already-published `dist-v<version>` tag is never rewritten, so a source change requires a new Userscript version before it can become a new CDN release.
+- Redesign the landing, settings, share-target, browser-install, and Link Lab experiences into denser task/distribution workspaces with mobile browser regression coverage.
+
 ## v4.3.1 — 2026-08-17
 
 - Production `share-tools.mythic3011.com` builds now enable the project-owned Threads alias resolver automatically; the old deployment-time `THREADS_RESOLVER_URL` variable is no longer required.

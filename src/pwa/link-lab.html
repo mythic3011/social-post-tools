@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d10">
+  <meta name="description" content="Inspect an X or Threads post URL and compare clean, preview, and reader outputs locally.">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <link rel="canonical" href="__CANONICAL_URL__">
+  <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'; worker-src 'self'">
+  <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
+  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=__APP_VERSION__">
+  <link rel="stylesheet" href="./assets/app.css?v=__APP_VERSION__">
+  <title>Link Lab · Social Post Tools</title>
+</head>
+<body data-page="link-lab">
+<div class="pico spt-app">
+<main class="container spt-shell app-workspace">
+  <header class="spt-header site-header">
+    <div class="brand-block">
+      <span class="product-mark" aria-hidden="true">SP</span>
+      <div><h1>Link Lab</h1><p class="eyebrow">Inspect · compare · copy</p></div>
+    </div>
+    <nav class="header-actions" aria-label="Primary navigation">
+      <a class="text-link" href="./">Home</a>
+      <a role="button" class="secondary outline compact" href="./settings.html">Settings</a>
+    </nav>
+  </header>
+
+  <section class="workspace-hero" aria-labelledby="lab-title">
+    <div class="hero-copy">
+      <div class="badge">Local only</div>
+      <h2 id="lab-title">See what each link capability actually produces.</h2>
+      <p>Paste an X or Threads post URL. Link Lab canonicalizes the source locally, then compares a chat-preview provider with an alternate reader without probing either service.</p>
+    </div>
+    <aside class="pipeline-panel" aria-label="Capability model">
+      <div class="panel-heading"><span class="eyebrow">Capability model</span><span class="status-chip">No health probes</span></div>
+      <ol class="pipeline-list">
+        <li><span>01</span><div><strong>Clean</strong><small>Canonical source URL with tracking removed.</small></div></li>
+        <li><span>02</span><div><strong>Preview</strong><small>Embed-fixer URL for richer chat previews.</small></div></li>
+        <li><span>03</span><div><strong>Reader</strong><small>Alternate reading frontend when one is configured.</small></div></li>
+      </ol>
+    </aside>
+  </section>
+
+  <article class="task-card primary-task">
+    <form id="link-lab-form" novalidate>
+      <label for="source-url"><strong>Post URL</strong></label>
+      <input id="source-url" name="source-url" type="url" inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://x.com/example/status/1234567890" required>
+      <div class="toolbar">
+        <button id="analyze-link" type="submit">Analyze link</button>
+        <button id="paste-link" type="button" class="secondary outline">Paste from clipboard</button>
+      </div>
+    </form>
+    <p id="lab-status" class="status" aria-live="polite">Nothing leaves this page until you explicitly open an output link.</p>
+  </article>
+
+  <section id="lab-results" class="landing-grid" aria-label="Link outputs" hidden>
+    <article class="task-card">
+      <div class="panel-heading"><span class="eyebrow">Clean</span><span id="clean-state" class="status-chip">Canonical</span></div>
+      <h2>Original source</h2>
+      <p id="clean-meta" class="muted">Canonical source URL.</p>
+      <label for="clean-output">Output</label>
+      <input id="clean-output" type="url" readonly>
+      <div class="toolbar">
+        <button type="button" data-copy-output="clean-output">Copy</button>
+        <button type="button" class="secondary outline" data-open-output="clean-output">Open</button>
+      </div>
+    </article>
+
+    <article class="task-card">
+      <div class="panel-heading"><span class="eyebrow">Preview</span><span id="preview-state" class="status-chip">Embed</span></div>
+      <h2>Chat-friendly preview</h2>
+      <p id="preview-meta" class="muted">Waiting for a supported post URL.</p>
+      <label for="preview-provider">Provider</label>
+      <select id="preview-provider" disabled><option>No active provider</option></select>
+      <label for="preview-output">Output</label>
+      <input id="preview-output" type="url" readonly>
+      <div class="toolbar">
+        <button type="button" data-copy-output="preview-output">Copy</button>
+        <button type="button" class="secondary outline" data-open-output="preview-output">Open</button>
+      </div>
+    </article>
+
+    <article class="task-card">
+      <div class="panel-heading"><span class="eyebrow">Reader</span><span id="reader-state" class="status-chip">Optional</span></div>
+      <h2>Alternate reader</h2>
+      <p id="reader-meta" class="muted">Waiting for a supported post URL.</p>
+      <label for="reader-provider">Provider</label>
+      <select id="reader-provider" disabled><option>No active provider</option></select>
+      <label for="reader-output">Output</label>
+      <input id="reader-output" type="url" readonly>
+      <div class="toolbar">
+        <button type="button" data-copy-output="reader-output">Copy</button>
+        <button type="button" class="secondary outline" data-open-output="reader-output">Open</button>
+      </div>
+    </article>
+  </section>
+
+  <details class="settings-group">
+    <summary>How provider selection works</summary>
+    <div class="settings-group-body">
+      <p class="muted">Link Lab reads the same local provider registry and custom-builder settings as the PWA. A configured provider is preferred when it matches the requested capability; otherwise a recommended active provider is selected. Changing a provider inside Link Lab affects only this comparison and does not rewrite your global Settings.</p>
+      <p class="muted">Retired providers remain readable only for migration compatibility and are not offered as active outputs. Link Lab does not send background requests to providers to check whether they are online.</p>
+    </div>
+  </details>
+
+  <footer class="app-footer">
+    <nav class="footer-nav" aria-label="Project links">
+      <a href="./">Home</a>
+      <a href="./settings.html">Settings</a>
+      <a href="./privacy.html">Privacy & security</a>
+    </nav>
+    <p class="build-info">Version __APP_VERSION__</p>
+  </footer>
+</main>
+</div>
+<script src="./social-post-core.js?v=__APP_VERSION__"></script>
+<script src="./link-lab.js?v=__APP_VERSION__"></script>
+</body>
+</html>

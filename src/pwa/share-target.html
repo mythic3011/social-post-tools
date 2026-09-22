@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#0b0d10">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src __THREADS_CONNECT_SRC__; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
   <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
   <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=__APP_VERSION__">
@@ -14,41 +14,67 @@
 </head>
 <body data-page="share-target">
 <div class="pico spt-app">
-<main class="container spt-shell">
-  <header class="spt-header"><div><h1>Shared post</h1><p class="eyebrow">Choose what to do next</p></div><a role="button" class="secondary outline compact" href="./settings.html">Settings</a></header>
+<main class="container spt-shell share-shell">
+  <header class="spt-header">
+    <div class="brand-block"><span class="product-mark" aria-hidden="true">SP</span><div><h1>Shared post</h1><p class="eyebrow">Inspect first, then choose an action</p></div></div>
+    <a role="button" class="secondary outline compact" href="./settings.html">Settings</a>
+  </header>
 
-  <article id="supported-card">
-    <div id="platform-badge" class="badge"></div>
-    <h2 id="share-title">Post link</h2>
-    <p id="share-text" class="muted"></p>
-    <p id="share-note" class="muted hidden"></p>
-    <div class="link-preview" id="share-link-preview"><span id="share-link-label">Share link</span><p class="url" id="alternate-url"></p></div>
-    <details class="inline-details" id="original-link-details"><summary id="original-link-label">Original link</summary><p class="url" id="clean-url"></p></details>
-  </article>
+  <section class="share-workspace">
+    <article id="supported-card" class="share-source-card">
+      <div class="section-heading-row">
+        <div><div id="platform-badge" class="badge"></div><h2 id="share-title">Post link</h2></div>
+        <span class="status-chip">Parsed locally</span>
+      </div>
+      <p id="share-text" class="share-body muted"></p>
+      <p id="share-note" class="muted hidden"></p>
 
-  <article class="hidden" id="unsupported-card">
-    <h2>Unsupported share</h2>
-    <p class="muted">No X or Threads post URL was found. The shared text is shown below.</p>
-    <p class="url" id="raw-share"></p>
-  </article>
+      <div class="link-stack">
+        <div class="link-preview" id="share-link-preview">
+          <span id="share-link-label">Selected share link</span>
+          <p class="url" id="alternate-url"></p>
+        </div>
+        <details class="inline-details" id="original-link-details">
+          <summary id="original-link-label">Original clean link</summary>
+          <p class="url" id="clean-url"></p>
+        </details>
+      </div>
+      <div class="toolbar">
+        <a id="open-link-lab" role="button" class="secondary outline" href="./link-lab.html" hidden>Compare clean / preview / reader</a>
+      </div>
+    </article>
 
-  <section class="actions" id="actions-primary" aria-label="Primary actions"></section>
+    <article class="hidden" id="unsupported-card">
+      <span class="eyebrow">Unsupported input</span>
+      <h2>No X or Threads post detected</h2>
+      <p class="muted">The shared text is preserved below so you can still inspect what Android sent.</p>
+      <p class="url raw-share" id="raw-share"></p>
+    </article>
 
-  <article id="ai-capture-card">
-    <h2>Use with AI</h2>
-    <p class="muted">Open the post in your browser to capture its text, images, quote/repost context, and other page-only information.</p>
-    <button id="open-source" class="full" type="button">Open for AI capture</button>
-  </article>
+    <aside class="action-panel">
+      <span class="eyebrow">Primary actions</span>
+      <h2>What next?</h2>
+      <section class="actions action-stack" id="actions-primary" aria-label="Primary actions"></section>
 
-  <details class="settings-group hidden" id="more-actions-card">
-    <summary>More actions</summary>
-    <div class="settings-group-body"><section class="actions" id="actions-more" aria-label="More actions"></section></div>
-  </details>
+      <article id="ai-capture-card" class="capture-card">
+        <div class="section-heading-row"><div><span class="capability-key">CAPTURE</span><h3>Use with AI</h3></div></div>
+        <p class="muted">Open the source in your Userscript browser to capture text, media, quote/repost context, and page-only discussion state.</p>
+        <button id="open-source" class="full" type="button">Open for AI capture</button>
+      </article>
+
+      <details class="settings-group hidden" id="more-actions-card">
+        <summary>More actions</summary>
+        <div class="settings-group-body"><section class="actions action-stack" id="actions-more" aria-label="More actions"></section></div>
+      </details>
+    </aside>
+  </section>
 
   <p id="status" class="status" aria-live="polite"></p>
 </main>
 </div>
 <script src="./social-post-core.js?v=__APP_VERSION__"></script>
+<script src="./provider-policy.js?v=__APP_VERSION__"></script>
 <script src="./app.js?v=__APP_VERSION__"></script>
+<script src="./share-target-enhancements.js?v=__APP_VERSION__"></script>
 </body>
 </html>

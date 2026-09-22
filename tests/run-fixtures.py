@@ -283,10 +283,10 @@ def assertion_script(case: dict) -> str:
       eq('commentLeak', text.includes('visible comment and must not leak'), spec.expect.commentLeak);
     }}
 
-    // Shared URL regression checks.
+    // Shared URL regression checks for providers that ship in the Userscript UI.
     if (spec.platform === 'x') {{
       eq('xCanonicalTracking', api.canonicalize(site, 'https://x.com/alice/status/123?s=20&t=abc'), 'https://x.com/alice/status/123');
-      eq('xNitterBuilder', api.buildUrl(api.builderById('nitter-net'), site, 'https://x.com/alice/status/123'), 'https://nitter.net/alice/status/123');
+      eq('xFixupBuilder', api.buildUrl(api.builderById('fixupx'), site, 'https://x.com/alice/status/123'), 'https://fixupx.com/alice/status/123');
     }} else {{
       eq('threadsCanonicalTracking', api.canonicalize(site, 'https://www.threads.com/@alice/post/ABC123?xmt=tracking'), 'https://www.threads.com/@alice/post/ABC123');
       eq('threadsVxBuilder', api.buildUrl(api.builderById('vxthreads'), site, 'https://www.threads.com/@alice/post/ABC123'), 'https://vxthreads.net/@alice/post/ABC123');
@@ -354,7 +354,6 @@ def assertion_script(case: dict) -> str:
 """
 
 
-
 def run_case(controller: ChromeController, source: str, case: dict) -> tuple[bool, dict, str]:
     fragment = (FIXTURES / case['file']).read_text(encoding='utf-8')
     base = 'https://www.threads.com/' if case['platform'] == 'threads' else 'https://x.com/'
@@ -404,7 +403,6 @@ def run_case(controller: ChromeController, source: str, case: dict) -> tuple[boo
         except Exception:
             pass
         controller.close_target(target.get('id') if isinstance(target, dict) else None)
-
 
 
 def main() -> int:
