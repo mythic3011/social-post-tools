@@ -30,6 +30,8 @@ app_all = app + '\n' + '\n'.join(
     )
     if (pwa/'js'/name).is_file()
 )
+# Shared UI (header/footer/install-dialog) lives in the components module.
+components = (pwa/'js/components.js').read_text() if (pwa/'js/components.js').is_file() else ''
 provider_policy = (pwa/'provider-policy.js').read_text()
 bootstrap = (pwa/'install-bootstrap.js').read_text()
 sw = (pwa/'sw.js').read_text()
@@ -144,11 +146,11 @@ checks = {
   'ux-install-button-always-actionable': has_id(index, 'install-app') and 'showInstallHelp()' in app_all and "manual-fallback" in app_all,
   'ux-install-bridge-early': './install-bootstrap.js' in index and './install-bootstrap.js' in settings and 'beforeinstallprompt' in bootstrap,
   'ux-versioned-install-assets': '?v=__APP_VERSION__' in index and '?v=__APP_VERSION__' in settings and './assets/install.css?v=__APP_VERSION__' in install,
-  'ux-install-dialog-fallback': has_id(index, 'install-dialog') and has_id(index, 'install-guidance') and 'install-diagnostics' in index,
+  'ux-install-dialog-fallback': '<spt-install-dialog' in index and "id = 'install-dialog'" in components and "id = 'install-guidance'" in components and 'install-diagnostics' in components,
   'ux-install-firefox-fallback': 'Firefox can install the PWA' in app_all and 'Google Chrome' in app_all,
   'ux-install-brave-experimental': 'Brave can install the PWA' in app_all and 'developer Web App install setting' in app_all,
-  'ux-install-share-target-diagnostic': has_id(index, 'diag-share-target') and 'diag-share-target' in app_all,
-  'ux-install-chrome-supported-path': 'diag-share-target' in index and 'shareTarget' in app_all,
+  'ux-install-share-target-diagnostic': 'share-target-diag' in index and 'diag-share-target' in components and 'diag-share-target' in app_all,
+  'ux-install-chrome-supported-path': 'diag-share-target' in components and 'shareTarget' in app_all,
 
   # --- share pipeline (code tokens) ---
   'share-pipeline-stages': 'SHARE_PIPELINE_SCHEMA' in core and "id: 's00-raw'" in core and "id: 's01-parse'" in core and "id: 's02-enrich'" in core,
