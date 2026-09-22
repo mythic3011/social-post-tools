@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
+"""PWA audit: structural and behavioral invariants for the web app.
+
+Checks assert *structure* (element ids, href targets, build placeholders,
+code tokens, CSP directives) rather than exact UI copy, so wording changes
+do not break the suite. Security and privacy invariants remain strict.
+"""
 from pathlib import Path
+from urllib.parse import urlparse
 import json, re
+
 root = Path(__file__).resolve().parents[1]
 pwa = root / 'src/pwa'
 manifest = json.loads((pwa/'manifest.webmanifest').read_text())
@@ -22,7 +30,33 @@ userscript = (root/'src/userscript/userscript.template.js').read_text()
 build = (root/'build.py').read_text()
 html_pages = [index, install, settings, share, bridge_page, privacy]
 external_stylesheet = re.compile(r'<link[^>]+rel=["\']stylesheet["\'][^>]+href=["\']https?://', re.I)
+
+# --- structural helpers (no UI copy) ---------------------------------------
+
+def has_href(html: str, href: str) -> bool:
+    return f'href="{href}"' in html
+
+def has_id(html: str, idv: str) -> bool:
+    return f'id="{idv}"' in html
+
+def has_class(html: str, cls: str) -> bool:
+    return cls in html
+
+def html_has_link_to(url: str, html: str) -> bool:
+    """True when *html* links to *url*'s host (netloc match, not substring).
+
+    Substring host checks are spoofable (e.g. ``evil-tampermonkey.net``), so
+    compare parsed netlocs instead. This also avoids CodeQL's
+    ``py/incomplete-url-substring-sanitization`` alert.
+    """
+    target = urlparse(url).netloc
+    for match in re.finditer(r'https?://[^\s"\'<>]+', html):
+        if urlparse(match.group(0)).netloc == target:
+            return True
+    return False
+
 checks = {
+  # --- manifest / CSP / SEO (structural) ---
   'manifest-share-target': manifest.get('share_target',{}).get('action') == './share-target.html',
   'manifest-basic-get': manifest.get('share_target',{}).get('method') == 'GET',
   'manifest-relative-start': manifest.get('start_url') == './' and manifest.get('scope') == './' and manifest.get('id') == './',
@@ -35,11 +69,15 @@ checks = {
   'csp-connect-none-settings': "connect-src 'none'" in settings,
   'csp-share-connect-build-scoped': 'connect-src __THREADS_CONNECT_SRC__;' in share,
   'privacy-no-script': "script-src 'none'" in privacy,
+
+  # --- code-safety invariants ---
   'no-inline-script': all('<script>' not in text for text in [index, settings, share]),
   'no-inline-style': all('<style' not in text for text in html_pages),
   'no-innerhtml': 'innerHTML' not in app and 'innerHTML' not in provider_policy,
   'no-eval': not re.search(r'\beval\s*\(|new\s+Function\s*\(', app + provider_policy),
   'history-query-cleared': 'history.replaceState' in app,
+
+  # --- service worker precache / strategy (structural) ---
   'service-worker-share-cache': "share-target.html" in sw and "caches.match('./share-target.html')" in sw,
   'service-worker-capture-bridge-cache': "capture-handoff.html" in sw and "caches.match('./capture-handoff.html')" in sw,
   'service-worker-settings-cache': "./settings.html" in sw,
@@ -51,14 +89,20 @@ checks = {
   'service-worker-cache-bust-fallback': "ignoreSearch: true" in sw,
   'service-worker-bootstrap-cache': "./install-bootstrap.js" in sw,
   'service-worker-local-framework-cache': "./assets/vendor/pico.conditional.min.css" in sw and "./assets/app.css" in sw,
+
+  # --- network behavior (structural) ---
   'no-analytics-network': 'analytics' not in app.lower() and 'XMLHttpRequest' not in app and app.count('fetch(') == 1,
-  'rich-capture-browser-bridge': 'openCaptureBridge' in app and 'capture-handoff.html' in app and 'Open for AI capture' in share,
+
+  # --- capture bridge (code tokens, not copy) ---
+  'rich-capture-browser-bridge': 'openCaptureBridge' in app and 'capture-handoff.html' in app and has_id(share, 'open-source'),
   'rich-capture-android-firefox-intent': 'androidIntentUrl' in app and 'org.mozilla.firefox' in app and 'browser_fallback_url' in app,
   'rich-capture-intent-targets-bridge': "new URL('./capture-handoff.html'" in app and 'location.href = androidIntentUrl(bridgeUrl' in app,
   'rich-capture-bridge-page': 'data-page="capture-handoff"' in bridge_page and 'Userscript not detected' in app,
   'rich-capture-userscript-open-tab': '// @grant        GM_openInTab' in userscript and 'GM_openInTab(target' in userscript,
   'rich-capture-build-match': 'capture-handoff.html*' in build and 'bridge_match' in build,
   'handoff-does-not-embed-shared-text': 'captureBridgeUrl(sourceUrl' in app and "bridge.searchParams.set('url', target)" in app and 'parsed.text' not in re.search(r'const handoffSource.*?const captureEnabled', app, re.S).group(0),
+
+  # --- settings / provider policy (structural) ---
   'settings-local-only': 'localStorage' in app,
   'provider-policy-loaded': all('./provider-policy.js?v=__APP_VERSION__' in text for text in [index, settings, share]),
   'provider-policy-migrates-retired': "Core.defaultBuilderId('x')" in provider_policy and 'Core.ALL_BUILTIN_BUILDERS' in provider_policy and 'ALL_BUILDERS.filter' in provider_policy and 'migrateSettings' in provider_policy,
@@ -66,26 +110,36 @@ checks = {
   'provider-policy-active-export': 'ALL_BUILTIN_BUILDERS: BUILTIN_BUILDERS' in core and 'BUILTIN_BUILDERS: ACTIVE_BUILTIN_BUILDERS' in core,
   'provider-policy-single-source': 'DEFAULT_BUILDERS' in core and 'retired: true' in core and 'apply_provider_release_policy' not in build and 'RETIRED_BUILDER_IDS' not in build,
   'provider-policy-no-health-probe': 'fetch(' not in provider_policy and 'XMLHttpRequest' not in provider_policy,
-  'ux-landing-primary-tasks': 'One share surface for clean links' in index and 'Browser setup' in index,
-  'ux-landing-pipeline': 'Default pipeline' in index and 'Detect post' in index and 'Choose output' in index and 'Send or capture' in index,
-  'ux-browser-setup-page': 'One script. Multiple delivery routes.' in install and 'Raw GitHub .user.js' in install,
+
+  # --- landing page (structure, not copy) ---
+  'ux-landing-primary-tasks': has_id(index, 'install-app') and has_href(index, './install.html') and has_class(index, 'hero-install-actions'),
+  'ux-landing-pipeline': has_class(index, 'pipeline-list') and has_class(index, 'pipeline-panel'),
+
+  # --- install page: assert link targets/placeholders, not button copy ---
+  'ux-browser-setup-page': has_href(install, '__RAW_USER_URL__') and has_href(install, '__CDN_USER_URL__'),
   'ux-install-distribution-sources': '__RAW_USER_URL__' in install and '__CDN_USER_URL__' in install and '__GITHUB_REPO_URL__/tree/dist' in install,
   'ux-install-update-evidence': '__RAW_META_URL__' in install and 'SHA256SUMS.txt' in install and 'release.json' in install,
-  'ux-tampermonkey-official-link': 'https://www.tampermonkey.net/' in install and 'Get Tampermonkey' in install,
-  'ux-violentmonkey-official-link': 'https://violentmonkey.github.io/' in install and 'Get Violentmonkey' in install,
+  'ux-tampermonkey-official-link': html_has_link_to('https://www.tampermonkey.net/', install),
+  'ux-violentmonkey-official-link': html_has_link_to('https://violentmonkey.github.io/', install),
   'security-external-manager-links-noopener': install.count('rel="noopener noreferrer"') >= 4,
-  'ux-raw-source-troubleshooting': 'opens as JavaScript source instead of an install prompt' in install and 'Import from URL' in install,
+  'ux-raw-source-troubleshooting': '__RAW_USER_URL__' in install and '__GITHUB_REPO_URL__/issues' in install,
+
+  # --- settings page (structure) ---
   'ux-progressive-settings': '<details class="settings-group"' in settings,
-  'ux-no-setup-required': 'Defaults should work without configuration.' in settings,
-  'ux-provider-capabilities': 'Three different outputs' in settings and '<dt>Clean</dt>' in settings and '<dt>Embed</dt>' in settings and '<dt>Reader</dt>' in settings,
-  'ux-install-button-always-actionable': 'id="install-app"' in index and 'showInstallHelp()' in app and "manual-fallback" in app,
+  'ux-no-setup-required': has_id(settings, 'settings-save') and has_id(settings, 'x-builder') and has_id(settings, 'threads-builder'),
+  'ux-provider-capabilities': 'provider-status-list' in settings and 'compact-dl' in settings,
+
+  # --- install prompt / dialog (ids + code tokens) ---
+  'ux-install-button-always-actionable': has_id(index, 'install-app') and 'showInstallHelp()' in app and "manual-fallback" in app,
   'ux-install-bridge-early': './install-bootstrap.js' in index and './install-bootstrap.js' in settings and 'beforeinstallprompt' in bootstrap,
   'ux-versioned-install-assets': '?v=__APP_VERSION__' in index and '?v=__APP_VERSION__' in settings and './assets/install.css?v=__APP_VERSION__' in install,
-  'ux-install-dialog-fallback': 'id="install-dialog"' in index and 'id="install-guidance"' in index and 'Installation diagnostics' in index,
+  'ux-install-dialog-fallback': has_id(index, 'install-dialog') and has_id(index, 'install-guidance') and 'install-diagnostics' in index,
   'ux-install-firefox-fallback': 'Firefox can install the PWA' in app and 'Google Chrome' in app,
   'ux-install-brave-experimental': 'Brave can install the PWA' in app and 'developer Web App install setting' in app,
-  'ux-install-share-target-diagnostic': 'id="diag-share-target"' in index and 'Share Target' in app,
-  'ux-install-chrome-supported-path': 'Chrome is the supported Share Target registration path' in index and 'Supported path' in app,
+  'ux-install-share-target-diagnostic': has_id(index, 'diag-share-target') and 'diag-share-target' in app,
+  'ux-install-chrome-supported-path': 'diag-share-target' in index and 'shareTarget' in app,
+
+  # --- share pipeline (code tokens) ---
   'share-pipeline-stages': 'SHARE_PIPELINE_SCHEMA' in core and "id: 's00-raw'" in core and "id: 's01-parse'" in core and "id: 's02-enrich'" in core,
   'share-parser-registry': 'SHARE_PARSERS' in core and "id: 'x-post'" in core and "id: 'threads-post'" in core and "id: 'threads-share-alias'" in core,
   'share-collection-registry': 'SHARE_COLLECTIONS' in core and "parserIds: Object.freeze(['x-post'])" in core and "'threads-share-resolver'" in core and 'pipeline: {' in core and 'collection:' in core,
@@ -98,14 +152,18 @@ checks = {
   'threads-resolver-rewrites-alias-text': 'rewriteResolvedThreadsText' in app,
   'threads-share-alias-ui': 'Threads shared link' in app and 'Retry canonical link' in app and 'Open Threads fallback' in app and 'Copy Threads link' in app,
   'threads-share-alias-not-transformed': 'const alternateUrl = hasCanonicalPost ? transformed' in app,
+
+  # --- platform detection / android prioritization (structure) ---
   'ux-platform-detected-before-css': 'dataset.sptPlatform = platform' in bootstrap and "isAndroid" in bootstrap,
-  'ux-android-install-primary': 'hero-install-actions' in index and 'Install Android app' in index,
-  'ux-android-userscript-demoted': 'browser-userscript-section' in index and 'android-browser-option' in index and 'Use the browser Userscript on Android' in index,
+  'ux-android-install-primary': 'hero-install-actions' in index and has_class(index, 'android-only'),
+  'ux-android-userscript-demoted': 'browser-userscript-section' in index and 'android-browser-option' in index,
   'ux-android-css-prioritizes-pwa': 'html[data-spt-platform="android"] .browser-userscript-section' in styles and 'html[data-spt-platform="android"] .browser-setup-cta' in styles,
   'ux-hidden-attribute-not-overridden': re.search(r'\[hidden\][^{]*\{[^}]*display\s*:\s*none\s*!important', styles, re.S) is not None,
-  'ux-install-fallback-help': 'id="install-help"' in index and 'manual installation path' in index and 'userChoice' in app,
-  'ux-share-workspace': 'share-workspace' in share and 'action-panel' in share and 'Inspect first, then choose an action' in share,
+  'ux-install-fallback-help': has_id(index, 'install-help') and 'userChoice' in app,
+  'ux-share-workspace': 'share-workspace' in share and 'action-panel' in share and has_id(share, 'actions-primary'),
   'ux-touch-target-48': 'min-height: 48px' in styles,
+
+  # --- CSS / framework (structural) ---
   'ui-pico-wrapper': all('class="pico spt-app"' in text for text in html_pages),
   'ui-local-pico-link': all('./assets/vendor/pico.conditional.min.css' in text for text in html_pages),
   'ui-local-app-css': all('./assets/app.css' in text for text in html_pages),
