@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent
 VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 TAILWIND_VERSION = '3.4.19'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
+PROVIDERS_MARKER = '/*__SOCIAL_POST_PROVIDERS__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
 SRC = ROOT / 'src'
 PWA_SRC = SRC / 'pwa'
@@ -90,12 +91,16 @@ def distribution_meta(base_url: str | None) -> str:
 
 def render_userscript(pages_base: str | None) -> str:
     core = (SRC / 'core/social-post-core.js').read_text(encoding='utf-8').rstrip()
+    providers = (SRC / 'core/providers.data.js').read_text(encoding='utf-8').rstrip()
     template = (SRC / 'userscript/userscript.template.js').read_text(encoding='utf-8')
     if template.count(CORE_MARKER) != 1:
         raise SystemExit('userscript core marker missing or duplicated')
+    if template.count(PROVIDERS_MARKER) != 1:
+        raise SystemExit('userscript providers marker missing or duplicated')
     if template.count(DIST_META_MARKER) != 1:
         raise SystemExit('userscript distribution marker missing or duplicated')
-    bundle = template.replace(CORE_MARKER, core)
+    bundle = template.replace(PROVIDERS_MARKER, providers)
+    bundle = bundle.replace(CORE_MARKER, core)
     bundle = bundle.replace(DIST_META_MARKER, distribution_meta(pages_base))
     return bundle.replace('__APP_VERSION__', VERSION)
 
@@ -105,6 +110,19 @@ def extract_metadata(bundle: str) -> str:
     if end < 0:
         raise SystemExit('userscript metadata block missing')
     return bundle[:end + len('// ==/UserScript==')] + '\n'
+
+
+def generate_providers() -> None:
+    """Compile providers.json into the JS data module the core consumes."""
+    script = ROOT / 'scripts' / 'gen_providers.py'
+    result = subprocess.run(
+        [os.environ.get('PYTHON', 'python'), str(script)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f'Provider codegen failed:\n{result.stdout}\n{result.stderr}')
 
 
 def compile_ui_css(site: Path) -> None:
@@ -139,6 +157,8 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, threads_resolv
     compile_ui_css(site)
     core_text = (SRC / 'core/social-post-core.js').read_text(encoding='utf-8')
     (site / 'social-post-core.js').write_text(core_text, encoding='utf-8')
+    providers_text = (SRC / 'core/providers.data.js').read_text(encoding='utf-8')
+    (site / 'providers.data.js').write_text(providers_text, encoding='utf-8')
     install = site / 'install'
     install.mkdir(parents=True, exist_ok=True)
     (install / 'social-post-tools.user.js').write_text(bundle, encoding='utf-8')
@@ -208,6 +228,7 @@ def main() -> None:
         configured_resolver = PUBLIC_THREADS_RESOLVER_URL
     threads_resolver_url = normalize_resolver_url(configured_resolver)
 
+    generate_providers()
     bundle = render_userscript(pages_base)
     meta = extract_metadata(bundle)
     dist = ROOT / 'dist'

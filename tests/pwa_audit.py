@@ -38,6 +38,9 @@ sw = (pwa/'sw.js').read_text()
 # The design-system source of truth is the Tailwind input; app.css is a build artifact.
 styles = (pwa/'assets/src/input.css').read_text()
 core = (root/'src/core/social-post-core.js').read_text()
+providers_json = (root/'src/core/providers.json').read_text()
+providers_data = (root/'src/core/providers.data.js').read_text()
+gen_providers = (root/'scripts/gen_providers.py').read_text()
 userscript = (root/'src/userscript/userscript.template.js').read_text()
 build = (root/'build.py').read_text()
 html_pages = [index, install, settings, share, bridge_page, privacy]
@@ -120,7 +123,12 @@ checks = {
   'provider-policy-migrates-retired': "Core.defaultBuilderId('x')" in provider_policy and 'Core.ALL_BUILTIN_BUILDERS' in provider_policy and 'ALL_BUILDERS.filter' in provider_policy and 'migrateSettings' in provider_policy,
   'provider-policy-curated-status': 'provider-status-list' in settings and 'renderProviderSummary' in provider_policy and 'builder.capability' in provider_policy and 'builder.status' in provider_policy,
   'provider-policy-active-export': 'ALL_BUILTIN_BUILDERS: BUILTIN_BUILDERS' in core and 'BUILTIN_BUILDERS: ACTIVE_BUILTIN_BUILDERS' in core,
-  'provider-policy-single-source': 'DEFAULT_BUILDERS' in core and 'retired: true' in core and 'apply_provider_release_policy' not in build and 'RETIRED_BUILDER_IDS' not in build,
+  'provider-policy-single-source': 'DEFAULT_BUILDERS' in core and '"retired": true' in providers_json and 'apply_provider_release_policy' not in build and 'RETIRED_BUILDER_IDS' not in build,
+  'provider-registry-json-source': 'loadBuiltinProviders' in core and 'globalThis.SocialPostProviders' in core and 'providers.json' in core,
+  'provider-registry-codegen': 'gen_providers.py' in build and 'generate_providers' in build and 'SocialPostProviders' in providers_data and 'Object.freeze' in providers_data,
+  'provider-registry-userscript-inline': 'PROVIDERS_MARKER' in build and '__SOCIAL_POST_PROVIDERS__' in userscript,
+  'provider-registry-pwa-preload': all('./providers.data.js?v=__APP_VERSION__' in text for text in [index, settings, share]),
+  'provider-registry-sw-cache': './providers.data.js' in sw,
   'provider-policy-no-health-probe': 'fetch(' not in provider_policy and 'XMLHttpRequest' not in provider_policy,
 
   # --- landing page (structure, not copy) ---

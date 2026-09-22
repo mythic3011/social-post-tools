@@ -61,7 +61,7 @@
     min-height: 2.9rem;
     border: 1px solid LinkText;
     border-radius: var(--spt-radius-md);
-    padding: .65rem .9rem;
+    padding: .75rem 1.35rem;
     background: LinkText;
     color: Canvas;
     text-decoration: none;
