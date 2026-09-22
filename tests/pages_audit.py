@@ -49,8 +49,8 @@ sw = read(SITE / 'sw.js')
 user = read(SITE / 'install/social-post-tools.user.js')
 meta = read(SITE / 'install/social-post-tools.meta.js')
 install_html = read(SITE / 'install.html')
-framework = SITE / 'assets/vendor/pico.conditional.min.css'
-framework_marker = SITE / 'assets/vendor/FRAMEWORK.txt'
+framework = SITE / 'assets/app.css'
+framework_marker = SITE / 'assets/FRAMEWORK.txt'
 
 workflow = read_rel('.github/workflows/pages.yml')
 ci_workflow = read_rel('.github/workflows/ci.yml')
@@ -131,7 +131,6 @@ def _site_files() -> dict[str, bool]:
         'site-social-preview': 'assets/social-preview.png',
         'site-userscript-install': 'install/social-post-tools.user.js',
         'site-userscript-meta': 'install/social-post-tools.meta.js',
-        'site-install-local-css': 'assets/install.css',
         'site-product-css': 'assets/app.css',
     }
     return {name: file_exists(path) for name, path in files.items()}
@@ -148,11 +147,10 @@ def _site_content() -> dict[str, bool]:
             and build.PUBLIC_CDN_USER_URL in install_html
             and build.PUBLIC_GITHUB_URL in install_html
         ),
-        'site-install-local-css': './assets/install.css?v=' in install_html,
         'site-local-framework': framework.is_file() and framework.stat().st_size > 500,
         'site-framework-marker': (
             framework_marker.is_file()
-            and '@picocss/pico 2.1.1' in read(framework_marker)
+            and 'tailwindcss 3.4.19' in read(framework_marker)
         ),
         'manifest-project-pages-safe': (
             manifest.get('start_url') == './'
@@ -168,8 +166,8 @@ def _site_content() -> dict[str, bool]:
             './install/social-post-tools.user.js' not in sw_shell_entries()
         ),
         'sw-caches-local-framework': (
-            './assets/vendor/pico.conditional.min.css' in sw
-            and './assets/install.css' in sw
+            './assets/app.css' in sw
+            and './js/components.js' in sw
         ),
         'meta-header-only': (
             meta.rstrip().endswith('// ==/UserScript==') and '(() =>' not in meta

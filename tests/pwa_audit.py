@@ -35,9 +35,8 @@ components = (pwa/'js/components.js').read_text() if (pwa/'js/components.js').is
 provider_policy = (pwa/'provider-policy.js').read_text()
 bootstrap = (pwa/'install-bootstrap.js').read_text()
 sw = (pwa/'sw.js').read_text()
-styles = (pwa/'assets/app.css').read_text()
-install_styles = (pwa/'assets/install.css').read_text()
-fallback = (pwa/'assets/pico-fallback.css').read_text()
+# The design-system source of truth is the Tailwind input; app.css is a build artifact.
+styles = (pwa/'assets/src/input.css').read_text()
 core = (root/'src/core/social-post-core.js').read_text()
 userscript = (root/'src/userscript/userscript.template.js').read_text()
 build = (root/'build.py').read_text()
@@ -95,13 +94,13 @@ checks = {
   'service-worker-capture-bridge-cache': "capture-handoff.html" in sw and "caches.match('./capture-handoff.html')" in sw,
   'service-worker-settings-cache': "./settings.html" in sw,
   'service-worker-install-guide-cache': "./install.html" in sw,
-  'service-worker-install-css-cache': "./assets/install.css" in sw,
+  'service-worker-components-cache': "./js/components.js" in sw,
   'service-worker-provider-policy-cache': "./provider-policy.js" in sw,
   'service-worker-install-network-only': "url.pathname.includes('/install/')" in sw and 'fetch(event.request)' in sw,
   'service-worker-install-critical-network-first': 'async function networkFirst' in sw and "webmanifest" in sw and "event.request.mode === 'navigate'" in sw,
   'service-worker-cache-bust-fallback': "ignoreSearch: true" in sw,
   'service-worker-bootstrap-cache': "./install-bootstrap.js" in sw,
-  'service-worker-local-framework-cache': "./assets/vendor/pico.conditional.min.css" in sw and "./assets/app.css" in sw,
+  'service-worker-local-framework-cache': "./assets/app.css" in sw,
 
   # --- network behavior (structural) ---
   'no-analytics-network': 'analytics' not in app_all.lower() and 'XMLHttpRequest' not in app_all and app_all.count('fetch(') == 1,
@@ -145,7 +144,7 @@ checks = {
   # --- install prompt / dialog (ids + code tokens) ---
   'ux-install-button-always-actionable': has_id(index, 'install-app') and 'showInstallHelp()' in app_all and "manual-fallback" in app_all,
   'ux-install-bridge-early': './install-bootstrap.js' in index and './install-bootstrap.js' in settings and 'beforeinstallprompt' in bootstrap,
-  'ux-versioned-install-assets': '?v=__APP_VERSION__' in index and '?v=__APP_VERSION__' in settings and './assets/install.css?v=__APP_VERSION__' in install,
+  'ux-versioned-install-assets': '?v=__APP_VERSION__' in index and '?v=__APP_VERSION__' in settings and './assets/app.css?v=__APP_VERSION__' in install,
   'ux-install-dialog-fallback': '<spt-install-dialog' in index and "id = 'install-dialog'" in components and "id = 'install-guidance'" in components and 'install-diagnostics' in components,
   'ux-install-firefox-fallback': 'Firefox can install the PWA' in app_all and 'Google Chrome' in app_all,
   'ux-install-brave-experimental': 'Brave can install the PWA' in app_all and 'developer Web App install setting' in app_all,
@@ -177,13 +176,12 @@ checks = {
   'ux-touch-target-48': 'min-height: 48px' in styles,
 
   # --- CSS / framework (structural) ---
-  'ui-pico-wrapper': all('class="pico spt-app"' in text for text in html_pages),
-  'ui-local-pico-link': all('./assets/vendor/pico.conditional.min.css' in text for text in html_pages),
+  'ui-app-wrapper': all('class="spt-app"' in text for text in html_pages),
+  'ui-single-stylesheet': all(text.count('rel="stylesheet"') == 1 for text in html_pages),
   'ui-local-app-css': all('./assets/app.css' in text for text in html_pages),
-  'ui-install-local-css': './assets/install.css?v=__APP_VERSION__' in install and 'https://' not in install_styles,
   'ui-no-runtime-css-cdn': all(external_stylesheet.search(text) is None for text in html_pages),
-  'ui-product-css-does-not-own-button-skin': not re.search(r'(^|\n)button\s*\{', styles + install_styles),
-  'ui-offline-fallback-scoped': fallback.startswith('/* SPT development fallback') and '.pico button' in fallback,
+  'ui-design-system-scoped': '.spt-app button' in styles and '@tailwind base' in styles,
+  'ui-no-external-css-url': 'https://' not in styles,
 }
 failed=[]
 for name, ok in checks.items():

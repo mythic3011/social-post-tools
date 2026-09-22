@@ -25,7 +25,7 @@ def png_size(path: Path):
 
 checks = {
     'seo-readme-twitter-threads-userscript-pwa': all(term in readme for term in ['X (Twitter)', 'Threads', 'Userscript', 'Progressive Web App']),
-    'seo-readme-stack-badges': all(term in readme for term in ['JavaScript-ES2022', 'PWA-installable', 'Python-3.13', 'Pico_CSS-2.1.1', 'GitHub_Pages-deployed']),
+    'seo-readme-stack-badges': all(term in readme for term in ['JavaScript-ES2022', 'PWA-installable', 'Python-3.13', 'Tailwind_CSS-3.4.19', 'GitHub_Pages-deployed']),
     'seo-readme-live-site': 'https://share-tools.mythic3011.com/' in readme,
     'seo-github-metadata-doc': (root / 'docs/deployment/GITHUB_REPOSITORY.md').is_file(),
     'seo-github-metadata-helper': (root / 'scripts/configure-github-repo.sh').is_file(),

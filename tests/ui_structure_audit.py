@@ -12,20 +12,21 @@ pages = (root/'.github/workflows/pages.yml').read_text()
 setup_toolchain = (root/'.github/actions/setup-toolchain/action.yml').read_text()
 mise_text = (root/'mise.toml').read_text()
 mise = tomllib.loads(mise_text)
-app_css = (root/'src/pwa/assets/app.css').read_text()
-install_css = (root/'src/pwa/assets/install.css').read_text()
+# The design-system source of truth is the Tailwind input; app.css is a build artifact.
+design_css = (root/'src/pwa/assets/src/input.css').read_text()
 
 checks = {
-    'ui-pico-pinned': package.get('devDependencies',{}).get('@picocss/pico') == '2.1.1',
-    'ui-lock-pico-pinned': lock.get('packages',{}).get('node_modules/@picocss/pico',{}).get('version') == '2.1.1',
-    'ui-lock-integrity': lock.get('packages',{}).get('node_modules/@picocss/pico',{}).get('integrity','').startswith('sha512-'),
-    'ui-build-localizes-pico': "pico.conditional.min.css" in build and 'node_modules' in build and 'shutil.copy2(PICO_CSS' in build,
-    'ui-build-fails-closed': 'Run `npm ci` first' in build and '--dev-ui-fallback' in build,
+    'ui-tailwind-pinned': package.get('devDependencies',{}).get('tailwindcss') == '3.4.19',
+    'ui-lock-tailwind-pinned': lock.get('packages',{}).get('node_modules/tailwindcss',{}).get('version') == '3.4.19',
+    'ui-lock-integrity': lock.get('packages',{}).get('node_modules/tailwindcss',{}).get('integrity','').startswith('sha512-'),
+    'ui-no-pico-dependency': '@picocss/pico' not in package.get('devDependencies',{}) and 'node_modules/@picocss/pico' not in lock.get('packages',{}),
+    'ui-build-compiles-tailwind': 'tailwindcss' in build and 'compile_ui_css' in build and 'subprocess.run' in build,
+    'ui-build-fails-closed': 'Run `npm ci` first' in build,
     'ui-dependencies-installed-once': 'mise run bootstrap' in setup_toolchain and 'npm ci --ignore-scripts --no-audit --no-fund' in mise_text and 'npm ci ' not in ci and 'npm ci ' not in pages,
     'ui-csp-remains-self': "style-src 'self'" in (root/'src/pwa/index.html').read_text(),
-    'ui-hidden-invariant': '[hidden], .hidden { display: none !important; }' in app_css,
-    'ui-token-layer': '--spt-content-width' in app_css and '--spt-space-4' in app_css,
-    'ui-install-workspace-layer': '.distribution-grid' in install_css and '.install-workspace' in install_css,
+    'ui-hidden-invariant': '[hidden], .hidden { display: none !important; }' in design_css,
+    'ui-token-layer': '--spt-content-width' in design_css and '--spt-space-4' in design_css,
+    'ui-install-workspace-layer': '.distribution-grid' in design_css and '.install-workspace' in design_css,
     'toolchain-mise-exact': mise['tools']['node'] == '24.20.0' and mise['tools']['python'] == '3.13.15' and mise['tools']['aqua:astral-sh/uv'] == '0.12.5',
     'toolchain-release-age-policy': mise['settings']['minimum_release_age'] == '7d',
     'toolchain-lock-enforced': mise['tool_config']['locked'] is True and mise['settings']['locked_verify_provenance'] is True and (root/'mise.lock').is_file(),

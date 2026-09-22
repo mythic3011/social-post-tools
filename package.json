@@ -5,13 +5,11 @@
   "description": "Task-oriented sharing and AI capture helpers for X and Threads.",
   "scripts": {
     "build": "uv run --locked python build.py",
-    "build:dev": "uv run --locked python build.py --dev-ui-fallback",
     "build:css": "tailwindcss -i src/pwa/assets/src/input.css -o src/pwa/assets/app.css --minify",
     "test": "uv run --locked bash tests/run.sh",
     "python:sync": "uv sync --locked"
   },
   "devDependencies": {
-    "@picocss/pico": "2.1.1",
     "tailwindcss": "3.4.19"
   },
   "homepage": "https://share-tools.mythic3011.com/",
