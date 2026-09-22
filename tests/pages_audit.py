@@ -88,14 +88,26 @@ def file_exists(*parts: str) -> bool:
 
 def html_has_link_to(url: str, html: str) -> bool:
     """True when *html* contains an href whose host matches *url*'s host."""
+    return text_has_url_host(url, html)
+
+
+def text_has_url_host(url: str, text: str) -> bool:
+    """True when *text* contains a URL whose host matches *url*'s host."""
     target = urlparse(url)
-    for match in re.finditer(r'href=["\']([^"\']+)["\']', html):
-        href = match.group(1)
-        if href.startswith(('http://', 'https://')):
-            parsed = urlparse(href)
-            if parsed.netloc == target.netloc:
-                return True
+    for match in re.finditer(r'https?://[^\s"\'<>]+', text):
+        parsed = urlparse(match.group(0))
+        if parsed.netloc == target.netloc:
+            return True
     return False
+
+
+def text_has_hostname(hostname: str, text: str) -> bool:
+    """True when *text* contains *hostname* as a bare host or inside a URL."""
+    target = urlparse(f'https://{hostname}')
+    if text_has_url_host(target.geturl(), text):
+        return True
+    # Match bare host not preceded by a larger domain suffix.
+    return re.search(rf'(?<![a-zA-Z0-9.-]){re.escape(hostname)}(?![a-zA-Z0-9.-])', text) is not None
 
 
 def sw_shell_entries() -> str:
@@ -216,10 +228,14 @@ def _workflow_checks() -> dict[str, bool]:
             'cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0' in edge_workflow
             and "wranglerVersion: '4.128.0'" in edge_workflow
         ),
-        'edge-resolver-custom-domain': 'resolver.mythic3011.com' in wrangler_config,
+        'edge-resolver-custom-domain': text_has_hostname(
+            'resolver.mythic3011.com', wrangler_config
+        ),
         'production-resolver-default': (
             'PUBLIC_THREADS_RESOLVER_URL' in build_py_text
-            and 'resolver.mythic3011.com/v1/threads/resolve' in build_py_text
+            and text_has_url_host(
+                'https://resolver.mythic3011.com/v1/threads/resolve', build_py_text
+            )
         ),
         'distribution-workflow': (
             'HEAD:dist' in dist_workflow
