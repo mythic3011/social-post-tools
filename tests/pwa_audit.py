@@ -6,6 +6,7 @@ code tokens, CSP directives) rather than exact UI copy, so wording changes
 do not break the suite. Security and privacy invariants remain strict.
 """
 from pathlib import Path
+from urllib.parse import urlparse
 import json, re
 
 root = Path(__file__).resolve().parents[1]
@@ -40,6 +41,19 @@ def has_id(html: str, idv: str) -> bool:
 
 def has_class(html: str, cls: str) -> bool:
     return cls in html
+
+def html_has_link_to(url: str, html: str) -> bool:
+    """True when *html* links to *url*'s host (netloc match, not substring).
+
+    Substring host checks are spoofable (e.g. ``evil-tampermonkey.net``), so
+    compare parsed netlocs instead. This also avoids CodeQL's
+    ``py/incomplete-url-substring-sanitization`` alert.
+    """
+    target = urlparse(url).netloc
+    for match in re.finditer(r'https?://[^\s"\'<>]+', html):
+        if urlparse(match.group(0)).netloc == target:
+            return True
+    return False
 
 checks = {
   # --- manifest / CSP / SEO (structural) ---
@@ -105,8 +119,8 @@ checks = {
   'ux-browser-setup-page': has_href(install, '__RAW_USER_URL__') and has_href(install, '__CDN_USER_URL__'),
   'ux-install-distribution-sources': '__RAW_USER_URL__' in install and '__CDN_USER_URL__' in install and '__GITHUB_REPO_URL__/tree/dist' in install,
   'ux-install-update-evidence': '__RAW_META_URL__' in install and 'SHA256SUMS.txt' in install and 'release.json' in install,
-  'ux-tampermonkey-official-link': 'https://www.tampermonkey.net/' in install,
-  'ux-violentmonkey-official-link': 'https://violentmonkey.github.io/' in install,
+  'ux-tampermonkey-official-link': html_has_link_to('https://www.tampermonkey.net/', install),
+  'ux-violentmonkey-official-link': html_has_link_to('https://violentmonkey.github.io/', install),
   'security-external-manager-links-noopener': install.count('rel="noopener noreferrer"') >= 4,
   'ux-raw-source-troubleshooting': '__RAW_USER_URL__' in install and '__GITHUB_REPO_URL__/issues' in install,
 
