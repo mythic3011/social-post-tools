@@ -3,6 +3,7 @@ const CACHE = 'social-post-tools-pwa-shell-v1';
 const SHELL = [
   './', './index.html', './install.html', './settings.html', './link-lab.html', './share-target.html', './capture-handoff.html', './privacy.html', './404.html',
   './assets/vendor/pico.conditional.min.css', './assets/app.css', './assets/install.css', './install-bootstrap.js', './provider-policy.js', './link-lab.js', './share-target-enhancements.js', './app.js', './social-post-core.js', './manifest.webmanifest',
+  './js/settings-store.js', './js/install-manager.js', './js/share-actions.js', './js/page-settings.js', './js/page-share-target.js', './js/page-capture-handoff.js',
   './icons/icon-192.png', './icons/icon-512.png'
 ];
 

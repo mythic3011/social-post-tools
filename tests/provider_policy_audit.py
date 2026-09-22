@@ -6,6 +6,8 @@ pwa = root / 'src' / 'pwa'
 core = (root / 'src' / 'core' / 'social-post-core.js').read_text(encoding='utf-8')
 policy = (pwa / 'provider-policy.js').read_text(encoding='utf-8')
 app = (pwa / 'app.js').read_text(encoding='utf-8')
+settings_store = (pwa / 'js' / 'settings-store.js').read_text(encoding='utf-8')
+app_all = app + settings_store
 index = (pwa / 'index.html').read_text(encoding='utf-8')
 settings = (pwa / 'settings.html').read_text(encoding='utf-8')
 share = (pwa / 'share-target.html').read_text(encoding='utf-8')
@@ -25,7 +27,7 @@ checks = {
     'provider-policy-loaded-before-app-index': index.index('./provider-policy.js') < index.index('./app.js'),
     'provider-policy-loaded-before-app-settings': settings.index('./provider-policy.js') < settings.index('./app.js'),
     'provider-policy-loaded-before-app-share': share.index('./provider-policy.js') < share.index('./app.js'),
-    'legacy-app-default-contained-by-policy': "builderId: 'nitter-net'" in app and 'Core.makePortableLinkSettings' in policy,
+    'legacy-app-default-contained-by-policy': "builderId: 'nitter-net'" in app_all and 'Core.makePortableLinkSettings' in policy,
 }
 
 failed = []
