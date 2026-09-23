@@ -29,16 +29,29 @@
     threads: 'vxthreads',
   });
 
-  const BUILTIN_BUILDERS = Object.freeze([
-    Object.freeze({ id: 'fixupx', name: 'FixupX', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://fixupx.com', builtin: true, group: 'Embed fixer', capability: 'embed', status: 'recommended', detail: 'Chat-friendly X previews', retired: false }),
-    Object.freeze({ id: 'fixvx', name: 'FixVX', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://fixvx.com', builtin: true, group: 'Embed fixer', capability: 'embed', status: 'available', detail: 'Alternative X embed fixer', retired: false }),
-    Object.freeze({ id: 'xcancel', name: 'XCancel', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://xcancel.com', builtin: true, group: 'Reader', capability: 'reader', status: 'available', detail: 'Alternative X reader', retired: false }),
-    Object.freeze({ id: 'vxthreads', name: 'vxThreads', platforms: ['threads'], type: 'replace-origin', baseUrl: 'https://vxthreads.net', builtin: true, group: 'Embed fixer', capability: 'embed', status: 'available', detail: 'Chat-friendly Threads previews', retired: false }),
-    Object.freeze({ id: 'nitter-net', name: 'Nitter.net', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.net', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
-    Object.freeze({ id: 'nitter-catsarch', name: 'Nitter · catsarch.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.catsarch.com', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
-    Object.freeze({ id: 'nitter-privacyredirect', name: 'Nitter · privacyredirect.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.privacyredirect.com', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
-    Object.freeze({ id: 'nitter-tiekoetter', name: 'Nitter · tiekoetter.com', platforms: ['x'], type: 'replace-origin', baseUrl: 'https://nitter.tiekoetter.com', builtin: true, group: 'Legacy reader', capability: 'reader', status: 'retired', detail: 'Legacy compatibility only', retired: true }),
-  ]);
+  // The built-in provider registry lives in providers.json (single source of
+  // truth) and is compiled to providers.data.js by scripts/gen_providers.py.
+  // Three loading contexts consume it:
+  //   - PWA: providers.data.js sets globalThis.SocialPostProviders via <script>
+  //   - userscript: build.py inlines the registry via the PROVIDERS_MARKER
+  //   - Node tests: require() falls back to reading providers.json from disk
+  function loadBuiltinProviders() {
+    if (typeof globalThis !== 'undefined' && Array.isArray(globalThis.SocialPostProviders)) {
+      return globalThis.SocialPostProviders;
+    }
+    if (typeof require === 'function' && typeof module === 'object' && module.exports) {
+      // Node: read the JSON source of truth directly so tests run standalone.
+      const path = require('path');
+      const fs = require('fs');
+      const jsonPath = path.join(__dirname, 'providers.json');
+      return JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+    }
+    throw new Error('SocialPostProviders registry is not available');
+  }
+
+  const BUILTIN_BUILDERS = Object.freeze(
+    loadBuiltinProviders().map((p) => Object.freeze(p))
+  );
 
   function parseUrl(raw, base = 'https://example.invalid/') {
     try { return new URL(raw, base); } catch { return null; }

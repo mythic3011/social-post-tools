@@ -1,0 +1,124 @@
+/* GENERATED from src/core/providers.json by scripts/gen_providers.py.
+   Do not edit by hand; edit the JSON and regenerate. */
+globalThis.SocialPostProviders = Object.freeze([
+  {
+    "id": "fixupx",
+    "name": "FixupX",
+    "platforms": [
+      "x"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://fixupx.com",
+    "builtin": true,
+    "group": "Embed fixer",
+    "capability": "embed",
+    "status": "recommended",
+    "detail": "Chat-friendly X previews",
+    "retired": false
+  },
+  {
+    "id": "fixvx",
+    "name": "FixVX",
+    "platforms": [
+      "x"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://fixvx.com",
+    "builtin": true,
+    "group": "Embed fixer",
+    "capability": "embed",
+    "status": "available",
+    "detail": "Alternative X embed fixer",
+    "retired": false
+  },
+  {
+    "id": "xcancel",
+    "name": "XCancel",
+    "platforms": [
+      "x"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://xcancel.com",
+    "builtin": true,
+    "group": "Reader",
+    "capability": "reader",
+    "status": "available",
+    "detail": "Alternative X reader",
+    "retired": false
+  },
+  {
+    "id": "vxthreads",
+    "name": "vxThreads",
+    "platforms": [
+      "threads"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://vxthreads.net",
+    "builtin": true,
+    "group": "Embed fixer",
+    "capability": "embed",
+    "status": "available",
+    "detail": "Chat-friendly Threads previews",
+    "retired": false
+  },
+  {
+    "id": "nitter-net",
+    "name": "Nitter.net",
+    "platforms": [
+      "x"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://nitter.net",
+    "builtin": true,
+    "group": "Legacy reader",
+    "capability": "reader",
+    "status": "retired",
+    "detail": "Legacy compatibility only",
+    "retired": true
+  },
+  {
+    "id": "nitter-catsarch",
+    "name": "Nitter · catsarch.com",
+    "platforms": [
+      "x"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://nitter.catsarch.com",
+    "builtin": true,
+    "group": "Legacy reader",
+    "capability": "reader",
+    "status": "retired",
+    "detail": "Legacy compatibility only",
+    "retired": true
+  },
+  {
+    "id": "nitter-privacyredirect",
+    "name": "Nitter · privacyredirect.com",
+    "platforms": [
+      "x"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://nitter.privacyredirect.com",
+    "builtin": true,
+    "group": "Legacy reader",
+    "capability": "reader",
+    "status": "retired",
+    "detail": "Legacy compatibility only",
+    "retired": true
+  },
+  {
+    "id": "nitter-tiekoetter",
+    "name": "Nitter · tiekoetter.com",
+    "platforms": [
+      "x"
+    ],
+    "type": "replace-origin",
+    "baseUrl": "https://nitter.tiekoetter.com",
+    "builtin": true,
+    "group": "Legacy reader",
+    "capability": "reader",
+    "status": "retired",
+    "detail": "Legacy compatibility only",
+    "retired": true
+  }
+].map((p) => Object.freeze(p)));

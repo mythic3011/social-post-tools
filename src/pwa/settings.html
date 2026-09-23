@@ -8,17 +8,13 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
   <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
   <script src="./install-bootstrap.js?v=__APP_VERSION__"></script>
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=__APP_VERSION__">
   <link rel="stylesheet" href="./assets/app.css?v=__APP_VERSION__">
   <title>Settings · Social Post Tools</title>
 </head>
 <body data-page="settings">
-<div class="pico spt-app">
+<div class="spt-app">
 <main class="container spt-shell settings-shell">
-  <header class="spt-header">
-    <div class="brand-block"><span class="product-mark" aria-hidden="true">SP</span><div><h1>Settings</h1><p class="eyebrow">Routing, actions, capture, and providers</p></div></div>
-    <a role="button" class="secondary outline compact" href="./">Home</a>
-  </header>
+  <spt-header title="Settings" eyebrow="Routing, actions, capture, and providers" brand home-href="./"></spt-header>
 
   <section class="settings-intro">
     <div>
@@ -131,29 +127,18 @@
     </aside>
   </section>
 
-  <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-dialog-title">
-    <article>
-      <header><h2 id="install-dialog-title">Install Social Post Tools</h2></header>
-      <p id="install-guidance">Open your browser menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
-      <p class="muted">The custom install prompt is browser-dependent. Manual installation can still work even when this website cannot trigger the browser prompt directly.</p>
-      <details class="install-diagnostics">
-        <summary>Installation diagnostics</summary>
-        <dl>
-          <div><dt>HTTPS</dt><dd id="diag-secure">Checking…</dd></div>
-          <div><dt>Service worker</dt><dd id="diag-worker">Checking…</dd></div>
-          <div><dt>Native prompt</dt><dd id="diag-prompt">Checking…</dd></div>
-          <div><dt>App mode</dt><dd id="diag-mode">Checking…</dd></div>
-        </dl>
-      </details>
-      <footer class="toolbar"><button id="install-dialog-close" type="button" class="secondary">Close</button></footer>
-    </article>
-  </dialog>
+  <spt-install-dialog></spt-install-dialog>
 
   <p id="status" class="status" aria-live="polite"></p>
 </main>
 </div>
+<script src="./providers.data.js?v=__APP_VERSION__"></script>
 <script src="./social-post-core.js?v=__APP_VERSION__"></script>
 <script src="./provider-policy.js?v=__APP_VERSION__"></script>
+<script src="./js/components.js?v=__APP_VERSION__"></script>
+<script src="./js/settings-store.js?v=__APP_VERSION__"></script>
+<script src="./js/install-manager.js?v=__APP_VERSION__"></script>
+<script src="./js/page-settings.js?v=__APP_VERSION__"></script>
 <script src="./app.js?v=__APP_VERSION__"></script>
 </body>
 </html>

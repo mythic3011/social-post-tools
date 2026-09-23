@@ -5,18 +5,20 @@ import argparse
 import html
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
 VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-PICO_VERSION = '2.1.1'
+TAILWIND_VERSION = '3.4.19'
 CORE_MARKER = '/*__SOCIAL_POST_CORE__*/'
+PROVIDERS_MARKER = '/*__SOCIAL_POST_PROVIDERS__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
 SRC = ROOT / 'src'
 PWA_SRC = SRC / 'pwa'
-PICO_CSS = ROOT / 'node_modules' / '@picocss' / 'pico' / 'css' / 'pico.conditional.min.css'
-PICO_FALLBACK = PWA_SRC / 'assets' / 'pico-fallback.css'
+TAILWIND_INPUT = PWA_SRC / 'assets' / 'src' / 'input.css'
+TAILWIND_BIN = ROOT / 'node_modules' / '.bin' / ('tailwindcss.cmd' if os.name == 'nt' else 'tailwindcss')
 PUBLIC_SITE_URL = 'https://share-tools.mythic3011.com'
 PUBLIC_GITHUB_REPO = 'mythic3011/social-post-tools'
 PUBLIC_GITHUB_URL = f'https://github.com/{PUBLIC_GITHUB_REPO}'
@@ -89,12 +91,16 @@ def distribution_meta(base_url: str | None) -> str:
 
 def render_userscript(pages_base: str | None) -> str:
     core = (SRC / 'core/social-post-core.js').read_text(encoding='utf-8').rstrip()
+    providers = (SRC / 'core/providers.data.js').read_text(encoding='utf-8').rstrip()
     template = (SRC / 'userscript/userscript.template.js').read_text(encoding='utf-8')
     if template.count(CORE_MARKER) != 1:
         raise SystemExit('userscript core marker missing or duplicated')
+    if template.count(PROVIDERS_MARKER) != 1:
+        raise SystemExit('userscript providers marker missing or duplicated')
     if template.count(DIST_META_MARKER) != 1:
         raise SystemExit('userscript distribution marker missing or duplicated')
-    bundle = template.replace(CORE_MARKER, core)
+    bundle = template.replace(PROVIDERS_MARKER, providers)
+    bundle = bundle.replace(CORE_MARKER, core)
     bundle = bundle.replace(DIST_META_MARKER, distribution_meta(pages_base))
     return bundle.replace('__APP_VERSION__', VERSION)
 
@@ -106,30 +112,53 @@ def extract_metadata(bundle: str) -> str:
     return bundle[:end + len('// ==/UserScript==')] + '\n'
 
 
-def install_ui_framework(site: Path, *, dev_fallback: bool) -> None:
-    vendor = site / 'assets' / 'vendor'
-    vendor.mkdir(parents=True, exist_ok=True)
-    target = vendor / 'pico.conditional.min.css'
-    marker = vendor / 'FRAMEWORK.txt'
-    if PICO_CSS.is_file():
-        shutil.copy2(PICO_CSS, target)
-        marker.write_text(f'@picocss/pico {PICO_VERSION}\nsource: npm lockfile\nmode: production\n', encoding='utf-8')
-        return
-    if dev_fallback:
-        shutil.copy2(PICO_FALLBACK, target)
-        marker.write_text(f'@picocss/pico {PICO_VERSION}\nmode: development fallback (Pico package unavailable)\n', encoding='utf-8')
-        return
-    raise SystemExit('Pico CSS is missing. Run `npm ci` first, or use --dev-ui-fallback for an offline preview build.')
+def generate_providers() -> None:
+    """Compile providers.json into the JS data module the core consumes."""
+    script = ROOT / 'scripts' / 'gen_providers.py'
+    result = subprocess.run(
+        [os.environ.get('PYTHON', 'python'), str(script)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f'Provider codegen failed:\n{result.stdout}\n{result.stderr}')
 
 
-def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: bool, threads_resolver_url: str | None) -> None:
+def compile_ui_css(site: Path) -> None:
+    """Compile the Tailwind design system into the site's single stylesheet.
+
+    The Tailwind CLI is provided by the locked npm dependency. The build fails
+    closed when the toolchain is missing so a site is never shipped unstyled.
+    """
+    if not TAILWIND_BIN.is_file():
+        raise SystemExit('Tailwind CSS is missing. Run `npm ci` first (or `mise run bootstrap`).')
+    target = site / 'assets' / 'app.css'
+    target.parent.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(
+        [str(TAILWIND_BIN), '-i', str(TAILWIND_INPUT), '-o', str(target), '--minify'],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f'Tailwind compile failed:\n{result.stdout}\n{result.stderr}')
+    marker = site / 'assets' / 'FRAMEWORK.txt'
+    marker.write_text(f'tailwindcss {TAILWIND_VERSION}\nsource: npm lockfile\nmode: production\n', encoding='utf-8')
+
+
+def write_site(pages_base: str | None, bundle: str, meta: str, *, threads_resolver_url: str | None) -> None:
     site = ROOT / 'site'
     if site.exists():
         shutil.rmtree(site)
-    shutil.copytree(PWA_SRC, site, ignore=shutil.ignore_patterns('pico-fallback.css'))
-    install_ui_framework(site, dev_fallback=dev_fallback)
+    # Exclude the Tailwind source and the old pre-compiled product CSS; the
+    # stylesheet is regenerated into assets/app.css by compile_ui_css.
+    shutil.copytree(PWA_SRC, site, ignore=shutil.ignore_patterns('src', 'app.css', 'install.css'))
+    compile_ui_css(site)
     core_text = (SRC / 'core/social-post-core.js').read_text(encoding='utf-8')
     (site / 'social-post-core.js').write_text(core_text, encoding='utf-8')
+    providers_text = (SRC / 'core/providers.data.js').read_text(encoding='utf-8')
+    (site / 'providers.data.js').write_text(providers_text, encoding='utf-8')
     install = site / 'install'
     install.mkdir(parents=True, exist_ok=True)
     (install / 'social-post-tools.user.js').write_text(bundle, encoding='utf-8')
@@ -190,7 +219,6 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, dev_fallback: 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Build Social Post Tools')
     parser.add_argument('--pages-base', default=os.environ.get('PAGES_BASE_URL'))
-    parser.add_argument('--dev-ui-fallback', action='store_true', help='Use the checked-in offline preview CSS when Pico is not installed.')
     parser.add_argument('--threads-resolver-url', default=os.environ.get('THREADS_RESOLVER_URL'), help='Override the HTTPS endpoint used to resolve Threads /share/ aliases. Production share-tools.mythic3011.com defaults to the project resolver.')
     parser.add_argument('--no-threads-resolver', action='store_true', help='Disable the Threads alias resolver even for the production site.')
     args = parser.parse_args()
@@ -200,6 +228,7 @@ def main() -> None:
         configured_resolver = PUBLIC_THREADS_RESOLVER_URL
     threads_resolver_url = normalize_resolver_url(configured_resolver)
 
+    generate_providers()
     bundle = render_userscript(pages_base)
     meta = extract_metadata(bundle)
     dist = ROOT / 'dist'
@@ -210,9 +239,9 @@ def main() -> None:
     (dist / 'social-post-tools.meta.js').write_text(meta, encoding='utf-8')
     (dist / f'social-post-tools-v{VERSION}.user.txt').write_text(bundle, encoding='utf-8')
 
-    write_site(pages_base, bundle, meta, dev_fallback=args.dev_ui_fallback, threads_resolver_url=threads_resolver_url)
+    write_site(pages_base, bundle, meta, threads_resolver_url=threads_resolver_url)
     print(f'built v{VERSION}: userscript + meta + GitHub Pages site')
-    print(f'ui framework: @picocss/pico {PICO_VERSION}' + (' (dev fallback)' if args.dev_ui_fallback and not PICO_CSS.is_file() else ''))
+    print(f'ui framework: tailwindcss {TAILWIND_VERSION}')
     if pages_base:
         print(f'pages base: {pages_base}')
     print('userscript update channel: ' + public_distribution_urls(pages_base)[2])

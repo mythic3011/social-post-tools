@@ -25,6 +25,7 @@
 // @connect      *.cdninstagram.com
 // ==/UserScript==
 
+/*__SOCIAL_POST_PROVIDERS__*/
 /*__SOCIAL_POST_CORE__*/
 
 (() => {

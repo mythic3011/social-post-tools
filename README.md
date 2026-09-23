@@ -12,7 +12,7 @@
 [![CSS3](https://img.shields.io/badge/CSS3-scoped-1572B6?logo=css3&logoColor=fff)](src/pwa/assets/app.css)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=fff)](docs/product/ANDROID_COMPANION.md)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=fff)](build.py)
-[![Pico CSS](https://img.shields.io/badge/Pico_CSS-2.1.1-0172AD?logo=css3&logoColor=fff)](docs/development/UI_FOUNDATION.md)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.19-38B2AC?logo=tailwindcss&logoColor=fff)](docs/development/UI_FOUNDATION.md)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-deployed-222?logo=github&logoColor=fff)](docs/deployment/GITHUB_PAGES.md)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-supported-00485b)](https://www.tampermonkey.net/)
 [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-supported-7B68EE)](https://violentmonkey.github.io/)
@@ -87,7 +87,7 @@ Social Post Tools deliberately does **not** health-probe every provider at runti
 | --- | --- | --- |
 | Userscript | JavaScript | Native X / Threads Share-menu integration and structured capture |
 | Android companion | PWA + Web Share Target | Receives links from the Android share sheet |
-| UI | Semantic HTML + Pico CSS 2.1.1 | Task-oriented, progressively disclosed interface |
+| UI | Semantic HTML + Tailwind CSS 3.4.19 | Task-oriented, progressively disclosed interface |
 | Shared core | JavaScript | Canonical URLs, provider lifecycle, URL builders, portable settings, hashing helpers |
 | Build / audits | Python 3.13 | Static build, packaging, SEO generation, security/UI checks |
 | Toolchain | mise + uv + npm locks | Exact tool versions, checksums/provenance, reproducible dependency setup |

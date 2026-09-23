@@ -18,18 +18,13 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'">
   <link rel="manifest" href="./manifest.webmanifest?v=__APP_VERSION__">
-  <link rel="stylesheet" href="./assets/vendor/pico.conditional.min.css?v=__APP_VERSION__">
   <link rel="stylesheet" href="./assets/app.css?v=__APP_VERSION__">
-  <link rel="stylesheet" href="./assets/install.css?v=__APP_VERSION__">
   <title>Browser install · Social Post Tools</title>
 </head>
 <body data-page="install">
-<div class="pico spt-app">
+<div class="spt-app">
 <main class="container spt-shell install-shell">
-  <header class="spt-header">
-    <div class="brand-block"><span class="product-mark" aria-hidden="true">SP</span><div><h1>Browser install</h1><p class="eyebrow">Userscript distribution workspace</p></div></div>
-    <div class="header-actions"><a class="text-link" href="__GITHUB_REPO_URL__" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a role="button" class="secondary outline compact" href="__SITE_HOME__">Home</a></div>
-  </header>
+  <spt-header title="Browser install" eyebrow="Userscript distribution workspace" brand github-href="__GITHUB_REPO_URL__" home-href="__SITE_HOME__"></spt-header>
 
   <section class="install-hero">
     <div class="install-hero-copy">
@@ -147,5 +142,6 @@
   </footer>
 </main>
 </div>
+<script src="./js/components.js?v=__APP_VERSION__"></script>
 </body>
 </html>
