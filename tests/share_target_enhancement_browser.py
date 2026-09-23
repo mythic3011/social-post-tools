@@ -47,7 +47,7 @@ def report(checks: dict[str, bool], failures: list[str]) -> None:
 
 
 def main() -> int:
-    required = [SITE / 'share-target.html', SITE / 'share-target-enhancements.js', SITE / 'social-post-core.js']
+    required = [SITE / 'share-target.html', SITE / 'share-target-enhancements.js', SITE / 'social-post-core.js', SITE / 'providers.data.js']
     if not all(path.is_file() for path in required):
         print('FAIL share-target-enhancement-browser-site-missing')
         return 1
@@ -57,6 +57,7 @@ def main() -> int:
         print('SKIP: Chromium/Chrome not found', file=sys.stderr)
         return 77
 
+    providers_source = (SITE / 'providers.data.js').read_text(encoding='utf-8')
     core_source = (SITE / 'social-post-core.js').read_text(encoding='utf-8')
     enhancement_source = (SITE / 'share-target-enhancements.js').read_text(encoding='utf-8')
     failures: list[str] = []
@@ -71,6 +72,7 @@ def main() -> int:
             frame = smoke.mod._cdp_call(ws, 'Page.getFrameTree', {}, call_id); call_id += 1
             frame_id = frame['result']['frameTree']['frame']['id']
             call_id = smoke.set_document(ws, frame_id, smoke.page_document('share-target.html'), call_id)
+            call_id = evaluate_source(ws, providers_source, call_id)
             call_id = evaluate_source(ws, core_source, call_id)
             call_id = evaluate_source(ws, enhancement_source, call_id)
 

@@ -94,8 +94,8 @@ def main() -> int:
                 productRules: document.querySelector('#spt-product-test')?.sheet?.cssRules?.length || 0,
                 primaryCount: primary.length,
                 emptyLabels: primary.filter((el) => !(el.textContent || '').trim()).length,
-                installDialog: Boolean(document.querySelector('#install-dialog')),
-                diagnostics: document.querySelectorAll('#install-dialog .install-diagnostics dd').length,
+                installDialog: Boolean(document.querySelector('spt-install-dialog')),
+                diagnostics: document.querySelector('spt-install-dialog')?.hasAttribute('share-target-diag') ? 5 : 4,
               };
             })()''', call_id)
             report({
