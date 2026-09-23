@@ -73,7 +73,7 @@ def report(checks: dict[str, bool], failures: list[str]) -> None:
 
 
 def main() -> int:
-    required = [SITE / 'link-lab.html', SITE / 'link-lab.js', SITE / 'social-post-core.js']
+    required = [SITE / 'link-lab.html', SITE / 'link-lab.js', SITE / 'social-post-core.js', SITE / 'providers.data.js']
     if not all(path.is_file() for path in required):
         print('FAIL link-lab-browser-site-missing')
         return 1
@@ -83,6 +83,7 @@ def main() -> int:
         print('SKIP: Chromium/Chrome not found', file=sys.stderr)
         return 77
 
+    providers_source = (SITE / 'providers.data.js').read_text(encoding='utf-8')
     core_source = (SITE / 'social-post-core.js').read_text(encoding='utf-8')
     lab_source = (SITE / 'link-lab.js').read_text(encoding='utf-8')
     failures: list[str] = []
@@ -101,6 +102,7 @@ def main() -> int:
             frame_id = frame['result']['frameTree']['frame']['id']
 
             call_id = smoke.set_document(ws, frame_id, smoke.page_document('link-lab.html'), call_id)
+            call_id = evaluate_source(ws, providers_source, call_id)
             call_id = evaluate_source(ws, core_source, call_id)
             call_id = evaluate_source(ws, lab_source, call_id)
 
