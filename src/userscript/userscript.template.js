@@ -179,7 +179,7 @@
       order: ['capture', 'archive', 'copyClean', 'copyAlternate', 'telegram', 'systemShare', 'openAlternate', 'settings'],
     },
     links: {
-      x: { builderId: 'nitter-net' },
+      x: { builderId: 'fixupx' },
       threads: { builderId: 'vxthreads' },
     },
     builders: {
@@ -557,8 +557,8 @@
         || oldLocalStorageValue('x-mirror-share-copy:selected-mirror')
         || oldLocalStorageValue('x-mirror-share-copy:selected-provider');
       const map = {
-        nitter: 'nitter-net',
-        'nitter-auto': 'nitter-net',
+        nitter: 'fixupx',
+        'nitter-auto': 'fixupx',
         fixupx: 'fixupx',
         fixvx: 'fixvx',
       };
@@ -3109,7 +3109,7 @@
   function builderDisplayLabel(builder) {
     if (!builder) return '';
     if (!builder.builtin) return `${builder.name} — custom`;
-    if (builder.group === 'Nitter') return `${builder.name} — alternative reader`;
+    if (builder.group === 'Legacy reader') return `${builder.name} — alternative reader`;
     if (builder.group === 'Embed fixer') return `${builder.name} — better chat previews`;
     if (builder.id === 'vxthreads') return `${builder.name} — better chat previews`;
     return builder.name;

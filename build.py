@@ -49,6 +49,12 @@ def normalize_resolver_url(value: str | None) -> str | None:
         raise SystemExit('--threads-resolver-url must be an absolute HTTPS URL without credentials')
     if parsed.query or parsed.fragment:
         raise SystemExit('--threads-resolver-url must not contain a query string or fragment')
+    # The URL is inlined verbatim into a single-quoted JS string literal in
+    # site JS files. Reject characters that would terminate the literal or
+    # inject code, otherwise the built artefact fails to parse and breaks
+    # every page that depends on share-actions.js.
+    if any(ch in value for ch in ("'", '"', '\\', '`', '\n', '\r', ' ', '${')):
+        raise SystemExit('--threads-resolver-url contains characters unsafe for JS string inlining')
     return value
 
 
