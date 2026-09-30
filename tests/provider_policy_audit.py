@@ -28,7 +28,8 @@ checks = {
     'provider-policy-loaded-before-app-index': index.index('./provider-policy.js') < index.index('./app.js'),
     'provider-policy-loaded-before-app-settings': settings.index('./provider-policy.js') < settings.index('./app.js'),
     'provider-policy-loaded-before-app-share': share.index('./provider-policy.js') < share.index('./app.js'),
-    'legacy-app-default-contained-by-policy': "builderId: 'nitter-net'" in settings_store and 'Core.makePortableLinkSettings' in policy,
+    'settings-store-default-x-is-active': "builderId: 'fixupx'" in settings_store and "builderId: 'nitter-net'" not in settings_store,
+    'settings-store-default-contained-by-policy': 'Core.makePortableLinkSettings' in policy,
 }
 
 failed = []
