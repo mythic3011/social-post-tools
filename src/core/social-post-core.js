@@ -5,7 +5,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '1.5.0';
+  // Core schema version — independent of the project's app version (VERSION at
+  // the repo root). Bump only when the JSON registry / settings shape changes
+  // in a way consumers must adapt to. Kept separate from the app's 4.x.y
+  // release line on purpose.
+  const SCHEMA_VERSION = '1.5.0';
   const MAX_BUILDER_URL_CHARS = 8192;
   const MAX_CUSTOM_BUILDERS = 32;
 
@@ -646,7 +650,8 @@
   const ACTIVE_BUILTIN_BUILDERS = Object.freeze(BUILTIN_BUILDERS.filter((builder) => !builder.retired));
 
   return Object.freeze({
-    VERSION,
+    VERSION: SCHEMA_VERSION,
+    SCHEMA_VERSION,
     PLATFORMS,
     DEFAULT_BUILDERS,
     ALL_BUILTIN_BUILDERS: BUILTIN_BUILDERS,
