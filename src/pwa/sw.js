@@ -1,5 +1,5 @@
 'use strict';
-const CACHE = 'social-post-tools-pwa-shell-v1';
+const CACHE = 'social-post-tools-pwa-shell-v2';
 const SHELL = [
   './', './index.html', './install.html', './settings.html', './link-lab.html', './share-target.html', './capture-handoff.html', './privacy.html', './404.html',
   './assets/app.css', './install-bootstrap.js', './provider-policy.js', './link-lab.js', './share-target-enhancements.js', './app.js', './social-post-core.js', './providers.data.js', './manifest.webmanifest',

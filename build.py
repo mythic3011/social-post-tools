@@ -152,8 +152,15 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, threads_resolv
     if site.exists():
         shutil.rmtree(site)
     # Exclude the Tailwind source and the old pre-compiled product CSS; the
-    # stylesheet is regenerated into assets/app.css by compile_ui_css.
-    shutil.copytree(PWA_SRC, site, ignore=shutil.ignore_patterns('src', 'app.css', 'install.css'))
+    # stylesheet is regenerated into assets/app.css by compile_ui_css. Use a
+    # custom ignore so we drop only 'assets/src', not any nested directory
+    # named 'src'.
+    def _ignore(dir_path: str, names: list[str]) -> set[str]:
+        ignored: set[str] = {'app.css', 'install.css'}
+        if Path(dir_path).resolve() == (PWA_SRC / 'assets').resolve():
+            ignored.add('src')
+        return {n for n in names if n in ignored}
+    shutil.copytree(PWA_SRC, site, ignore=_ignore)
     compile_ui_css(site)
     core_text = (SRC / 'core/social-post-core.js').read_text(encoding='utf-8')
     (site / 'social-post-core.js').write_text(core_text, encoding='utf-8')
@@ -191,10 +198,20 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, threads_resolv
             text = text.replace(marker, value)
         path.write_text(text, encoding='utf-8')
 
-    app_js = site / 'app.js'
-    app_text = app_js.read_text(encoding='utf-8')
-    app_text = app_text.replace('__THREADS_RESOLVER_URL__', threads_resolver_url or '')
-    app_js.write_text(app_text, encoding='utf-8')
+    # The Threads resolver marker may appear in any site JS file (the app.js
+    # split moved it into js/share-actions.js). Rewrite it everywhere it
+    # appears, then fail closed if any marker survives — a literal placeholder
+    # is truthy in JS and silently breaks the resolution feature.
+    for js_path in site.rglob('*.js'):
+        js_text = js_path.read_text(encoding='utf-8')
+        if '__THREADS_RESOLVER_URL__' in js_text:
+            js_path.write_text(
+                js_text.replace('__THREADS_RESOLVER_URL__', threads_resolver_url or ''),
+                encoding='utf-8',
+            )
+    for js_path in site.rglob('*.js'):
+        if '__THREADS_RESOLVER_URL__' in js_path.read_text(encoding='utf-8'):
+            raise SystemExit(f'unsubstituted __THREADS_RESOLVER_URL__ in {js_path}')
 
     sitemap_urls = [canonical_base + '/', canonical_base + '/install.html', canonical_base + '/privacy.html']
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
