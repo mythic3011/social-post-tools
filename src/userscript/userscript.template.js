@@ -3,6 +3,7 @@
 // @namespace    social-post-tools
 // @version      __APP_VERSION__
 // @description  Simple post sharing and AI capture for X/Threads, with optional advanced link builders, archive tools, Android sharing, and Telegram.
+// @author       mythic3011
 /*__USERSCRIPT_DISTRIBUTION_META__*/
 // @match        https://x.com/*
 // @match        https://twitter.com/*

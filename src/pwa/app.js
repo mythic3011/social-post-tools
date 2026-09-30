@@ -20,6 +20,11 @@
 
   const page = document.body.dataset.page;
   if (page === 'settings') SPT.pages?.settings?.();
-  if (page === 'share-target') SPT.pages?.shareTarget?.().catch(() => status('Could not prepare the shared post.'));
+  if (page === 'share-target') {
+    // Wrap via Promise.resolve so a missing SPT.pages.shareTarget doesn't
+    // throw TypeError when the optional chain short-circuits to undefined.
+    Promise.resolve(SPT.pages?.shareTarget?.())
+      .catch(() => status('Could not prepare the shared post.'));
+  }
   if (page === 'capture-handoff') SPT.pages?.captureHandoff?.();
 })();
