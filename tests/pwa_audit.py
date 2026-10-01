@@ -12,6 +12,15 @@ import json, re
 root = Path(__file__).resolve().parents[1]
 pwa = root / 'src/pwa'
 manifest = json.loads((pwa/'manifest.webmanifest').read_text())
+
+def _regex_not_contains(pattern, text, forbidden):
+    """Return True when pattern exists in text and forbidden is absent from the match.
+
+    Used instead of `re.search(...).group(0)` so a rename does not raise
+    AttributeError mid-audit and silently abort the remaining checks."""
+    match = re.search(pattern, text, re.S)
+    return bool(match) and forbidden not in match.group(0)
+
 index = (pwa/'index.html').read_text()
 settings = (pwa/'settings.html').read_text()
 share = (pwa/'share-target.html').read_text()
@@ -74,6 +83,8 @@ checks = {
   # --- manifest / CSP / SEO (structural) ---
   'manifest-share-target': manifest.get('share_target',{}).get('action') == './share-target.html',
   'manifest-basic-get': manifest.get('share_target',{}).get('method') == 'GET',
+  'manifest-share-target-enctype': manifest.get('share_target',{}).get('enctype') == 'application/x-www-form-urlencoded',
+  'manifest-share-target-params': manifest.get('share_target',{}).get('params') == {'title': 'title', 'text': 'text', 'url': 'url'},
   'manifest-relative-start': manifest.get('start_url') == './' and manifest.get('scope') == './' and manifest.get('id') == './',
   'manifest-no-remote-assets': all(not str(icon.get('src','')).startswith(('http:','https:','/')) for icon in manifest.get('icons',[])),
   'csp-connect-none-index': "connect-src 'none'" in index,
@@ -115,7 +126,7 @@ checks = {
   'rich-capture-bridge-page': 'data-page="capture-handoff"' in bridge_page and 'Userscript not detected' in app_all,
   'rich-capture-userscript-open-tab': '// @grant        GM_openInTab' in userscript and 'GM_openInTab(target' in userscript,
   'rich-capture-build-match': 'capture-handoff.html*' in build and 'bridge_match' in build,
-  'handoff-does-not-embed-shared-text': 'captureBridgeUrl(sourceUrl' in app_all and "bridge.searchParams.set('url', target)" in app_all and 'parsed.text' not in re.search(r'const handoffSource.*?const captureEnabled', app_all, re.S).group(0),
+  'handoff-does-not-embed-shared-text': 'captureBridgeUrl(sourceUrl' in app_all and "bridge.searchParams.set('url', target)" in app_all and _regex_not_contains(r'const handoffSource.*?const captureEnabled', app_all, 'parsed.text'),
 
   # --- settings / provider policy (structural) ---
   'settings-local-only': 'localStorage' in app_all,

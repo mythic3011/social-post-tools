@@ -143,7 +143,7 @@
     if (!host) return;
     host.replaceChildren();
 
-    for (const builder of Core.BUILTIN_BUILDERS) {
+    for (const builder of ALL_BUILDERS) {
       const row = document.createElement('div');
       row.className = 'provider-row';
 

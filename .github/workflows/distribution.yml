@@ -58,8 +58,15 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum social-post-tools.user.js social-post-tools.meta.js social-post-tools-v*.user.txt > SHA256SUMS.txt
           VERSION="${{ steps.release.outputs.version }}"
+          # Detect any unexpected social-post-tools-v*.user.txt strays: the
+          # build is expected to produce exactly one.
+          count=$(ls social-post-tools-v*.user.txt 2>/dev/null | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "expected exactly one social-post-tools-v*.user.txt in dist, found $count" >&2
+            exit 1
+          fi
+          sha256sum social-post-tools.user.js social-post-tools.meta.js "social-post-tools-v${VERSION}.user.txt" > SHA256SUMS.txt
           USER_SHA="$(sha256sum social-post-tools.user.js | awk '{print $1}')"
           cat > release.json <<EOF
           {

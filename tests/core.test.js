@@ -4,7 +4,8 @@ const Core = require('../src/core/social-post-core.js');
 
 async function main() {
 
-  assert.equal(Core.VERSION, '1.5.0');
+  assert.equal(Core.VERSION, Core.SCHEMA_VERSION);
+  assert.equal(Core.SCHEMA_VERSION, '1.5.0');
   assert.equal(Core.canonicalize('x', 'https://twitter.com/alice/status/123?s=20&t=abc'), 'https://x.com/alice/status/123');
   assert.equal(Core.canonicalize('threads', 'https://threads.net/@bob/post/Ab_C-9/foo?xmt=track'), 'https://www.threads.com/@bob/post/Ab_C-9');
   assert.equal(Core.canonicalize('x', 'https://evil.example/alice/status/123'), null);

@@ -13,7 +13,7 @@
   function builderDisplayLabel(builder) {
     if (!builder) return '';
     if (!builder.builtin) return `${builder.name} — custom`;
-    if (builder.group === 'Nitter') return `${builder.name} — alternative reader`;
+    if (builder.group === 'Legacy reader') return `${builder.name} — alternative reader`;
     if (builder.group === 'Embed fixer') return `${builder.name} — better chat previews`;
     if (builder.id === 'vxthreads') return `${builder.name} — better chat previews`;
     return builder.name;

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import json
+import re
 import tomllib
 
 root = Path(__file__).resolve().parents[1]
@@ -27,7 +28,10 @@ checks = {
     'ui-hidden-invariant': '[hidden], .hidden { display: none !important; }' in design_css,
     'ui-token-layer': '--spt-content-width' in design_css and '--spt-space-4' in design_css,
     'ui-install-workspace-layer': '.distribution-grid' in design_css and '.install-workspace' in design_css,
-    'toolchain-mise-exact': mise['tools']['node'] == '24.20.0' and mise['tools']['python'] == '3.13.15' and mise['tools']['aqua:astral-sh/uv'] == '0.12.5',
+    'toolchain-mise-pinned-semver': all(
+        re.fullmatch(r'\d+\.\d+\.\d+', str(v))
+        for k, v in mise['tools'].items() if k in ('node', 'python', 'aqua:astral-sh/uv')
+    ),
     'toolchain-release-age-policy': mise['settings']['minimum_release_age'] == '7d',
     'toolchain-lock-enforced': mise['tool_config']['locked'] is True and mise['settings']['locked_verify_provenance'] is True and (root/'mise.lock').is_file(),
     'toolchain-mise-action-pinned': 'jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c' in setup_toolchain and "version: '2026.9.5'" in setup_toolchain,

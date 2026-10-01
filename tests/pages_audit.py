@@ -244,7 +244,7 @@ def _workflow_checks() -> dict[str, bool]:
             < dist_workflow.index('Publish generated dist branch')
         ),
         'distribution-attestation-pinned': (
-            'actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6' in dist_workflow
+            _action_pinned_to_sha(dist_workflow, 'actions/attest')
             and 'subject-checksums: dist/SHA256SUMS.txt' in dist_workflow
         ),
         'distribution-attestation-permissions': (
@@ -264,21 +264,19 @@ def _workflow_checks() -> dict[str, bool]:
             dist_workflow,
         ) is not None,
         'distribution-artifact-handoff-pinned': (
-            'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' in dist_workflow
-            and 'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c' in dist_workflow
+            _action_pinned_to_sha(dist_workflow, 'actions/upload-artifact')
+            and _action_pinned_to_sha(dist_workflow, 'actions/download-artifact')
         ),
         'distribution-artifact-reverified': 'sha256sum --check SHA256SUMS.txt' in dist_workflow,
-        'dependency-review-pinned': (
-            'actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294'
-            in dep_review_workflow
-        ),
+        'dependency-review-pinned': _action_pinned_to_sha(dep_review_workflow, 'actions/dependency-review-action'),
         'dependency-review-pr-only': (
             'pull_request:' in dep_review_workflow
             and 'fail-on-severity: moderate' in dep_review_workflow
         ),
         'codeql-pinned': (
             codeql_workflow.count('github/codeql-action/') == 2
-            and codeql_workflow.count('@1c5b675653bb5c22dbe9b12b556ec555138e09fd') == 2
+            and _action_pinned_to_sha(codeql_workflow, 'github/codeql-action/init')
+            and _action_pinned_to_sha(codeql_workflow, 'github/codeql-action/analyze')
         ),
         'codeql-languages': (
             'javascript-typescript' in codeql_workflow

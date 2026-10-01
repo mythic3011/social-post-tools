@@ -40,8 +40,11 @@
       $('share-text').textContent = parsed.text || '';
       if (parsed.needsResolution) {
         $('share-note').classList.remove('hidden');
+        const retryable = parsed.resolutionError !== 'resolver_not_configured';
         $('share-note').textContent = parsed.resolutionError
-          ? `Automatic canonical-link resolution failed (${parsed.resolutionError}). Retry first; the /share/ URL is only a fallback.`
+          ? (retryable
+              ? `Automatic canonical-link resolution failed (${parsed.resolutionError}). Retry first; the /share/ URL is only a fallback.`
+              : 'No canonical resolver is configured for this build. The /share/ URL is the only option.')
           : 'Threads supplied a /share/ alias and the canonical post permalink is still unresolved.';
         $('share-link-label').textContent = 'Threads share link';
         $('alternate-url').textContent = parsed.sharedUrl || '';
@@ -63,11 +66,13 @@
     const moreActions = $('actions-more');
     const moreCard = $('more-actions-card');
     if (parsed.needsResolution && parsed.sharedUrl) {
-      addAction(primaryActions, 'Retry canonical link', () => {
-        const retry = new URL(location.href);
-        retry.searchParams.set('url', parsed.sharedUrl);
-        location.replace(retry.href);
-      });
+      if (parsed.resolutionError !== 'resolver_not_configured') {
+        addAction(primaryActions, 'Retry canonical link', () => {
+          const retry = new URL(location.href);
+          retry.searchParams.set('url', parsed.sharedUrl);
+          location.replace(retry.href);
+        });
+      }
       addAction(moreActions, 'Open Threads fallback', () => {
         window.open(parsed.sharedUrl, '_blank', 'noopener,noreferrer');
       });
