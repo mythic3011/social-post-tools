@@ -10,7 +10,7 @@
     "python:sync": "uv sync --locked"
   },
   "devDependencies": {
-    "tailwindcss": "3.4.19"
+    "tailwindcss": "4.3.3"
   },
   "homepage": "https://share-tools.mythic3011.com/",
   "repository": {
