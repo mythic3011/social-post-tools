@@ -24,7 +24,7 @@
   ]);
   const DEFAULTS = Object.freeze({
     schemaVersion: 1,
-    links: { x: { builderId: 'fixupx' }, threads: { builderId: 'vxthreads' } },
+    links: { x: { builderId: 'fixupx' }, threads: { builderId: null } },
     builders: { custom: [] },
     actions: { enabled: { copyClean: false, copyAlternate: true, systemShare: true, telegram: false, openAlternate: false, richCapture: true } },
     share: { linkSource: 'selected', template: '{text}' },

@@ -126,7 +126,7 @@ def main() -> int:
             threads_result, call_id = submit_value(ws, 'https://threads.net/@bob/post/Ab_C-9?xmt=tracking', call_id)
             report({
                 'link-lab-threads-clean-canonical': bool(threads_result and threads_result['clean'] == 'https://www.threads.com/@bob/post/Ab_C-9'),
-                'link-lab-threads-preview-vxthreads': bool(threads_result and threads_result['preview'] == 'https://vxthreads.net/@bob/post/Ab_C-9' and 'vxThreads' in threads_result['previewMeta']),
+                'link-lab-threads-preview-unavailable': bool(threads_result and threads_result['preview'] == '' and threads_result['previewDisabled']),
                 'link-lab-threads-reader-unavailable': bool(threads_result and threads_result['reader'] == '' and threads_result['readerDisabled'] and threads_result['readerState'] == 'Unavailable'),
                 'link-lab-threads-reader-select-disabled': bool(threads_result and threads_result['readerProviderDisabled']),
             }, failures)

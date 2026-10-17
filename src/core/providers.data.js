@@ -57,9 +57,9 @@ globalThis.SocialPostProviders = Object.freeze([
     "builtin": true,
     "group": "Embed fixer",
     "capability": "embed",
-    "status": "available",
-    "detail": "Chat-friendly Threads previews",
-    "retired": false
+    "status": "retired",
+    "detail": "Origin unreachable; use direct Threads links",
+    "retired": true
   },
   {
     "id": "nitter-net",
