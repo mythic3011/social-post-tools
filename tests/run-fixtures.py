@@ -289,7 +289,11 @@ def assertion_script(case: dict) -> str:
       eq('xFixupBuilder', api.buildUrl(api.builderById('fixupx'), site, 'https://x.com/alice/status/123'), 'https://fixupx.com/alice/status/123');
     }} else {{
       eq('threadsCanonicalTracking', api.canonicalize(site, 'https://www.threads.com/@alice/post/ABC123?xmt=tracking'), 'https://www.threads.com/@alice/post/ABC123');
-      eq('threadsVxBuilder', api.buildUrl(api.builderById('vxthreads'), site, 'https://www.threads.com/@alice/post/ABC123'), 'https://vxthreads.net/@alice/post/ABC123');
+      // vxthreads is retired (origin unreachable); userscripts share the canonical
+      // Threads URL directly. Assert builderById no longer surfaces it via the
+      // active registry and that the transform falls back to null so callers use
+      // the canonical link.
+      eq('threadsVxRetired', api.builderById('vxthreads'), null);
     }}
 
 
