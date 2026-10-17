@@ -181,7 +181,7 @@
     },
     links: {
       x: { builderId: 'fixupx' },
-      threads: { builderId: 'vxthreads' },
+      threads: { builderId: null },
     },
     builders: {
       custom: [],

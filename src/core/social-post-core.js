@@ -28,9 +28,11 @@
     }),
   });
 
+  // When a platform has no active builder (e.g. vxthreads retired and no
+  // replacement), defaultBuilderId returns null and callers fall back to the
+  // canonical post URL — direct Threads links with no rewriting.
   const DEFAULT_BUILDERS = Object.freeze({
     x: 'fixupx',
-    threads: 'vxthreads',
   });
 
   // The built-in provider registry lives in providers.json (single source of

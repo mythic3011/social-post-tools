@@ -11,12 +11,21 @@ async function main() {
   assert.equal(Core.canonicalize('x', 'https://evil.example/alice/status/123'), null);
 
   assert.equal(Core.defaultBuilderId('x'), 'fixupx');
-  assert.equal(Core.defaultBuilderId('threads'), 'vxthreads');
+  // All Threads builders are retired → the platform intentionally has no
+  // default so transforms fall back to the canonical Threads URL.
+  assert.equal(Core.defaultBuilderId('threads'), null);
   assert.equal(Core.normalizeBuilderId('x', 'nitter-net'), 'fixupx');
   assert.equal(Core.normalizeBuilderId('x', 'fixvx'), 'fixvx');
-  assert.equal(Core.normalizeBuilderId('threads', 'fixupx'), 'vxthreads');
+  assert.equal(Core.normalizeBuilderId('threads', 'fixupx'), null);
   assert(Core.BUILTIN_BUILDERS.every((builder) => !builder.retired));
   assert(Core.ALL_BUILTIN_BUILDERS.some((builder) => builder.id === 'nitter-net' && builder.retired));
+  assert(Core.ALL_BUILTIN_BUILDERS.some((builder) => builder.id === 'vxthreads' && builder.retired));
+  // With no active Threads builder, transformedUrl resolves to null so
+  // callers use the canonical Threads link (direct threads URL, no rewrite).
+  assert.equal(
+    Core.transformedUrl('threads', 'https://www.threads.com/@bob/post/abc', 'vxthreads'),
+    null,
+  );
   assert.equal(Core.builderById('nitter-net').retired, true);
   assert.equal(Core.builderById('fixupx').capability, 'embed');
   assert.equal(Core.builderById('xcancel').capability, 'reader');
@@ -24,7 +33,10 @@ async function main() {
   assert.equal(Core.selectBuilder('x', 'nitter-net').id, 'fixupx');
   assert.equal(Core.transformedUrl('x', 'https://x.com/alice/status/123', 'nitter-net'), 'https://fixupx.com/alice/status/123');
   assert.equal(Core.buildUrl(Core.builderById('nitter-net'), 'x', 'https://x.com/alice/status/123'), 'https://nitter.net/alice/status/123');
-  assert.equal(Core.transformedUrl('threads', 'https://www.threads.com/@bob/post/AbC', 'vxthreads'), 'https://vxthreads.net/@bob/post/AbC');
+  // buildUrl() still works for a retired builder when called directly
+  // (legacy bookkeeping); transformedUrl respects retirement.
+  assert.equal(Core.buildUrl(Core.builderById('vxthreads'), 'threads', 'https://www.threads.com/@bob/post/AbC'), 'https://vxthreads.net/@bob/post/AbC');
+  assert.equal(Core.transformedUrl('threads', 'https://www.threads.com/@bob/post/AbC', 'vxthreads'), null);
 
   const custom = Core.normalizeCustomBuilder({ name: 'Self', id: 'self', platforms: ['x'], type: 'replace-origin', capability: 'reader', baseUrl: 'https://n.example' });
   assert(custom);
@@ -117,7 +129,7 @@ async function main() {
     security: { allowInsecureCustomUrls: false },
   });
   assert.equal(retiredExport.links.x.builderId, 'fixupx');
-  assert.equal(retiredExport.links.threads.builderId, 'vxthreads');
+  assert.equal(retiredExport.links.threads.builderId, null);
 
   const filteredExport = Core.makePortableLinkSettings({
     links: { x: { builderId: 'self' }, threads: { builderId: 'vxthreads' } },
@@ -135,7 +147,8 @@ async function main() {
 
   const defaults = Core.makePortableLinkSettings({});
   assert.equal(defaults.links.x.builderId, 'fixupx');
-  assert.equal(defaults.links.threads.builderId, 'vxthreads');
+  // Threads has no active builder — the portable settings record that with null.
+  assert.equal(defaults.links.threads.builderId, null);
 
   const handoff = Core.makeCaptureHandoffUrl('https://twitter.com/alice/status/123?s=20', { mode: 'smart' });
   assert.equal(handoff, 'https://x.com/alice/status/123#sptCapture=v1&mode=smart');
