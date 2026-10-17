@@ -1,0 +1,7 @@
+{
+  "schema": "social-post-tools-distribution/v1",
+  "version": "4.5.0",
+  "distributionTag": "dist-v4.5.0",
+  "sourceCommit": "033fc2914ffb4579692f36739933d2bd9e45771e",
+  "sha256": "b8c65dc7084851c3257064b8b8cc6ce857af1ae76b10f1fbba329518d1a579aa"
+}
