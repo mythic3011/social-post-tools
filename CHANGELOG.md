@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.5.0 — 2026-10-17
+
+- Retire vxThreads: vxthreads.net is unreachable, so the Threads provider is no longer surfaced as active. Threads shares now use the canonical post URL (direct Threads links) without rewriting.
+- Apply the Threads resolver substitution across every site JS file with a fail-closed post-build check; ship no build artifacts containing the literal `__THREADS_RESOLVER_URL__` placeholder.
+- Restore the install.html CSP to `script-src 'self'` so the page can load the shared `js/components.js` Web Components that render its header and footer.
+- Align the Userscript template and PWA settings store defaults with the Core default X builder (`fixupx`); legacy `nitter`/`nitter-auto` migration now lands on the active provider.
+- Guard the share-target page when the Threads resolver is not configured: suppress the misleading "Retry first" copy and the `Retry canonical link` button.
+- Harden the app.js dispatch so a missing page module no longer crashes with `TypeError` when `.catch` is invoked on an undefined promise chain.
+- Rename the core schema version constant (`SCHEMA_VERSION`) to mark it as independent of the application release line; keep `Core.VERSION` as a compatibility alias.
+- Strengthen the audit suite so dependabot bumps no longer desynchronize hard-coded action SHA assertions: replace literals with reusable pinned-to-SHA helpers, loosen exact toolchain versions to semver form, and add manifest share-target enctype/params checks.
+- Pin the distribution workflow to emit exactly one tagged artifact and fail loudly on strays.
+
 ## v4.4.0 — 2026-09-20
 
 - Refactor provider lifecycle into the shared core: active defaults, capability metadata, retirement state, migration compatibility, and selection policy now have one source of truth instead of PWA/build-time duplicates.
