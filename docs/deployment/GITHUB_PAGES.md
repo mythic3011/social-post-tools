@@ -75,19 +75,13 @@ A GitHub Pages custom domain also works because the workflow receives the config
 
 ## UI asset build
 
-The repository pins `@picocss/pico` in `package.json` and `package-lock.json`. CI/Pages must run:
-
-```bash
-npm ci --ignore-scripts --no-audit --no-fund
-```
-
-before `build.py`. The builder copies `node_modules/@picocss/pico/css/pico.conditional.min.css` into:
+The repository pins `tailwindcss@3.4.19` in `package.json` and `package-lock.json`. The Pages toolchain action runs `mise run bootstrap`, which installs that lockfile with `npm ci --ignore-scripts --no-audit --no-fund`. `build.py` then compiles `src/pwa/styles/input.css` into:
 
 ```text
-site/assets/vendor/pico.conditional.min.css
+site/assets/app.css
 ```
 
-No CDN URL is emitted into production HTML, so the existing same-origin CSP and offline PWA shell continue to work. A local `--dev-ui-fallback` option exists only for offline preview/testing; it is not used by GitHub Actions.
+No CDN URL is emitted into production HTML, so the existing same-origin CSP and offline PWA shell continue to work. The build fails closed when the Tailwind CLI is missing.
 
 ## Search and social metadata
 

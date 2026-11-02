@@ -21,7 +21,7 @@ CHANGELOG.txt                        → CHANGELOG.md
 
 ## UI dependency
 
-The standalone PWA/Pages UI uses `@picocss/pico@2.1.1` as a pinned development dependency. Production builds copy its conditional CSS into the static site. The Userscript does not inject Pico into X or Threads.
+At v4.2 the standalone PWA/Pages UI used `@picocss/pico@2.1.1` as a pinned development dependency. That dependency was later removed. The current foundation is pinned Tailwind CSS, compiled at build time. See [UI_FOUNDATION.md](UI_FOUNDATION.md). The Userscript still does not inject a CSS framework into X or Threads.
 
 ## Existing-repository apply flow
 

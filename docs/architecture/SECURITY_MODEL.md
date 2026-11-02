@@ -97,13 +97,13 @@ The service worker intentionally excludes `/install/` userscript and metadata fi
 Build and deploy permissions are separated: the build job has read access to contents/Pages metadata; the deploy job receives `pages: write` and `id-token: write`. Pull-request CI never deploys.
 
 
-## v4.2 UI dependency boundary
+## UI dependency boundary
 
-The standalone PWA/Pages UI uses a single pinned development dependency, `@picocss/pico@2.1.1`. Production CI installs it with the lockfile using `npm ci --ignore-scripts`, then `build.py` copies only `pico.conditional.min.css` into the static Pages artifact. The deployed PWA does not load CSS, JavaScript, fonts, or telemetry from a third-party CDN at runtime.
+The standalone PWA/Pages UI uses one pinned development dependency, `tailwindcss@3.4.19`. Production CI installs it with the lockfile using `npm ci --ignore-scripts` (via `mise run bootstrap`). `build.py` compiles `src/pwa/styles/input.css` into a single same-origin stylesheet. The deployed PWA does not load CSS, JavaScript, fonts, or telemetry from a third-party CDN at runtime.
 
-The existing CSP remains `style-src 'self'`; normal PWA pages keep `connect-src 'none'`, while the share-target page can be restricted to one build-injected resolver origin. Pico is confined to SPT-owned pages under a `.pico` wrapper. It is never injected into the X/Threads host page, so the framework cannot alter native social-site controls or increase the Userscript's host-page styling surface.
+The existing CSP remains `style-src 'self'`; normal PWA pages keep `connect-src 'none'`, while the share-target page can be restricted to one build-injected resolver origin. The compiled CSS is scoped to `.spt-app` on SPT-owned pages. It is never injected into the X/Threads host page, so the framework cannot alter native social-site controls or increase the Userscript's host-page styling surface.
 
-The build fails closed when the pinned Pico asset is absent. `--dev-ui-fallback` is an explicit offline-preview mode only; CI and Pages deployment do not use it. The checked-in fallback is scoped and intentionally minimal so it cannot silently become the production dependency.
+The build fails closed when the Tailwind CLI is absent. CI and Pages deployment do not have an offline fallback that can silently replace the pinned dependency.
 
 The product layer continues to own security-sensitive UI state invariants such as `[hidden] { display: none !important; }`, which prevents generic framework/control display rules from exposing controls before their capability is available.
 

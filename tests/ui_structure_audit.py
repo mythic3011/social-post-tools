@@ -14,7 +14,7 @@ setup_toolchain = (root/'.github/actions/setup-toolchain/action.yml').read_text(
 mise_text = (root/'mise.toml').read_text()
 mise = tomllib.loads(mise_text)
 # The design-system source of truth is the Tailwind input; app.css is a build artifact.
-design_css = (root/'src/pwa/assets/src/input.css').read_text()
+design_css = (root/'src/pwa/styles/input.css').read_text()
 
 checks = {
     'ui-tailwind-pinned': package.get('devDependencies',{}).get('tailwindcss') == '3.4.19',

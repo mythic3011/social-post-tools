@@ -17,7 +17,7 @@ PROVIDERS_MARKER = '/*__SOCIAL_POST_PROVIDERS__*/'
 DIST_META_MARKER = '/*__USERSCRIPT_DISTRIBUTION_META__*/'
 SRC = ROOT / 'src'
 PWA_SRC = SRC / 'pwa'
-TAILWIND_INPUT = PWA_SRC / 'assets' / 'src' / 'input.css'
+TAILWIND_INPUT = PWA_SRC / 'styles' / 'input.css'
 TAILWIND_BIN = ROOT / 'node_modules' / '.bin' / ('tailwindcss.cmd' if os.name == 'nt' else 'tailwindcss')
 PUBLIC_SITE_URL = 'https://share-tools.mythic3011.com'
 PUBLIC_GITHUB_REPO = 'mythic3011/social-post-tools'
@@ -157,14 +157,11 @@ def write_site(pages_base: str | None, bundle: str, meta: str, *, threads_resolv
     site = ROOT / 'site'
     if site.exists():
         shutil.rmtree(site)
-    # Exclude the Tailwind source and the old pre-compiled product CSS; the
-    # stylesheet is regenerated into assets/app.css by compile_ui_css. Use a
-    # custom ignore so we drop only 'assets/src', not any nested directory
-    # named 'src'.
-    def _ignore(dir_path: str, names: list[str]) -> set[str]:
-        ignored: set[str] = {'app.css', 'install.css'}
-        if Path(dir_path).resolve() == (PWA_SRC / 'assets').resolve():
-            ignored.add('src')
+    # Stylesheet source lives in src/pwa/styles and is compiled into
+    # assets/app.css. Drop a locally generated app.css if one is present so
+    # the site never ships a stale pre-compiled copy.
+    def _ignore(_dir_path: str, names: list[str]) -> set[str]:
+        ignored = {'app.css', 'install.css'}
         return {n for n in names if n in ignored}
     shutil.copytree(PWA_SRC, site, ignore=_ignore)
     compile_ui_css(site)

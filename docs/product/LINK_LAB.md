@@ -15,7 +15,7 @@ The current built-in behavior is:
 | Platform | Clean | Preview | Reader |
 | --- | --- | --- | --- |
 | X | `x.com` canonical URL | FixupX by default; FixVX is selectable | XCancel |
-| Threads | `threads.com` canonical URL | vxThreads | none currently |
+| Threads | `threads.com` canonical URL | none — vxThreads is retired; use the canonical URL | none currently |
 
 The provider dropdowns are populated from the shared `SocialPostCore` registry. Retired providers therefore remain migration-readable without becoming normal Link Lab choices.
 
@@ -23,7 +23,7 @@ Changing a provider in Link Lab changes only the current comparison. It does not
 
 ## Network and privacy boundary
 
-Link Lab deliberately has `connect-src 'none'` and performs no provider health probes. Pasting or deep-linking a post URL does not cause background requests to FixupX, FixVX, XCancel, vxThreads, or the Threads resolver.
+Link Lab deliberately has `connect-src 'none'` and performs no provider health probes. Pasting or deep-linking a post URL does not cause background requests to FixupX, FixVX, XCancel, or the Threads resolver.
 
 Only explicit **Open** actions navigate to an output provider.
 
