@@ -92,7 +92,7 @@ CrowdSec collections bundle the pieces needed for a service. Social Post Tools u
 X collection
   x-post parser
   X DOM extractor
-  Nitter/embed builders
+  embed/reader builders
   AI/archive actions
 
 Threads collection
@@ -100,7 +100,7 @@ Threads collection
   threads-share-alias parser
   optional alias resolver
   Threads DOM extractor
-  vxThreads builder
+  canonical post URL (no active embed builder)
   AI/archive actions
 ```
 

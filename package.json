@@ -5,7 +5,7 @@
   "description": "Task-oriented sharing and AI capture helpers for X and Threads.",
   "scripts": {
     "build": "uv run --locked python build.py",
-    "build:css": "tailwindcss -i src/pwa/assets/src/input.css -o src/pwa/assets/app.css --minify",
+    "build:css": "tailwindcss -i src/pwa/styles/input.css -o src/pwa/assets/app.css --minify",
     "test": "uv run --locked bash tests/run.sh",
     "python:sync": "uv sync --locked"
   },

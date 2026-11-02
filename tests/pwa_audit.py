@@ -45,7 +45,7 @@ provider_policy = (pwa/'provider-policy.js').read_text()
 bootstrap = (pwa/'install-bootstrap.js').read_text()
 sw = (pwa/'sw.js').read_text()
 # The design-system source of truth is the Tailwind input; app.css is a build artifact.
-styles = (pwa/'assets/src/input.css').read_text()
+styles = (pwa/'styles/input.css').read_text()
 core = (root/'src/core/social-post-core.js').read_text()
 providers_json = (root/'src/core/providers.json').read_text()
 providers_data = (root/'src/core/providers.data.js').read_text()
@@ -187,8 +187,8 @@ checks = {
   # --- platform detection / android prioritization (structure) ---
   'ux-platform-detected-before-css': 'dataset.sptPlatform = platform' in bootstrap and "isAndroid" in bootstrap,
   'ux-android-install-primary': 'hero-install-actions' in index and has_class(index, 'android-only'),
-  'ux-android-userscript-demoted': 'browser-userscript-section' in index and 'android-browser-option' in index,
-  'ux-android-css-prioritizes-pwa': 'html[data-spt-platform="android"] .browser-userscript-section' in styles and 'html[data-spt-platform="android"] .browser-setup-cta' in styles,
+  'ux-android-userscript-demoted': 'browser-userscript-section' not in index and 'android-browser-option' in index and 'browser-setup-cta' in index,
+  'ux-android-css-prioritizes-pwa': 'html[data-spt-platform="android"] .browser-setup-cta' in styles and 'browser-userscript-section' not in styles,
   'ux-hidden-attribute-not-overridden': re.search(r'\[hidden\][^{]*\{[^}]*display\s*:\s*none\s*!important', styles, re.S) is not None,
   'ux-install-fallback-help': has_id(index, 'install-help') and 'userChoice' in app_all,
   'ux-share-workspace': 'share-workspace' in share and 'action-panel' in share and has_id(share, 'actions-primary'),

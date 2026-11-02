@@ -26,13 +26,13 @@ Userscript adapter                        PWA share target
 ## Source boundaries
 
 - `src/core/` contains deterministic, DOM-free shared logic.
-- `src/userscript/` owns host-page integration. It does **not** load Pico or any global CSS framework into X/Threads.
-- `src/pwa/` owns the standalone web UI. Pico CSS is build-time-localized into the Pages artifact.
+- `src/userscript/` owns host-page integration. It does **not** load Tailwind or any global CSS framework into X/Threads.
+- `src/pwa/` owns the standalone web UI. Tailwind CSS is compiled into the Pages artifact at build time. Page modules live in `src/pwa/js/`; the design-system source is `src/pwa/styles/input.css`.
 - `dist/` and `site/` are generated outputs and are not source-of-truth directories.
 
 ## UI boundary
 
-The native X/Threads menu remains host-styled. The PWA/Pages UI uses Pico CSS plus a small Social Post Tools product layer. This avoids framework leakage into host pages while removing duplicated form/button/card CSS from the standalone app.
+The native X/Threads menu remains host-styled. The PWA/Pages UI uses the compiled Social Post Tools design system (Tailwind CSS 3.4.19). This avoids framework leakage into host pages while keeping form, button, and card styling in one product stylesheet.
 
 
 ## Staged share parser

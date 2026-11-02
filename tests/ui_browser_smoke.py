@@ -110,14 +110,12 @@ def main() -> int:
               document.documentElement.dataset.sptPlatform = 'android';
               const install = document.querySelector('#install-app');
               const browserCta = document.querySelector('.browser-setup-cta');
-              const browserSection = document.querySelector('.browser-userscript-section');
               const androidOption = document.querySelector('.android-browser-option');
               const androidLabel = install?.querySelector('.android-only');
               const desktopLabel = install?.querySelector('.not-android');
               return {
                 installDisplay: install ? getComputedStyle(install).display : null,
                 browserCtaDisplay: browserCta ? getComputedStyle(browserCta).display : null,
-                browserSectionDisplay: browserSection ? getComputedStyle(browserSection).display : null,
                 androidOptionDisplay: androidOption ? getComputedStyle(androidOption).display : null,
                 androidLabelDisplay: androidLabel ? getComputedStyle(androidLabel).display : null,
                 desktopLabelDisplay: desktopLabel ? getComputedStyle(desktopLabel).display : null,
@@ -127,7 +125,7 @@ def main() -> int:
             })()''', call_id)
             report({
                 'android-install-cta-visible': bool(android_layout and android_layout['installDisplay'] != 'none'),
-                'android-browser-setup-demoted': bool(android_layout and android_layout['browserCtaDisplay'] == 'none' and android_layout['browserSectionDisplay'] == 'none'),
+                'android-browser-setup-demoted': bool(android_layout and android_layout['browserCtaDisplay'] == 'none'),
                 'android-userscript-still-discoverable': bool(android_layout and android_layout['androidOptionDisplay'] != 'none'),
                 'android-install-label-selected': bool(android_layout and android_layout['androidLabelDisplay'] != 'none' and android_layout['desktopLabelDisplay'] == 'none'),
                 'android-layout-no-overflow': bool(android_layout and android_layout['scrollWidth'] <= android_layout['width'] + 1),

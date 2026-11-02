@@ -57,42 +57,9 @@
 
   <section class="capability-strip" aria-label="Core capabilities">
     <div><span class="capability-key">LINK</span><strong>Clean URL</strong><small>Canonical post link without tracking noise.</small></div>
-    <div><span class="capability-key">EMBED</span><strong>Chat preview</strong><small>FixupX / vxThreads style links when richer embeds matter.</small></div>
+    <div><span class="capability-key">EMBED</span><strong>Chat preview</strong><small>FixupX-style links for X. Threads stays on the canonical post URL.</small></div>
     <div><span class="capability-key">READ</span><strong>Alternate reader</strong><small>Reader frontends stay separate from embed-fixer semantics.</small></div>
     <div><span class="capability-key">CAPTURE</span><strong>AI context</strong><small>Post, media, quote/repost context, and visible discussion.</small></div>
-  </section>
-
-  <section class="landing-grid">
-    <article class="task-card primary-task">
-      <span class="eyebrow">Android</span>
-      <h2>Share-sheet workflow</h2>
-      <p>Install the PWA with Chrome so Social Post Tools becomes an Android Share target. From X or Threads, share the post into this app and choose the next action.</p>
-      <div class="step-list compact-steps" aria-label="Android setup steps">
-        <div><span>1</span><p><strong>Install the PWA</strong><br><small>Chrome is the supported Share Target registration path.</small></p></div>
-        <div><span>2</span><p><strong>Share a post</strong><br><small>Use X / Threads → Share → Social Post Tools.</small></p></div>
-        <div><span>3</span><p><strong>Pick an output</strong><br><small>Copy, share, open a reader, or continue into AI capture.</small></p></div>
-      </div>
-    </article>
-
-    <article class="task-card browser-userscript-section">
-      <span class="eyebrow">Desktop / extension browser</span>
-      <h2>Userscript workflow</h2>
-      <p>The Userscript adds post-level tools directly inside X and Threads. Use it when you want capture controls without routing through Android Share.</p>
-      <div class="toolbar">
-        <a role="button" href="./install.html">Set up Userscript</a>
-        <a role="button" class="secondary outline" href="__RAW_USER_URL__">Direct install</a>
-      </div>
-      <p class="muted compact-copy">Tampermonkey is the recommended default; Violentmonkey remains supported.</p>
-    </article>
-
-    <article class="task-card">
-      <span class="eyebrow">Inspect links</span>
-      <h2>Compare outputs before sharing</h2>
-      <p>Use Link Lab to paste an X or Threads URL and compare the canonical source, chat-preview output, and alternate-reader output without background provider health checks.</p>
-      <div class="toolbar">
-        <a role="button" href="./link-lab.html">Open Link Lab</a>
-      </div>
-    </article>
   </section>
 
   <details class="android-only settings-group android-browser-option">

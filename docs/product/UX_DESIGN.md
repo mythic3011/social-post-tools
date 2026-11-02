@@ -46,7 +46,7 @@ The install page does not require users to understand PWA, service-worker, share
 
 ## v4.2 UI implementation boundary
 
-The HCI model from v4.0/v4.1 is unchanged: common tasks remain visible, advanced controls remain progressively disclosed, and setup is optional for the default path. Pico CSS is an implementation foundation, not a new navigation model.
+The HCI model from v4.0/v4.1 is unchanged: common tasks remain visible, advanced controls remain progressively disclosed, and setup is optional for the default path. Tailwind CSS is the compile step for that foundation, not a new navigation model.
 
 The standalone PWA/Pages surface uses semantic HTML plus framework primitives for forms, buttons, articles, and disclosure controls. Product-specific CSS is reserved for information hierarchy, spacing tokens, install states, and mobile composition. This reduces custom primitive styling without hiding application state inside utility-class strings.
 

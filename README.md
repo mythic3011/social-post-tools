@@ -66,7 +66,7 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 ## What it does
 
 - **Clean X / Twitter and Threads links** — strip common tracking parameters and canonicalize post URLs.
-- **Capability-based share links** — keep the canonical source URL separate from chat-preview builders such as FixupX/FixVX/vxThreads and reader frontends such as XCancel.
+- **Capability-based share links** — keep the canonical source URL separate from chat-preview builders such as FixupX/FixVX and reader frontends such as XCancel. Threads shares stay on the canonical post URL.
 - **Structured AI capture** — preserve the focal post, media ownership, quote/repost context, and optional visible discussion instead of flattening everything into one text blob.
 - **Android Share Target** — receive a native Android share and forward, copy, transform, or hand the source post back to the browser for richer capture.
 - **Telegram and system sharing** — use platform share destinations without storing bot credentials.
@@ -77,7 +77,7 @@ Threads native sharing may also supply `threads.com/share/<id>` instead of an ex
 
 Public alternative-front-end instance lists are intentionally not treated as a stable product dependency. Built-in providers are curated by capability instead of assuming that many interchangeable domains provide reliability.
 
-The shared core defaults X preview links to **FixupX**, keeps **XCancel** as an optional reader, and uses **vxThreads** for Threads preview links. Provider metadata, lifecycle state, and defaults live in one registry in `src/core/social-post-core.js`. Normal consumers receive only active built-ins; the full legacy registry remains addressable for migrations and old imported settings. Retired Nitter IDs can therefore still be understood without becoming selectable defaults or fallbacks.
+The shared core defaults X preview links to **FixupX**, keeps **XCancel** as an optional reader, and does not rewrite Threads links. vxThreads is retired because its origin is unreachable. Provider metadata, lifecycle state, and defaults live in one registry in `src/core/social-post-core.js`. Normal consumers receive only active built-ins; the full legacy registry remains addressable for migrations and old imported settings. Retired provider IDs, including Nitter and vxThreads, can therefore still be understood without becoming selectable defaults or fallbacks.
 
 Social Post Tools deliberately does **not** health-probe every provider at runtime. Doing so would generate background cross-origin requests that leak browsing/share intent and would weaken the current restrictive CSP model. Self-hosted or replacement services can still be added through custom URL builders.
 

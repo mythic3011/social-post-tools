@@ -299,8 +299,7 @@
   .android-only { display: none !important; }
   html[data-spt-platform="android"] .android-only { display: initial !important; }
   html[data-spt-platform="android"] .not-android { display: none !important; }
-  html[data-spt-platform="android"] .browser-setup-cta,
-  html[data-spt-platform="android"] .browser-userscript-section { display: none !important; }
+  html[data-spt-platform="android"] .browser-setup-cta { display: none !important; }
   html[data-spt-platform="android"] .hero-install-actions { grid-template-columns: 1fr; }
   html[data-spt-platform="android"] .android-browser-option { display: block !important; margin-top: var(--spt-space-5); }
 

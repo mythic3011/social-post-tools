@@ -9,15 +9,6 @@ uv run --locked python build.py --pages-base https://share-tools.mythic3011.com
 uv run --locked bash tests/run.sh
 ```
 
-For an offline preview environment where the pinned Pico package cannot be installed, the explicit development-only fallback can be used:
-
-```bash
-uv run --locked python build.py --pages-base https://share-tools.mythic3011.com --dev-ui-fallback
-uv run --locked bash tests/run.sh
-```
-
-`--dev-ui-fallback` is not a production build mode and is not used by GitHub Actions.
-
 It executes:
 
 - syntax validation;
@@ -113,9 +104,9 @@ The shared-core test verifies stable JSON key ordering and the standard SHA-256 
 
 ## v4.2 UI foundation checks
 
-`tests/ui_structure_audit.py` and `tests/pwa_audit.py` verify the framework boundary: pinned/locked Pico version, local same-origin stylesheet links, unchanged CSP, `.pico` scoping, the `[hidden]` invariant, 48px coarse-pointer targets, and the absence of generic product-layer button skinning.
+`tests/ui_structure_audit.py` and `tests/pwa_audit.py` verify the framework boundary: pinned/locked Tailwind CSS 3.4.19, local same-origin stylesheet links, unchanged CSP, `.spt-app` scoping, the `[hidden]` invariant, and 48px coarse-pointer targets.
 
-`tests/pages_audit.py` verifies that the generated Pages artifact contains the local framework file/marker, that the service worker caches it, and that both CI and Pages workflows install npm dependencies before the build.
+`tests/pages_audit.py` verifies that the generated Pages artifact contains the compiled stylesheet and framework marker, that the service worker caches it, and that the toolchain action installs npm dependencies before the build.
 
 
 `tests/ui_browser_smoke.py` loads the generated site in headless Chromium at a 360px mobile viewport and checks horizontal overflow, install-button hidden state, stylesheet loading, closed-by-default advanced settings, form labeling, and basic light/dark computed-color behavior. This is a layout/accessibility smoke test rather than screenshot pixel-diff testing.

@@ -96,6 +96,6 @@ Userscript installer and metadata files are not placed in the service-worker she
 
 The CSS-framework refactor changes only the standalone PWA/Pages presentation layer. It adds no Userscript observer, polling loop, event listener, or network request. X/Threads native-menu integration remains framework-free.
 
-Pico CSS is a static same-origin asset copied during build and included in the PWA application shell. Product CSS remains a separate small file so project-specific layout can evolve without rebuilding framework code. The service worker caches both local CSS assets; userscript installer/update files remain outside the shell cache.
+The design system is compiled once at build time into one same-origin stylesheet and included in the PWA application shell. The service worker caches that stylesheet. Userscript installer and update files remain outside the shell cache.
 
 The existing Chromium hot-path and shared-core smoke tests are retained unchanged. The v4.2 release test run remained within the established tripwires; these numbers are regression signals rather than production benchmarks.

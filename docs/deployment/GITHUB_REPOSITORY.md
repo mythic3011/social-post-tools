@@ -35,7 +35,7 @@ android
 privacy
 github-pages
 javascript
-pico-css
+tailwindcss
 url-cleaner
 ```
 
