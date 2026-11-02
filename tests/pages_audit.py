@@ -221,7 +221,7 @@ def _workflow_checks() -> dict[str, bool]:
             and '--threads-resolver-url' not in workflow
         ),
         'edge-resolver-workflow': (
-            'cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0' in edge_workflow
+            _action_pinned_to_sha(edge_workflow, 'cloudflare/wrangler-action')
             and "wranglerVersion: '4.128.0'" in edge_workflow
         ),
         'edge-resolver-custom-domain': text_has_hostname(
